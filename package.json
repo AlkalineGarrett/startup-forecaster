@@ -1,0 +1,21 @@
+{
+  "name": "startup-forecaster",
+  "version": "0.1.0",
+  "description": "Take a startup idea from a pitch to a researched, simulated revenue forecast: source evidence, build each assumption's distribution from it, simulate a portfolio, and plan the build.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.6"
+  },
+  "bin": {
+    "forecaster": "forecaster/bin/forecaster.mjs"
+  },
+  "scripts": {
+    "test": "npm run test:engine && npm run test:compiler && npm run test:fetcher && npm run test:forecaster",
+    "test:engine": "npm --prefix montecarlo-engine test",
+    "test:compiler": "cd distribution-compiler && python3 -m pytest tests -q",
+    "test:fetcher": "cd agentic-fetcher && python3 -m pytest tests -q",
+    "test:forecaster": "npm --prefix forecaster test"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "build-plan-generator",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "build-plan": "render.mjs"
+  },
+  "scripts": {
+    "build": "node render.mjs example.mjs"
+  }
+}

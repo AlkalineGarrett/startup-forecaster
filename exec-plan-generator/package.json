@@ -1,0 +1,11 @@
+{
+  "name": "exec-plan-generator",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "exec-plan": "build.mjs"
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

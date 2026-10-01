@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+
+agentic-fetcher/ocrtool
+distribution-compiler/build/
+montecarlo-engine/dist/
+montecarlo-engine/.cache/
+build-plan-generator/*-build-plan.html
+exec-plan-generator/execution-plan-*.html

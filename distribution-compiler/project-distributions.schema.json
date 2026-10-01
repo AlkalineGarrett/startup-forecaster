@@ -1,0 +1,815 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Project-distributions schema — grounded · constructed · derived",
+  "description": "Machine-readable form of the project-distributions schema. The canonical prose spec is schema/SCHEMA.md and its illustrated companion is schema/schema-grounded.html; where they and this file differ, SCHEMA.md wins. A node states a `distribution` CONSTRUCTED from a shared corpus of grounded evidence; percentiles are a DERIVED readout (debug_computed_percentiles), never authored. Everything traces to a source. This describes the LOGICAL model; for the current run it is physically split — the shared corpus (documents/general_knowledge/speculations) lives in corpus/*.json and the nodes (keyed project::node) live in projects/*.json, one file per project. The prior run's single-file data is frozen under archive/calibration-run-1/.",
+  "type": "object",
+  "required": [
+    "nodes"
+  ],
+  "properties": {
+    "documents": {
+      "type": "object",
+      "description": "Shared corpus at the root: archived sources, each keyed by doc_<sha256[:12]>.",
+      "propertyNames": {
+        "pattern": "^doc_"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/document"
+      }
+    },
+    "general_knowledge": {
+      "type": "object",
+      "description": "Broadly-held reference-class priors, keyed by gk_<id>.",
+      "propertyNames": {
+        "pattern": "^gk_"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/general_knowledge"
+      }
+    },
+    "speculations": {
+      "type": "object",
+      "description": "Stated-but-unsourced load-bearing guesses, keyed by spec_<id>.",
+      "propertyNames": {
+        "pattern": "^spec_"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/speculation"
+      }
+    },
+    "nodes": {
+      "type": "object",
+      "description": "Project-axis distributions, keyed by project::node.",
+      "additionalProperties": {
+        "$ref": "#/$defs/node"
+      }
+    }
+  },
+  "$defs": {
+    "document": {
+      "type": "object",
+      "description": "An archived source and the home for its observations (I12: node → distribution → reference → observation → document).",
+      "required": [
+        "sha256",
+        "observations"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "description": "content hash = identity; identical bytes are one record"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "primary",
+            "secondary",
+            "internal"
+          ]
+        },
+        "trust_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "capture": {
+          "enum": [
+            "full_text",
+            "image_only",
+            "js_shell",
+            "partial",
+            "failed"
+          ]
+        },
+        "core": {
+          "type": "string",
+          "description": "lean, image-OCR'd text a reader opens instead of the raw file"
+        },
+        "derivation": {
+          "type": "object",
+          "description": "present only if this document was computed from others (I13); every `from` id resolves",
+          "required": [
+            "method",
+            "from"
+          ],
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "from": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "how": {
+              "type": "string"
+            },
+            "script": {
+              "type": "string"
+            }
+          }
+        },
+        "observations": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^obs_"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/observation"
+          }
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "description": "One fact drawn from a document. Which nodes use it is derived on demand from projects/*.json (agentic-fetcher/citations.py), not stored — the stored cited_by cache drifted stale and was dropped (I11).",
+      "required": [
+        "statement",
+        "verification"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "measure": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/measure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "verbatim sentence; may be null when read from a non-textual capture — then a capture_note says so and verification is not `verified` (I6)"
+        },
+        "capture_note": {
+          "type": "string",
+          "description": "present only when quote is null: why there is no verbatim quote"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "verification": {
+          "enum": [
+            "verified",
+            "unchecked",
+            "not_in_doc",
+            "unverifiable"
+          ],
+          "description": "verified = non-empty quote present in core; unchecked = not yet swept; not_in_doc = swept, figure absent; unverifiable = real but not yet parseable (carries blocked_on)"
+        },
+        "blocked_on": {
+          "type": "string",
+          "description": "present iff verification = unverifiable — what unblocks it (e.g. an OCR sidecar)"
+        }
+      }
+    },
+    "general_knowledge": {
+      "type": "object",
+      "required": [
+        "statement",
+        "reasoning"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "measure": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/measure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "why it is admissible without a single citation"
+        }
+      }
+    },
+    "speculation": {
+      "type": "object",
+      "required": [
+        "statement",
+        "reasoning"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "measure": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/measure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "why we lean on this un-sourced figure and what would confirm it"
+        }
+      }
+    },
+    "measure": {
+      "type": "object",
+      "description": "The superstructure — only the parts the source states; never force-fit a p10/p50/p90 template (I10).",
+      "properties": {
+        "unit": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "mean": {
+          "type": "number",
+          "description": "arithmetic mean; grounds a splice tail's shape (§4.3)"
+        },
+        "mode": {
+          "type": "number"
+        },
+        "interval": {
+          "type": "object",
+          "required": [
+            "low",
+            "high"
+          ],
+          "properties": {
+            "low": {
+              "type": "number"
+            },
+            "high": {
+              "type": "number"
+            }
+          }
+        },
+        "quantiles": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^p[0-9]+$"
+          },
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "points": {
+          "type": "object",
+          "description": "named point-measures that are NOT probability quantiles (e.g. gaap/non-gaap margin, milestone shares, a voluntary/involuntary churn split) — one number per named label",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "series": {
+          "type": "array",
+          "description": "a dated multi-point series; the operand extrapolate_cagr / extrapolate_linear consume",
+          "items": {
+            "type": "object",
+            "required": [
+              "period",
+              "value"
+            ],
+            "properties": {
+              "period": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "population": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string"
+        },
+        "denominator": {
+          "type": "string"
+        }
+      }
+    },
+    "value": {
+      "type": "object",
+      "description": "The recurring trail behind a grounded number (a param, an atom's/anchor's `at`, an input, a cross_check, a splice threshold).",
+      "properties": {
+        "value_type": {
+          "type": "string",
+          "description": "open vocabulary, suggested below. computed_value carries a formula; direct_value (incl. a plain reference to a shared value) takes the number as-is.",
+          "examples": [
+            "direct_value",
+            "value_bounds",
+            "inferred_value",
+            "computed_value",
+            "directional"
+          ]
+        },
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "→ obs_ / gk_ / spec_ / in_ by id; null = a counted gap (needs missing_document)"
+        },
+        "quantile": {
+          "type": "string",
+          "pattern": "^p[0-9]+$",
+          "description": "select one quantile (e.g. \"p10\") of the referenced measure's `quantiles` — for a value that restates one point of a stated distribution (e.g. a scaffolded anchor restating a speculation's authored quantile)"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "plural, when the value spans several grounded sources (I7)"
+        },
+        "formula": {
+          "type": "string",
+          "description": "for a computed_value — ONE grammar over ids AND the distribution's own structure (segments[i], splices[i]), with the closed function set min/max/extrapolate_cagr/extrapolate_linear/slope_match (I22)"
+        },
+        "measure": {
+          "$ref": "#/$defs/measure"
+        },
+        "basis": {
+          "type": "object",
+          "description": "metric-comparability marker; a metric/unit_of mismatch among a node's operands is flagged, never silently reconciled (I21)",
+          "properties": {
+            "metric": {
+              "type": "string"
+            },
+            "unit_of": {
+              "type": "string"
+            }
+          }
+        },
+        "process": {
+          "type": "string",
+          "description": "the mechanical how"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "the self-contained why"
+        },
+        "confidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "missing_document": {
+          "type": "string",
+          "description": "present only when reference = null (I15)"
+        }
+      }
+    },
+    "allocation": {
+      "type": "object",
+      "description": "The single mass-split decision on point_mass / weighted_combination.",
+      "required": [
+        "constraint"
+      ],
+      "properties": {
+        "constraint": {
+          "type": "string",
+          "description": "an executable predicate, e.g. \"sum(atoms[].weight) == 1\" (I3)"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "process": {
+          "type": "string"
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "atom": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/value"
+        }
+      ],
+      "required": [
+        "weight"
+      ],
+      "description": "A point-mass atom: a value (the position, via its measure) plus a weight. The one allocation renormalizes the weights (I3).",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "allocation": {
+          "type": "number",
+          "minimum": 0,
+          "description": "alias for weight"
+        },
+        "value": {
+          "$ref": "#/$defs/value",
+          "description": "optional nested position (else the atom itself is the value)"
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "description": "A nested distribution plus a weight (weighted_combination).",
+      "required": [
+        "distribution",
+        "weight"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "distribution": {
+          "$ref": "#/$defs/distribution"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "segment": {
+      "type": "object",
+      "description": "A distribution governing one slice of the support (splice), ordered lower → upper.",
+      "required": [
+        "distribution"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "distribution": {
+          "$ref": "#/$defs/distribution"
+        }
+      }
+    },
+    "splice_point": {
+      "type": "object",
+      "description": "The transition between two consecutive segments. `at` is a position (or a mass fraction for a point-mass boundary), usually referencing a shared value the upper segment's location reuses.",
+      "required": [
+        "at"
+      ],
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/value"
+        }
+      }
+    },
+    "anchor": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/value"
+        }
+      ],
+      "description": "A metalog anchor: an observed sample value (position via its measure; or a nested `value`). Its percentile is its rank i/(n+1), not authored. No weight.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/value",
+          "description": "optional nested value (else the anchor itself is the value)"
+        }
+      }
+    },
+    "distribution": {
+      "type": "object",
+      "description": "kind IS the family. Structural: point_mass (atoms), weighted_combination (components), splice (segments+splices). Quantile-parameterized: metalog (anchors + k, optional lower_bound/zero_mass). Parametric families state named params as values. Exact per-kind keys: compiler/DESIGN.md. I2: complete for its kind.",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "examples": [
+            "point_mass",
+            "weighted_combination",
+            "splice",
+            "metalog",
+            "lognormal",
+            "beta",
+            "normal",
+            "gamma",
+            "uniform",
+            "generalized_pareto"
+          ]
+        },
+        "atoms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/atom"
+          }
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        },
+        "allocation": {
+          "$ref": "#/$defs/allocation"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/segment"
+          },
+          "minItems": 2
+        },
+        "splices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/splice_point"
+          }
+        },
+        "boundedness": {
+          "enum": [
+            "unbounded",
+            "semi-bounded",
+            "lower-semi-bounded",
+            "bounded"
+          ]
+        },
+        "lower": {
+          "type": [
+            "number",
+            "object"
+          ]
+        },
+        "upper": {
+          "type": [
+            "number",
+            "object"
+          ]
+        },
+        "plotting_position": {
+          "type": "string"
+        },
+        "terms": {
+          "type": "integer"
+        },
+        "anchors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anchor"
+          }
+        },
+        "k": {
+          "type": "integer",
+          "description": "metalog term count (alias: terms)"
+        },
+        "lower_bound": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "metalog lower bound; null = unbounded (alias: boundedness + lower)"
+        },
+        "upper_bound": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "metalog upper bound; null = unbounded. With lower_bound, gives a doubly-bounded (log-odds) metalog for a fraction/rate whose tail must not cross a ceiling (alias: boundedness + upper)"
+        },
+        "zero_mass": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "metalog: probability mass sitting at lower_bound — the $0 free-tier hurdle"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "point_mass"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "atoms"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "weighted_combination"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "components"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "splice"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "segments",
+              "splices"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "metalog"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "anchors"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": {
+        "$ref": "#/$defs/value",
+        "description": "a parametric kind's named params (median/sigma, alpha/beta, shape/rate, location/scale/shape, etc.), each a value"
+      }
+    },
+    "cross_check": {
+      "type": "object",
+      "description": "A figure that corroborates or refutes the built distribution but anchors no part of it (I18).",
+      "required": [
+        "usage"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "usage": {
+          "enum": [
+            "corroboration",
+            "refutation"
+          ]
+        },
+        "reference": {
+          "type": "string"
+        },
+        "measure": {
+          "$ref": "#/$defs/measure"
+        },
+        "superseded_by": {
+          "type": "string",
+          "description": "present only on a refutation — the observation that replaced the disproven claim"
+        },
+        "value_type": {
+          "type": "string"
+        },
+        "formula": {
+          "type": "string"
+        },
+        "process": {
+          "type": "string"
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "description": "The project-axis distribution the model consumes — an elicited leaf; holds no evidence of its own, only references into the corpus.",
+      "required": [
+        "unit",
+        "model_definition",
+        "distribution",
+        "support_score",
+        "reasoning"
+      ],
+      "properties": {
+        "unit": {
+          "type": "string"
+        },
+        "model_definition": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "object",
+          "properties": {
+            "base_project": {
+              "type": "string"
+            },
+            "variant": {
+              "type": "string"
+            }
+          }
+        },
+        "inputs": {
+          "type": "object",
+          "description": "node-local named Values (I19: a DAG), keyed by in_<id>",
+          "propertyNames": {
+            "pattern": "^in_"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        "truncation": {
+          "type": "object",
+          "description": "optional — only bounds that actually clip beyond the distribution's natural domain (I16)",
+          "properties": {
+            "lower": {},
+            "upper": {}
+          }
+        },
+        "distribution": {
+          "$ref": "#/$defs/distribution"
+        },
+        "reconciliation": {
+          "type": "object",
+          "description": "how multiple / conflicting sources were combined (P5)",
+          "properties": {
+            "process": {
+              "type": "string"
+            },
+            "reasoning": {
+              "type": "string"
+            }
+          }
+        },
+        "cross_checks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cross_check"
+          }
+        },
+        "support_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "how grounded the whole distribution is, overall"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "the rationale for support_score — the node's one free-standing narrative"
+        },
+        "debug_computed_percentiles": {
+          "type": "object",
+          "description": "percentiles/mean read off the distribution — throwaway, recomputable, never authored (I1)",
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}

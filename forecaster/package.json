@@ -1,0 +1,11 @@
+{
+  "name": "forecaster",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "forecaster": "bin/forecaster.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/forecaster.test.mjs"
+  }
+}

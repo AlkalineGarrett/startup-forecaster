@@ -1,0 +1,251 @@
+{
+ "test::beta_fill": {
+  "unit": "fraction 0-1",
+  "model_definition": "beta, percentiles omitted (test fill)",
+  "distribution": {
+   "kind": "beta",
+   "alpha": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 4.5
+    }
+   },
+   "beta": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2.4
+    }
+   }
+  },
+  "support_score": 50,
+  "reasoning": "t"
+ },
+ "test::beta_mismatch": {
+  "unit": "fraction 0-1",
+  "model_definition": "beta, wrong authored p50 (test check)",
+  "distribution": {
+   "kind": "beta",
+   "alpha": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 4.5
+    }
+   },
+   "beta": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2.4
+    }
+   }
+  },
+  "support_score": 50,
+  "reasoning": "t",
+  "debug_computed_percentiles": {
+   "p05": 0.2,
+   "p10": 0.28,
+   "p50": 0.9,
+   "p90": 0.89,
+   "p95": 0.93
+  }
+ },
+ "test::splice_gpd": {
+  "unit": "usd",
+  "model_definition": "lognormal body + GPD tail, scale by slope_match",
+  "distribution": {
+   "kind": "splice",
+   "segments": [
+    {
+     "name": "body",
+     "distribution": {
+      "kind": "lognormal",
+      "median": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 20
+       }
+      },
+      "sigma": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 2.3374939712499927
+       }
+      }
+     }
+    },
+    {
+     "name": "tail",
+     "distribution": {
+      "kind": "generalized_pareto",
+      "location": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 400
+       }
+      },
+      "scale": {
+       "value_type": "computed_value",
+       "formula": "slope_match(segments[0], splices[0])",
+       "measure": {}
+      },
+      "shape": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0.927
+       }
+      }
+     }
+    }
+   ],
+   "splices": [
+    {
+     "at": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 400
+      }
+     }
+    }
+   ]
+  },
+  "support_score": 40,
+  "reasoning": "t"
+ },
+ "test::point_mass": {
+  "unit": "count",
+  "model_definition": "two atoms 60/40",
+  "distribution": {
+   "kind": "point_mass",
+   "atoms": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      }
+     },
+     "weight": 0.6
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 50
+      }
+     },
+     "weight": 0.4
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "t"
+ },
+ "test::mixture": {
+  "unit": "count",
+  "model_definition": "mixture of N(10,2) and N(30,3)",
+  "distribution": {
+   "kind": "weighted_combination",
+   "components": [
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 10
+       }
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 2
+       }
+      }
+     },
+     "weight": 0.5
+    },
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 30
+       }
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 3
+       }
+      }
+     },
+     "weight": 0.5
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "t"
+ },
+ "test::metalog": {
+  "unit": "usd/mo",
+  "model_definition": "lower-semi-bounded metalog, 13% at $0",
+  "distribution": {
+   "kind": "metalog",
+   "lower_bound": 0.0,
+   "zero_mass": 0.13,
+   "k": 5,
+   "anchors": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 15
+      }
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 17.5
+      }
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 19.99
+      }
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 29
+      }
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 39.99
+      }
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 69
+      }
+     }
+    }
+   ]
+  },
+  "support_score": 45,
+  "reasoning": "t"
+ }
+}

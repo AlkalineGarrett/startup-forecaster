@@ -1,0 +1,390 @@
+:root{
+  --ground:#F1F3F6; --paper:#FFFFFF; --paper-2:#F8FAFB;
+  --ink:#17202B; --ink-soft:#54606E; --ink-faint:#8A94A0;
+  --line:#DFE4EA; --line-soft:#EBEFF3;
+  --accent:#1E5F84; --accent-deep:#123D55; --accent-tint:#E4EEF4;
+  --good:#2F7D57; --good-bg:#E7F1EB;
+  --warn:#A9762A; --warn-bg:#F5EDDD;
+  --low:#A8483A; --low-bg:#F3E5E2;
+  --c-p20:#A8483A; --c-p50:#1E5F84; --c-p80:#2F7D57; --c-mean:#7a5aa8;
+  --font-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:"SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --shadow:0 1px 2px rgba(23,32,43,.04),0 4px 16px rgba(23,32,43,.05);
+}
+*{box-sizing:border-box} body{margin:0}
+.wrap{max-width:1460px;margin:0 auto;padding:0 clamp(12px,3vw,28px) 90px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px;background:var(--ground);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+/* flex-basis:0 (not auto) so the content pane's wide children never inflate its base width and push it
+   below the nav — it always shares the row with the nav and just grows to fill. */
+#panels{flex:1 1 0;min-width:0}
+/* The methodology footer is a flex child of .wrap — force it onto its own full-width bottom row. */
+.wrap>footer{flex:0 0 100%;order:9;margin-top:24px}
+/* Narrow screens: nav + stat column collapse back into stacked top rows. */
+@media (max-width:680px){ .wrap{flex-direction:column;gap:10px} }
+a{color:var(--accent);text-underline-offset:2px}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;text-wrap:balance;line-height:1.15;letter-spacing:-.01em}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 .5rem;font-weight:600}
+.mast{border-top:3px solid var(--accent);padding-top:24px;margin-bottom:20px}
+.mast h1{font-size:clamp(1.9rem,4vw,2.8rem);margin:.1em 0 .28em}
+.mast .lede{font-size:clamp(1rem,1.5vw,1.14rem);color:var(--ink-soft);max-width:70ch;margin:0}
+.callout{background:var(--warn-bg);border:1px solid #e6d3a8;border-left:3px solid var(--warn);border-radius:10px;padding:13px 16px;margin-top:18px;font-size:.9rem;color:#6b551f}
+.callout b{color:#5a4718}
+.fxnote{margin-top:10px;font-size:.82rem;color:var(--ink-faint)}
+/* overflow-x:scroll (not auto) forces the horizontal scrollbar track to stay rendered so it can't
+   vanish under macOS overlay-scrollbars / non-overflowing widths — the tabs overflow the capped
+   container in practice. overflow-y:hidden stops the spec coercion to a vertical auto-scrollbar.
+   flex-wrap:nowrap keeps the tabs on one scrolling row; the extra bottom padding reserves room for
+   the always-on scrollbar so it never overlaps a tab. */
+/* The project selector is a PINNED LEFT NAV pane (a vertical column), not a top bar. */
+.tabbar{position:sticky;top:0;z-index:5;flex:0 0 115px;align-self:flex-start;display:flex;flex-direction:column;gap:5px;max-height:100vh;overflow-y:auto;overflow-x:hidden;background:var(--ground);padding:14px 2px 14px 0}
+.tabbar::-webkit-scrollbar{width:9px;-webkit-appearance:none;appearance:none}
+.tabbar::-webkit-scrollbar-track{background:var(--line-soft);border-radius:999px}
+.tabbar::-webkit-scrollbar-thumb{background:var(--ink-faint);border-radius:999px;border:2px solid var(--line-soft)}
+.tabbar::-webkit-scrollbar-thumb:hover{background:var(--ink-soft)}
+.tab{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;font-family:var(--font-mono);font-size:.72rem;font-weight:600;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:6px 9px;cursor:pointer;white-space:normal;line-height:1.25;transition:.12s}
+.tab:hover{border-color:var(--accent);color:var(--accent)}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.tab .ev{opacity:.7;font-weight:400;font-size:.92em} .tab.active .ev{opacity:.85}
+/* Narrow screens: the nav becomes a wrapping top row again. */
+@media (max-width:680px){ .tabbar{position:static;flex:none;flex-direction:row;flex-wrap:wrap;max-height:none;padding:12px 0} .tab{width:auto} }
+/* Grounding + Archived trail the active project tabs as a reference/utility group. A hairline
+ * divider (on the first of the group) separates them; the Archived tab is further muted/dashed. */
+.tab-tail{margin-left:10px;position:relative}
+.tab-tail::before{content:"";position:absolute;left:-7px;top:4px;bottom:4px;border-left:1px solid var(--line)}
+.tab-arch{color:var(--ink-faint);border-style:dashed}
+.tab-arch.active{background:var(--ink-soft);border-color:var(--ink-soft);color:#fff}
+.panel{display:none;margin-top:10px} .panel.active{display:block}
+.tablecard{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-top:16px}
+.scroller{overflow-x:auto}
+table.ov{border-collapse:collapse;width:100%;min-width:960px;font-size:.9rem}
+table.ov thead th{background:var(--paper-2);text-align:right;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;padding:12px 13px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:bottom}
+table.ov thead th.l{text-align:left}
+table.ov thead th[data-key]{cursor:pointer;user-select:none}
+table.ov thead th[data-key]:hover{color:var(--accent)}
+table.ov thead th .arr{opacity:.3} table.ov thead th[aria-sort] .arr{opacity:1;color:var(--accent)}
+table.ov tbody td{padding:11px 13px;border-bottom:1px solid var(--line-soft);vertical-align:middle;text-align:right}
+table.ov tbody td.l{text-align:left}
+table.ov tbody tr:last-child td{border-bottom:0}
+table.ov tbody tr:hover td{background:rgba(30,95,132,.04)}
+table.ov tbody tr.vrow, table.ov tbody tr.cmprow{cursor:pointer} /* still fully clickable (open the variant) */
+/* anchored heat scale: values set inline as --hbg/--hfg; normal specificity so row-hover still wins */
+.heatc{background:var(--hbg,transparent);color:var(--hfg,inherit)} .heatc .n{color:var(--hfg,inherit)}
+.oname{font-weight:600;color:var(--ink);font-family:var(--font-display);font-size:1.01rem}
+/* Expandable per-unit topline brief (native <details>): one-liner always visible, expands to detail. */
+.brief{background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin:0 0 16px;padding:12px 16px}
+.brief>summary{cursor:pointer;list-style:none;font-family:var(--font-display);font-size:1.05rem;font-weight:600;color:var(--ink);line-height:1.4;display:flex;gap:9px;align-items:baseline}
+.brief>summary::-webkit-details-marker{display:none}
+.brief>summary::before{content:"\25B8";color:var(--accent);font-size:.8em;transition:transform .12s ease;flex:0 0 auto}
+.brief[open]>summary::before{transform:rotate(90deg)}
+.briefdetail{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft);max-width:80ch}
+.briefsec{margin:0 0 14px}
+.briefsec:last-child{margin-bottom:0}
+.briefsec .briefh{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:5px}
+.brieful{margin:0;padding-left:18px}
+.brieful>li{font-size:.88rem;color:var(--ink-soft);line-height:1.55;margin:4px 0}
+.brieful ul.briefsub{margin:4px 0 6px;padding-left:18px;list-style:circle}
+.brieful ul.briefsub li{font-size:.85rem;color:var(--ink-soft);line-height:1.5;margin:2px 0}
+/* 3-way co-highlight (Project overview): a hover on any of stats table / chart line / year table tints the
+   same option's rows in the others. Specificity beats both .heatc and the row:hover rule. */
+table.ov tbody tr.cohlrow.cohot td{background:var(--accent-tint)}
+table.ov tbody tr.cohlrow.cohot td.l{box-shadow:inset 3px 0 0 var(--accent)}
+.yoyrow.cohot{background:var(--accent-tint);color:var(--ink)}
+.namego{cursor:pointer}
+.namego:hover{color:var(--accent);text-decoration:underline}
+/* Expandable variant-project rows (Opportunity + YoY tables): a triangle to the RIGHT of the name rotates
+   on expand; the row body is clickable; sub-rows keep the heat backgrounds, just smaller + indented. */
+/* CSS border-triangle (empty span) so it rotates cleanly around its own centre — a glyph's box is off-centre. */
+.ovtri{display:inline-block;margin-left:7px;vertical-align:middle;width:0;height:0;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent var(--ink-faint);transform-origin:center;transition:transform .14s ease}
+table.ov tbody tr.expanded .ovtri{transform:rotate(90deg)}
+table.ov tbody tr.hasvars{cursor:pointer}
+table.ov tbody tr.ovsub td, table.ov tbody tr.yoysub td{font-size:.72rem;padding-top:7px;padding-bottom:7px}
+.ovsubname, .ysubname{padding-left:24px;font-weight:500;color:var(--ink);font-family:var(--font-display);font-size:.8rem}
+/* neutral gap after every top-level project's block: its own row (no variants / collapsed), or its last
+   variant sub-row when expanded — so each project reads as a distinct group either way. */
+table.ov tbody tr.ovtr:not(.hasvars) td, table.ov tbody tr.yoytr:not(.hasvars) td,
+table.ov tbody tr.ovtr.hasvars:not(.expanded) td, table.ov tbody tr.yoytr.hasvars:not(.expanded) td,
+table.ov tbody tr.sublast td{border-bottom:7px solid var(--ground)}
+.n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.psucc{display:inline-block;min-width:40px;font-family:var(--font-mono);font-size:.82rem;color:var(--ink)}
+.succbar{display:inline-block;width:50px;height:6px;border-radius:4px;background:var(--line-soft);overflow:hidden;vertical-align:middle;margin-left:6px}
+.succbar>i{display:block;height:100%;background:var(--good)}
+.spreadh{min-width:320px}
+.axl{fill:var(--ink-faint);font-family:var(--font-mono);font-size:8px}
+.strip{display:block}
+.striplegend{display:flex;gap:16px;align-items:center;padding:11px 15px 13px;font-size:.75rem;color:var(--ink-soft);flex-wrap:wrap;border-top:1px solid var(--line)}
+.striplegend span{display:inline-flex;align-items:center;gap:6px}
+.lgdot{width:9px;height:9px;border-radius:50%;border:1.4px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.lgsw{width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.06)}
+/* Income/cost table: clickable line rows that expand a bulleted breakdown (.icexp row). */
+.icrow{cursor:pointer}
+.icrow .icchev{display:inline-block;margin-right:7px;color:var(--ink-faint);font-size:.7rem;transition:transform .12s}
+.icrow.icopen .icchev{transform:rotate(90deg);color:var(--accent)}
+.icrow:hover .oname{color:var(--accent)}
+.icexp td{background:var(--paper-2)}
+.icexp:not(.icsub) td{padding:2px 18px 12px}
+.icbul{margin:8px 0 0;padding-left:22px;font-size:.85rem;color:var(--ink-soft);line-height:1.5;text-align:left}
+.icbul li{margin:3px 0}
+.icnote{margin:2px 0 4px;font-size:.85rem;color:var(--ink-soft);line-height:1.5;text-align:left}
+/* Operating-cost component sub-rows: indented label, smaller, muted. */
+.icsub td{padding:6px 13px}
+.icsub td .icv{font-size:.85rem}
+.icsublabel{padding-left:24px;color:var(--ink-soft);font-size:.85rem;font-family:var(--font-display)}
+/* pairwise matrix */
+.resimbtn{font-family:var(--font-mono);font-size:.74rem;font-weight:700;color:#fff;background:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:7px 14px;cursor:pointer}
+.resimbtn:hover{background:var(--accent-deep);border-color:var(--accent-deep)}
+.stalenote{font-family:var(--font-mono);font-size:.72rem;color:var(--warn);align-self:center}
+.rowcards.stale .stat{opacity:.55}
+.pwloading{font-family:var(--font-mono);font-size:.85rem;color:var(--ink-soft);padding:24px 4px}
+.pwtoggle{display:flex;gap:6px;align-items:center;margin:14px 0 12px;font-family:var(--font-mono);font-size:.75rem;color:var(--ink-soft)}
+.pwtog{font-family:var(--font-mono);font-size:.74rem;font-weight:600;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:5px 12px;cursor:pointer}
+.pwtog:hover{border-color:var(--accent);color:var(--accent)} .pwtog.active{background:var(--accent);border-color:var(--accent);color:#fff}
+table.pwmatrix{border-collapse:separate;border-spacing:2px}
+.pwmatrix td{width:80px;height:40px}
+.pwcell{border-radius:5px;text-align:center;vertical-align:middle;padding:1px}
+.pwempty{background:transparent;border:none}
+.pwcorner{background:transparent;border:none}
+.pwcolh{width:80px;font-family:var(--font-mono);font-size:.64rem;font-weight:600;color:var(--ink-soft);text-align:center;vertical-align:bottom;padding-bottom:5px}
+.pwcolh span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
+.pwrowh{width:auto;font-family:var(--font-mono);font-size:.72rem;font-weight:700;color:var(--ink);text-align:right;vertical-align:middle;padding-right:9px;white-space:nowrap;background:var(--paper-2);border-radius:5px}
+td.pwnonecol,th.pwnonecol{border-right:2px solid var(--line)}
+.pwcell .pwval{font-family:var(--font-mono);font-size:.82rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pwnums{display:flex;align-items:baseline;justify-content:center;gap:2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pwnums .m{font-size:.5rem;opacity:.6;color:inherit}
+/* selected metric large, others small — shared by the horizon tables (p20/p50/mean/p80) */
+.metric-p20 .m20,.metric-p50 .m50,.metric-mean .mmean,.metric-p80 .m80{font-size:.8rem;font-weight:700;opacity:1}
+/* revenue-by-horizon table */
+table.hz th.hzgrp{text-align:center;font-size:.7rem;letter-spacing:.03em}
+table.hz td.hzc{text-align:center;vertical-align:middle;padding:4px 8px;min-width:120px;border-radius:5px}
+table.hz .pwnums{font-size:inherit}
+.vtabs{display:flex;gap:6px;flex-wrap:wrap;margin:0;position:sticky;top:var(--tabbar-h,56px);z-index:4;background:var(--ground);padding:12px 0 8px;box-shadow:0 8px 12px -10px rgba(23,32,43,.16)}
+/* on a variant panel the pinned stats sit below BOTH the tab bar and the sub-tabs */
+.varpanel .pinned{top:calc(var(--tabbar-h,56px) + var(--vtabs-h,48px))}
+@media (max-width:760px){ .vtabs{position:static;box-shadow:none} }
+.vtab{font-family:var(--font-mono);font-size:.78rem;font-weight:600;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.vtab:hover{border-color:var(--accent);color:var(--accent)}
+.vtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.vhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:14px}
+.vhead h3{font-family:var(--font-display);font-size:1.15rem;margin:0}
+.chk{font-family:var(--font-mono);font-size:.8rem;font-weight:700;width:20px;height:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--line);cursor:pointer;background:var(--paper);vertical-align:middle}
+.chk.checked{background:var(--accent);border-color:var(--accent);color:#fff}
+.chk.unchecked{background:var(--paper);border-color:var(--line);color:transparent}
+.chk.gray{background:var(--paper-2);border-color:var(--line);color:var(--ink-faint)}
+.chk:hover{border-color:var(--accent)}
+.inclbl{font-family:var(--font-mono);font-size:.72rem;color:var(--ink-soft);margin-left:6px}
+table.ov tbody tr.mixrow td{font-weight:700;background:var(--paper-2)}
+.phead{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px}
+.phead h2{font-size:clamp(1.4rem,2.6vw,1.8rem);margin:0}
+.phead .type{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-faint)}
+.pone{color:var(--ink-soft);margin:6px 0 0;max-width:74ch}
+.pinned{position:sticky;top:var(--tabbar-h,8px);z-index:4;background:var(--ground);padding-top:6px;padding-bottom:14px}
+@media (max-width:760px){ .pinned{position:static;box-shadow:none;padding-bottom:0} }
+.rowcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:18px}
+.pinned .rowcards{margin-top:0}
+/* Project page = a sticky left COLUMN of all the summary stat boxes + a scrolling content pane. The
+   project selector nav sits further left (see .tabbar), so the page reads: [nav][stats][content]. */
+.projlayout{display:flex;align-items:flex-start;gap:18px}
+.statcol{flex:0 0 124px;position:sticky;top:12px;align-self:flex-start;max-height:calc(100vh - 20px);overflow-y:auto}
+.statcol .rowcards{display:flex;flex-direction:column;gap:5px;margin:0}
+.statcol .stat{padding:5px 8px;border-radius:9px}
+.statcol .stat .k{font-size:.53rem;letter-spacing:.05em}
+.statcol .stat .v{font-size:.9rem;margin-top:0}
+.pcontent{flex:1 1 auto;min-width:0}
+@media (max-width:680px){ .projlayout{flex-direction:column;gap:10px} .statcol{position:static;flex:none;max-height:none;width:100%} .statcol .rowcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))} }
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow)}
+.stat .k{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+.stat .v{font-family:var(--font-mono);font-weight:700;font-size:1.3rem;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat.p20 .v{color:var(--c-p20)} .stat.p50 .v{color:var(--c-p50)} .stat.mean .v{color:var(--c-mean)} .stat.p80 .v{color:var(--c-p80)}
+.stat .sub{font-size:.72rem;color:var(--ink-faint);margin-top:1px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px}
+/* Wide, short revenue histogram in the pinned header (fills the space freed by moving the graph down). */
+.histcard{margin-top:16px}
+/* Req: squash all margin above the histogram — it's the first thing in the content pane. */
+.pcontent > .histcard:first-child{margin-top:0}
+.histcard svg.hist{max-height:210px}
+/* Dependency graph relocated to the very bottom of the page, centred at a comfortable size. */
+.graphcard{margin-top:28px}
+.graphcard .cap{text-align:center}
+.graphcard svg.graph{max-width:560px;margin:0 auto}
+.card .cap{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+/* Collapsible revenue-distribution histogram: a large toggle in the card's upper-right corner. */
+.histcard{position:relative}
+.histtoggle{position:absolute;top:6px;right:10px;z-index:2;background:none;border:0;padding:0 6px;cursor:pointer;color:var(--ink-faint);font-size:1.6rem;line-height:1;display:inline-block;transition:transform .15s ease,color .12s ease}
+.histtoggle:hover{color:var(--ink)}
+.histtoggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.histcard.collapsed .histtoggle{transform:rotate(-90deg)}
+.histcard.collapsed .histbody{display:none}
+.histcard.collapsed{margin-bottom:0}
+svg.hist{width:100%;height:auto;display:block}
+svg.hist .histhit{cursor:crosshair}
+.histlabel{font-family:var(--font-mono);font-size:.74rem;color:var(--ink-soft);margin-top:6px;min-height:1.3em;font-variant-numeric:tabular-nums}
+.histtip{position:absolute;z-index:6;pointer-events:none;background:var(--card,#fff);border:1px solid var(--line,#d7dce2);border-radius:6px;padding:4px 10px;font-family:var(--font-mono);font-size:.72rem;font-variant-numeric:tabular-nums;color:var(--ink,#1b2430);white-space:pre-line;text-align:center;line-height:1.4;box-shadow:0 3px 10px rgba(20,30,45,.16)}
+.histtip[hidden]{display:none}
+svg.hist .bar{fill:var(--accent);fill-opacity:.75} svg.hist .bar0{fill:var(--low);fill-opacity:.7} svg.hist .barloss{fill:#A8483A;fill-opacity:.9}
+svg.hist .pl{stroke-width:1} svg.hist .plt{font-family:var(--font-mono);font-size:11px;font-weight:600}
+svg.hist .ax{fill:var(--ink-faint);font-family:var(--font-mono);font-size:10px}
+svg.graph{width:100%;height:auto;display:block;font-family:var(--font-mono)}
+svg.graph .gnode{fill:var(--paper-2);stroke:var(--line)} svg.graph .gate{stroke:var(--warn)} svg.graph .val{stroke:var(--accent)}
+svg.graph text{font-size:8.5px;fill:var(--ink)} svg.graph .edge{stroke:var(--line);stroke-width:1;fill:none}
+svg.graph .rev{fill:var(--accent-tint);stroke:var(--accent)}
+.nodes{margin-top:22px;display:grid;gap:12px}
+.node{background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px}
+.node .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.node .nlabel{font-weight:600;color:var(--ink)}
+.kind{font-family:var(--font-mono);font-size:.64rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.kind.gate{background:var(--warn-bg);color:var(--warn)} .kind.value{background:var(--accent-tint);color:var(--accent-deep)}
+.conf{font-family:var(--font-mono);font-size:.66rem;padding:2px 7px;border-radius:5px;margin-left:auto}
+.conf.high{background:var(--good-bg);color:var(--good)} .conf.med{background:var(--warn-bg);color:var(--warn)} .conf.low{background:var(--low-bg);color:var(--low)}
+.corrchip{font-family:var(--font-mono);font-size:.63rem;padding:2px 7px;border-radius:5px;background:var(--paper-2);border:1px solid var(--line-soft);color:var(--ink-soft);cursor:help}
+/* grounding-strength badge (support_score): number + a small label, banded like the bar colours */
+.support{margin-left:auto;display:inline-flex;align-items:baseline;gap:5px;font-family:var(--font-mono);font-size:.8rem;font-weight:700;padding:2px 8px;border-radius:5px;cursor:help}
+.support .slab{font-size:.56rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.75}
+.support.hi{background:var(--good-bg);color:var(--good)} .support.mid{background:var(--warn-bg);color:var(--warn)} .support.lo{background:var(--low-bg);color:var(--low)}
+/* collapsible per-node derivation: distribution structure, process, cross-checks, reconciliation */
+.deriv{margin-top:10px;border-top:1px solid var(--line-soft);padding-top:8px}
+.deriv>summary{font-size:.76rem;font-weight:600;color:var(--accent);cursor:pointer;list-style:none;user-select:none}
+.deriv>summary::-webkit-details-marker{display:none}
+.deriv>summary::before{content:"▸ ";color:var(--ink-faint)}
+.deriv[open]>summary::before{content:"▾ "}
+.derivbody{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.drow{display:grid;grid-template-columns:88px 1fr;gap:10px;font-size:.8rem;color:var(--ink-soft);line-height:1.5}
+.drow .dk{font-family:var(--font-mono);font-size:.64rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);text-align:right;padding-top:2px}
+.drow .dmono{font-family:var(--font-mono);font-size:.76rem;color:var(--ink)}
+.drow .dunit{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-faint)}
+.dlist{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px}
+.dlist li{margin:0}
+@media(max-width:640px){.drow{grid-template-columns:1fr}.drow .dk{text-align:left}}
+svg.pbar{width:100%;height:auto;display:block;font-family:var(--font-mono);margin:12px 0 2px;overflow:visible;cursor:pointer}
+.barhint{font-family:var(--font-mono);font-size:.72rem;color:var(--ink-faint);margin:2px 0 2px;min-height:1.4em}
+.barhint.ovon{color:var(--accent-deep)} .barhint b{color:var(--accent);font-weight:700}
+.ovreset{font-family:var(--font-mono);font-size:.7rem;cursor:pointer;background:var(--paper);color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin-left:2px}
+.ovreset:hover{border-color:var(--accent)}
+.basis{font-size:.9rem;color:var(--ink-soft);margin:9px 0 0;line-height:1.55}
+.srcs{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.srcs a{font-family:var(--font-mono);font-size:.72rem;background:var(--paper-2);border:1px solid var(--line-soft);border-radius:6px;padding:2px 8px;text-decoration:none;color:var(--accent)}
+.srcs a:hover{border-color:var(--accent)}
+.revnote{margin-top:18px;background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:.88rem;color:var(--ink-soft)}
+.resetbtn{font-family:var(--font-body);font-size:.82rem;font-weight:600;cursor:pointer;background:var(--paper);color:var(--accent);border:1px solid var(--line);border-radius:8px;padding:7px 13px;box-shadow:var(--shadow)}
+.resetbtn:hover{border-color:var(--accent)}
+/* Reset-overrides riding the left-gutter stat column (or spanning the inline stat grid). */
+.rowcards .resetbtn.railreset{grid-column:1/-1;width:100%;font-size:.74rem;padding:6px 8px;text-align:center;margin-bottom:2px}
+/* Active include checkbox inside each variant tab button. */
+.tabchk{width:16px;height:16px;font-size:.66rem;margin-right:5px}
+.vtab.active .tabchk.unchecked{background:transparent;border-color:rgba(255,255,255,.6)}
+.vtab.active .tabchk.checked{background:#fff;color:var(--accent);border-color:#fff}
+.vtab.active .tabchk.gray{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);color:rgba(255,255,255,.8)}
+footer{margin-top:52px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.82rem}
+footer code{font-family:var(--font-mono);background:var(--paper);border:1px solid var(--line-soft);border-radius:5px;padding:1px 6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Price-as-output curve (price → revenue with planned vs optimal markers + hours-utilisation trace) */
+.pricecard{margin-top:16px}
+.pricecard svg.pricecurve{width:100%;height:auto;display:block;max-height:250px}
+svg.pricecurve line.ax{stroke:var(--line);stroke-width:1.25}
+svg.pricecurve text.ax{fill:var(--ink-faint);stroke:none;font-family:var(--font-mono);font-size:10px}
+svg.pricecurve .rev{fill:none;stroke:var(--accent);stroke-width:2}
+svg.pricecurve .pt{fill:var(--accent);fill-opacity:.85}
+svg.pricecurve .util{fill:none;stroke:var(--warn);stroke-width:1.25;stroke-dasharray:3 3;opacity:.85}
+svg.pricecurve line.cap{stroke:var(--warn);stroke-width:1;stroke-dasharray:2 4;opacity:.6}
+svg.pricecurve .planned{stroke:var(--ink-faint);stroke-width:1;stroke-dasharray:4 3}
+svg.pricecurve .opt{stroke:var(--good);stroke-width:1.25}
+svg.pricecurve .optdot{fill:var(--good);stroke:#fff;stroke-width:1}
+svg.pricecurve text.mk{font-family:var(--font-mono);font-size:10px;font-weight:600;stroke:none}
+svg.pricecurve text.mk.planned{fill:var(--ink-soft)}
+svg.pricecurve text.mk.opt{fill:var(--good)}
+.pricecurveinfo{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:.86rem;color:var(--ink-soft)}
+.pricecurveinfo b{color:var(--ink)}
+/* Revenue & net income by year (two-line chart) */
+.yearcard{margin-top:16px}
+.yearcard svg.yearchart{width:100%;height:auto;display:block;max-height:260px}
+svg.yearchart line.ax{stroke:var(--line);stroke-width:1.25}
+svg.yearchart line.zero{stroke:var(--ink-faint);stroke-width:1;stroke-dasharray:2 4;opacity:.7}
+svg.yearchart text.ax{fill:var(--ink-faint);stroke:none;font-family:var(--font-mono);font-size:12px}
+svg.yearchart .rev{fill:none;stroke:var(--accent);stroke-width:2.5}
+svg.yearchart .net{fill:none;stroke:var(--good);stroke-width:2.5;stroke-dasharray:5 3}
+svg.yearchart .ptrev{fill:var(--accent);stroke:#fff;stroke-width:1}
+svg.yearchart .ptnet{fill:var(--good);stroke:#fff;stroke-width:1}
+svg.yearchart text.vl{font-family:var(--font-mono);font-size:10px;font-weight:600;stroke:none}
+svg.yearchart text.vlrev{fill:var(--accent)}
+svg.yearchart text.vlnet{fill:var(--good)}
+.yearlegend{display:flex;gap:20px;flex-wrap:wrap;margin:10px 0 6px;font-family:var(--font-mono);font-size:.82rem;color:var(--ink-soft)}
+.yearlegend .sw{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+/* Compare-all overlay legend: one checkbox-toggle row per option */
+.cmplegend{display:flex;gap:8px 18px;flex-wrap:wrap;margin:12px 0 4px;font-size:.85rem}
+.cmpleg{display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink)}
+.cmpleg input{cursor:pointer;margin:0}
+.cmpleg .sw{display:inline-block;width:14px;height:3px;border-radius:2px}
+.cmplegv{color:var(--ink-soft);font-family:var(--font-mono);font-size:.8rem}
+/* Overview year-over-year overlay (all projects) */
+.yoycard{margin-top:8px}
+.yoytoggles{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
+.yoytoggles .pwtoggle{margin:0 0 4px}
+.yoybody{display:flex;gap:16px;align-items:stretch;margin-top:6px}
+.mlchartwrap{flex:1 1 auto;min-width:0}
+.yoylegend{flex:0 0 240px;display:flex;flex-direction:column;gap:2px;max-height:360px;overflow:auto}
+.yoyrow{display:flex;align-items:flex-start;gap:7px;font-size:.8rem;color:var(--ink-soft);cursor:pointer;padding:4px 6px;border-radius:6px;user-select:none}
+.yoyrow:hover{background:var(--accent-tint);color:var(--ink)}
+.yoyrow input{cursor:pointer;margin:2px 0 0;flex:0 0 auto}
+.yoysw{display:inline-block;width:15px;height:3px;border-radius:2px;flex:0 0 auto;margin-top:7px}
+.yoyname{overflow-wrap:anywhere;line-height:1.3}
+/* Shared multi-line overlay chart (render/linechart.ts) — used by BOTH the Overview YoY overlay and the
+   per-project Compare-all overlay, so they look identical. Layout-only classes (.yoychart / inside a
+   .comparecard) sit on top of this. */
+svg.mlchart{width:100%;height:auto;display:block;max-height:340px}
+svg.mlchart line.ax{stroke:var(--line);stroke-width:1.25}
+svg.mlchart line.zero{stroke:var(--ink-faint);stroke-width:1;stroke-dasharray:2 4;opacity:.6}
+svg.mlchart text.axl{fill:var(--ink-faint);font-family:var(--font-mono);font-size:12px}
+svg.mlchart .mlline{transition:opacity .1s}
+svg.mlchart .mlstroke{stroke-width:2}
+svg.mlchart .mldot{stroke:#fff;stroke-width:1}
+/* per-year value labels are hidden until the client reveals the hovered line's on hover */
+svg.mlchart text.mlvl{opacity:0;font-family:var(--font-mono);font-size:14px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3}
+svg.yoychart{flex:1 1 auto;min-width:0}
+
+/* ---- Grounding / evidence explorer ---- */
+.ev-wrap{max-width:1100px;margin:0 auto;padding:4px 2px 40px}
+.ev-intro h2{font-family:var(--font-display);margin:6px 0 4px}
+.ev-intro p{color:var(--ink-soft);font-size:13px;max-width:80ch;line-height:1.5;margin:0 0 12px}
+.ev-filter{width:100%;box-sizing:border-box;padding:9px 12px;font:14px var(--font-body);border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);margin-bottom:14px}
+.ev-filter:focus{outline:none;border-color:var(--accent)}
+.ev-proj{border:1px solid var(--line);border-radius:11px;background:var(--paper);margin-bottom:9px;overflow:hidden}
+.ev-proj>summary{cursor:pointer;padding:11px 14px;font-weight:650;display:flex;align-items:baseline;gap:10px;list-style:none}
+.ev-proj>summary::-webkit-details-marker{display:none}
+.ev-proj>summary::before{content:"▸";color:var(--ink-faint);font-size:11px}
+.ev-proj[open]>summary::before{content:"▾"}
+.ev-proj-name{font-family:var(--font-display);text-transform:capitalize}
+.ev-proj-n{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);font-weight:400}
+.ev-node{border-top:1px solid var(--line-soft)}
+.ev-node>summary{cursor:pointer;padding:8px 14px 8px 30px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;list-style:none}
+.ev-node>summary::-webkit-details-marker{display:none}
+.ev-node>summary:hover{background:var(--ground)}
+.ev-id{font-family:var(--font-mono);font-size:12.5px;color:var(--ink);font-weight:600}
+.ev-supp{font-family:var(--font-mono);font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;min-width:20px;text-align:center}
+.ev-supp.s-hi{background:var(--good-bg);color:var(--good)} .ev-supp.s-mid{background:var(--warn-bg);color:var(--warn)}
+.ev-supp.s-lo{background:var(--low-bg);color:var(--low)} .ev-supp.s-na{background:var(--ground);color:var(--ink-faint)}
+.ev-badge{font-family:var(--font-mono);font-size:10px;color:var(--ink-soft);background:var(--ground);border:1px solid var(--line-soft);border-radius:5px;padding:1px 6px}
+.ev-p50{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)}
+.ev-nref{font-family:var(--font-mono);font-size:10px;color:var(--accent);margin-left:auto}
+.ev-body{padding:4px 16px 16px 30px;font-size:13px;color:var(--ink-soft);line-height:1.5}
+.ev-def{color:var(--ink);font-weight:500;margin:4px 0 6px}
+.ev-meta{font-size:12px;color:var(--ink-faint);margin-bottom:8px}
+.ev-pct{border-collapse:collapse;margin:6px 0 10px;font-family:var(--font-mono);font-size:11.5px}
+.ev-pct td{border:1px solid var(--line-soft);padding:3px 9px;text-align:right;color:var(--ink)}
+.ev-pk{color:var(--ink-faint);font-size:9.5px;display:block;text-transform:uppercase;letter-spacing:.04em}
+.ev-reason{margin:6px 0;max-width:82ch}
+.ev-proc,.ev-checks{margin:6px 0;padding-left:20px;font-size:12px}
+.ev-checks li{color:var(--ink-soft)}
+.ev-recon{font-size:12px;color:var(--ink-faint);font-style:italic;margin:4px 0}
+.ev-evhead,.ev-noev{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);margin:12px 0 6px;border-top:1px dashed var(--line-soft);padding-top:8px}
+.ev-item{border-left:3px solid var(--line);padding:5px 0 5px 12px;margin:8px 0;background:var(--ground);border-radius:0 7px 7px 0}
+.ev-item.ev-obs{border-left-color:var(--good)} .ev-item.ev-gk{border-left-color:var(--accent)} .ev-item.ev-spec{border-left-color:var(--warn)}
+.ev-item-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;margin-bottom:3px}
+.ev-tag{font-family:var(--font-mono);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint)}
+.ev-cid{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint)}
+.ev-ver{font-family:var(--font-mono);font-size:9.5px;color:var(--good);background:var(--good-bg);padding:0 5px;border-radius:4px}
+.ev-src{color:var(--accent);font-size:11px;text-decoration:none;margin-left:auto;max-width:48ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-src:hover{text-decoration:underline}
+.ev-stmt{color:var(--ink);font-size:12.5px}
+.ev-quote{margin:4px 0;padding:2px 0 2px 10px;border-left:2px solid var(--line);color:var(--ink-soft);font-style:italic;font-size:12px}
+.ev-why{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.ev-measure{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);margin-top:3px}
