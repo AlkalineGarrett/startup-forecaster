@@ -15,9 +15,9 @@ export const nodesOf = (p: Project, unitId: string): ProjectNode[] =>
   unitId === "generic" ? p.nodes : variantById(p, unitId)?.nodes || [];
 
 /** The project's own graph as a unit. */
-export const baseUnit = (p: Project): RunUnit => ({ id: p.id, fx: p.fx, nodes: p.nodes, sim: p.sim!, rho: RHO[p.id] || {}, margin: p.margin, tvMultiple: p.tvMultiple, cost: p.cost, personal: p.personal, market: p.market, priceSweep: p.priceSweep, revenueLines: p.revenueLines, cogsLines: p.cogsLines, costLines: p.costLines });
+export const baseUnit = (p: Project): RunUnit => ({ id: p.id, fx: p.fx, nodes: p.nodes, sim: p.sim!, rho: RHO[p.id] || {}, margin: p.margin, tvMultiple: p.tvMultiple, cost: p.cost, personal: p.personal, afterTax: p.afterTax, market: p.market, priceSweep: p.priceSweep, revenueLines: p.revenueLines, cogsLines: p.cogsLines, costLines: p.costLines });
 /** A variant as a unit — keyed `project::variant` (the key its compiled distributions live under). */
-export const variantUnit = (p: Project, v: Variant): RunUnit => ({ id: uKey(p.id, v.id), fx: v.fx, nodes: v.nodes, sim: v.sim, rho: v.rho, margin: v.margin ?? p.margin, tvMultiple: v.tvMultiple ?? p.tvMultiple, cost: v.cost, personal: p.personal, market: v.market, priceSweep: v.priceSweep, revenueLines: v.revenueLines ?? p.revenueLines, cogsLines: v.cogsLines ?? p.cogsLines, costLines: v.costLines ?? p.costLines });
+export const variantUnit = (p: Project, v: Variant): RunUnit => ({ id: uKey(p.id, v.id), fx: v.fx, nodes: v.nodes, sim: v.sim, rho: v.rho, margin: v.margin ?? p.margin, tvMultiple: v.tvMultiple ?? p.tvMultiple, cost: v.cost, personal: p.personal, afterTax: p.afterTax, market: v.market, priceSweep: v.priceSweep, revenueLines: v.revenueLines ?? p.revenueLines, cogsLines: v.cogsLines ?? p.cogsLines, costLines: v.costLines ?? p.costLines });
 /** A unit id → RunUnit; the generic base carries the cap-exempt `base` flag unless it is the aggregate (headlineBase). */
 export const unitOf = (p: Project, id: string): RunUnit =>
   id === "generic" ? { ...baseUnit(p), base: !p.headlineBase } : variantUnit(p, variantById(p, id) as Variant);

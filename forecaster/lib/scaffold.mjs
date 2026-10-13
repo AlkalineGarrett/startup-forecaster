@@ -4,7 +4,7 @@
 //   3. <distributionData>/projects/<id>.json + corpus speculations
 //                                      a PLACEHOLDER distribution per node (wide preset prior, support 5,
 //                                      referencing a `…_placeholder` speculation) so the model runs end to end —
-//                                      written by distribution-compiler/compiler/scaffold.py
+//                                      written by distribution-compiler/compiler/scaffold.mjs
 //   4. <dossiers>/<id>/research-brief.md  what would ground each node, in the order to research them
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -93,7 +93,7 @@ export function scaffoldVenture(pf, { id, name, preset, presetModule, cur, fx, c
   insertAtMarker(pf.bootstrap, "imports", () => `import { ${ident} } from "./projects/${id}.ts";`);
   insertAtMarker(pf.bootstrap, "register", (marker) => {
     const arr = (marker.match(/forecaster:register\s+([A-Za-z_$][\w$]*)/) || [])[1];
-    if (!arr) throw new Error(`${pf.bootstrap}: the register marker must name the projects array, e.g. "// forecaster:register PROJECTS"`);
+    if (!arr) throw new Error(`${pf.bootstrap}: the register marker must name the projects array, e.g. "// forecaster:register VENTURES"`);
     return `${arr}.push(${ident});`;
   });
   insertAtMarker(pf.manifest, "modules", () => `"projects/${id}.ts",`);
@@ -113,9 +113,9 @@ export function scaffoldVenture(pf, { id, name, preset, presetModule, cur, fx, c
   mkdirSync(join(pf.distributionData, "corpus"), { recursive: true });
   const input = join(mkdtempSync(join(tmpdir(), "forecaster-")), "venture.json");
   writeFileSync(input, JSON.stringify({ projects: [venture] }));
-  const r = spawnSync("python3", [join(pf.compiler, "compiler", "scaffold.py"), input, id, "--write"],
+  const r = spawnSync(process.execPath, [join(pf.compiler, "compiler", "scaffold.mjs"), input, id, "--write"],
     { env: { ...process.env, FORECASTER_DATA: pf.distributionData }, encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`scaffold.py failed: ${(r.stderr || r.stdout).trim()}`);
+  if (r.status !== 0) throw new Error(`scaffold.mjs failed: ${(r.stderr || r.stdout).trim()}`);
   written.push(dataFile, join(pf.distributionData, "corpus", "speculations.json"));
 
   // 4. research brief

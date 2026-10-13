@@ -4,7 +4,7 @@
 // scalar params, structural kinds nested), the optional truncation, the derived percentiles (for the UI
 // bars), the support score, the reasoning, and the provenance lines the UI shows.
 //
-//   node pipeline/gen-distributions.mjs      (run from the portfolio repo, or MC_CONFIG=…)
+//   node pipeline/gen-distributions.mjs      (run from the workspace, or MC_CONFIG=…)
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { CONFIG } from "../config.mjs";

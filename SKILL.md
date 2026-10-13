@@ -6,10 +6,11 @@ description: Take a startup idea from a pitch to a researched, simulated revenue
 # Startup forecaster
 
 You turn an idea into a forecast whose every number traces to evidence. The tools do the mechanics; your
-job is the research and the honesty. Work inside the user's **portfolio repo** (the one with
-`portfolio.config.mjs`), which sits next to this `startup-forecaster` checkout. Its tools are the
-checkout's `montecarlo-engine/`, `distribution-compiler/`, `agentic-fetcher/` and `forecaster/`; below,
-`forecaster` means `node ../startup-forecaster/forecaster/bin/forecaster.mjs`.
+job is the research and the honesty. Work inside the user's **workspace** (the folder with
+`portfolio.config.mjs`, next to this `startup-forecaster` checkout; `forecaster init <dir>` creates one). It
+holds the portfolio (`src/`), the distribution data (`distributions/`), the source archive (`sources/`),
+`dossiers/` and `plans/`; the tools find each part through the config. Below, `forecaster` means
+`node ../startup-forecaster/forecaster/bin/forecaster.mjs`, run from the workspace root.
 
 ## The loop
 
@@ -39,22 +40,22 @@ the model run. Never present a placeholder-driven number as a forecast.
 Take nodes in the order `forecaster status` ranks them (the research brief in `dossiers/<id>/research-brief.md`
 says what would ground each). For each node:
 
-1. **Search the archive first** — `python3 ../startup-forecaster/agentic-fetcher/search.py "<distinctive phrase>"` (content
-   search) and the fetch queue (`fetch_request.py list`). An archived source is grounded already: use it, never
+1. **Search the archive first** — `node ../startup-forecaster/agentic-fetcher/search.mjs "<distinctive phrase>"` (content
+   search; a query with regex metacharacters is a JavaScript regex) and the fetch queue (`fetch_request.mjs list`). An archived source is grounded already: use it, never
    re-fetch or re-ask.
-2. **Find and fetch** — subagents may find URLs; the main session fetches (curl / WebFetch), archives with
-   `install_source.py`, and records each figure with `add_observation.py … --quote "<verbatim>"`.
+2. **Find and fetch** — find the page (WebSearch), fetch its bytes (curl), archive with
+   `install_source.mjs`, and records each figure with `add_observation.mjs … --quote "<verbatim>"`.
 3. **Browser-gated pages** (JS-rendered, logins, anti-bot) are never driven with an automated browser. Queue
-   them for the human (`fetch_request.py add --url … --for <id>::<node>`, lane human_only) and record the
+   them for the human (`fetch_request.mjs add --url … --for <id>::<node>`, lane human_only) and record the
    gap as `reference: null` + `missing_document` — never substitute a weaker proxy and call it grounded.
-4. **Construct the distribution** in the data project (`projects/<id>.json`, replacing the placeholder):
+4. **Construct the distribution** in `distributions/projects/<id>.json`, replacing the placeholder:
    built from the observations (`direct_value` references; `computed_value` formulas; `inferred_value` only
    where genuine judgement sets a number, with reasoning + confidence). Stated quantiles anchor at the
    source's percentiles; elicited low/likely/high at 10/50/90; raw data points at plotting positions.
    Percentiles are derived, never authored. Widen only for grounded disagreement. Score `support_score`
-   honestly and write self-contained `reasoning`. Fit shapes with `../startup-forecaster/distribution-compiler/compiler/preview.py`.
-5. **Compile and re-run** — `python3 ../startup-forecaster/distribution-compiler/compiler/compile.py projects/<id>.json` (in the
-   data project) must be clean; then `npm run pipeline` and `forecaster status <id>`.
+   honestly and write self-contained `reasoning`. Fit shapes with `../startup-forecaster/distribution-compiler/compiler/preview.mjs`.
+5. **Compile and re-run** — `node ../startup-forecaster/distribution-compiler/compiler/compile.mjs distributions/projects/<id>.json`
+   must be clean; then `npm run pipeline` and `forecaster status <id>`.
 
 Stop when the top drivers are sourced (or are explicit, reasoned judgement where no source can exist) and no
 driver is still a placeholder. Name any remaining placeholders in the write-up.
@@ -77,7 +78,7 @@ outward-facing — confirm with the user first. Build / execution plans: the `bu
 `exec-plan-generator` tools.
 
 ## Rules that do not bend
-- Every number in the model traces to the data project; nothing numeric is typed into the project file.
+- Every number in the model traces to `distributions/`; nothing numeric is typed into the project file.
 - A placeholder, a guess, or a proxy is labelled as such — in the data (support score, speculation) and in
   anything you tell the user.
 - Show the user source data verbatim; don't paraphrase a source's figures into stronger claims.

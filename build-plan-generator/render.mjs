@@ -8,7 +8,7 @@
 // (no <html>/<head>/<body> — the claude.ai Artifact wrapper adds those). It also
 // renders fine opened directly in a browser.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, basename, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -215,7 +215,13 @@ export function renderPage({ META, STEPS, SOURCES }, css) {
 }
 
 // ---------- CLI ----------
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+/** Run directly (not imported)? Compared as real paths, so a symlinked path (macOS /var → /private/var)
+ *  still counts. */
+const runDirectly = () => {
+  try { return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
+  catch { return false; }
+};
+if (runDirectly()) {
   const specArg = process.argv[2];
   if (!specArg) {
     console.error('usage: node render.mjs <spec.mjs> [out.html]');

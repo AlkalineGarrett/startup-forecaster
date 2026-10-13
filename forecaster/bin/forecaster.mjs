@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 // startup-forecaster — take a startup idea from a one-line pitch to a researched, simulated forecast.
 //
+//   forecaster init <dir> [--name "<Title>"]             create a workspace (portfolio, data, sources, plans)
 //   forecaster presets                                   the business-model presets + their nodes
 //   forecaster new <id> --preset <p> --name "<Name>"     scaffold a venture into this portfolio
 //                  [--cur $] [--fx 1] [--channel usB2B]
 //   forecaster status [<id> ...] [--json]                grounding per node, ranked by influence
 //
-// Run inside a portfolio repo (portfolio.config.mjs; montecarlo-engine convention) or pass --portfolio <dir>.
+// Run anywhere inside a workspace (the folder with portfolio.config.mjs) or pass --portfolio <dir>.
 // The agent playbook that drives the whole flow is SKILL.md.
 import { readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { initWorkspace } from "../lib/init.mjs";
 import { loadPortfolio } from "../lib/portfolio.mjs";
 import { scaffoldVenture } from "../lib/scaffold.mjs";
 import { ventureStatuses, printStatus } from "../lib/status.mjs";
@@ -27,6 +29,12 @@ async function presets() {
 
 async function main() {
   const [cmd, ...rest] = positional;
+  if (cmd === "init") {
+    if (!rest[0]) throw new Error('usage: forecaster init <dir> [--name "<Title>"]');
+    const { root } = initWorkspace(rest[0], { name: flag("--name") });
+    console.log(`Created workspace ${root}\n\nNext: cd ${relative(process.cwd(), root) || "."} && git init\n      forecaster new <id> --preset <preset> --name "<Name>"   (see \`forecaster presets\`)`);
+    return;
+  }
   if (cmd === "presets") {
     for (const p of await presets()) {
       const b = p.build(p.defaults);
@@ -64,7 +72,7 @@ async function main() {
 }
 
 function readFileHeader() {
-  return `usage:\n  forecaster presets\n  forecaster new <id> --preset <p> --name "<Name>" [--cur $] [--fx 1] [--channel …]\n  forecaster status [<id> ...] [--json]`;
+  return `usage:\n  forecaster init <dir> [--name "<Title>"]\n  forecaster presets\n  forecaster new <id> --preset <p> --name "<Name>" [--cur $] [--fx 1] [--channel …]\n  forecaster status [<id> ...] [--json]`;
 }
 
 main().catch((e) => { console.error(`forecaster: ${e.message}`); process.exit(1); });

@@ -15,17 +15,21 @@ agent playbook that drives the whole loop is the repo's [`SKILL.md`](../SKILL.md
 
 ## Commands
 
-Run inside a portfolio repo (one with `portfolio.config.mjs` — the montecarlo-engine convention):
+Run anywhere inside a workspace (the folder with `portfolio.config.mjs`):
 
 ```sh
+node ../startup-forecaster/forecaster/bin/forecaster.mjs init <dir> [--name "<Title>"]
 node ../startup-forecaster/forecaster/bin/forecaster.mjs presets
 node ../startup-forecaster/forecaster/bin/forecaster.mjs new <id> --preset <preset> --name "<Name>" [--cur $] [--fx 1] [--channel …]
 node ../startup-forecaster/forecaster/bin/forecaster.mjs status [<id> ...] [--json]
 ```
 
+**`init`** creates a workspace: `portfolio.config.mjs` and the engine wiring, `src/projects.ts` with the
+registration markers, an empty `distributions/` data project and `sources/` archive, `dossiers/` and `plans/`.
+
 **`new`** writes the venture's structure-only project file (nodes + a `subscription-cohort` model), registers
 it at the portfolio's `// forecaster:imports`, `// forecaster:register <ARRAY>` and `// forecaster:modules`
-markers, seeds a **placeholder** distribution per node in the distribution-data project (a wide preset
+markers, seeds a **placeholder** distribution per node in `distributions/` (a wide preset
 prior, support 5, backed by a `…_placeholder` speculation — never presented as a finding), and writes a
 research brief (`<dossiers>/<id>/research-brief.md`). Then `npm run pipeline` makes it runnable.
 
@@ -48,5 +52,5 @@ note on what evidence would ground it. Add one by dropping a module in `presets/
 ## Test
 
 ```sh
-npm test               # end to end in a throwaway portfolio (uses the engine + compiler beside it)
+npm test               # end to end in a throwaway workspace (uses the engine + compiler beside it)
 ```

@@ -5,7 +5,7 @@
 // node references. The render layer joins this with DISTRIBUTIONS to show, per node, its construction
 // and the evidence behind it.
 //
-//   node pipeline/gen-evidence.mjs      (run from the portfolio repo, or MC_CONFIG=…)
+//   node pipeline/gen-evidence.mjs      (run from the workspace, or MC_CONFIG=…)
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { CONFIG } from "../config.mjs";

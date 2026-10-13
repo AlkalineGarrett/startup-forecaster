@@ -14,7 +14,7 @@ contract (`pipeline/gen-distributions.mjs` reads the compiled artifacts; `src/di
 | source | `projects/<project>.json` | one file per project; human/agent-authored, lean (subset of slots filled) |
 | **compiled** | `build/<project>.compiled.json` | **consume this** — the same node set with every derived slot filled and checked, plus a `_meta` block |
 
-The build artifact is produced by `python3 compiler/compile.py projects/<project>.json --write`.
+The build artifact is produced by `node compiler/compile.mjs projects/<project>.json --write`.
 Consume the **compiled** artifact, not the source: in it, every `computed_value` formula is
 evaluated, every reference resolved to a scalar, and `debug_computed_percentiles` filled.
 
@@ -51,12 +51,12 @@ sampling.
 
 `distribution.kind` **is** the family. Realize the kind from its params and sample by
 inverse-transform: draw `U ~ Uniform(0,1)`, return `Q(U)` (the quantile function).
-**`compiler/distributions.py` is the executable reference**: `construct(kind, params)` → a `Dist`
-with `.ppf(U)` (the sampler), `.cdf(x)`, `.percentiles()`. `compiler/build_dist` (in `compile.py`)
+**`compiler/distributions.mjs` is the executable reference**: `construct(kind, params)` → a `Dist`
+with `.ppf(U)` (the sampler), `.cdf(x)`, `.percentiles()`. `compiler/build_dist` (in `compile.mjs`)
 turns a compiled node's `distribution` block into that `Dist` — reuse it directly, or port the math
 below.
 
-**Parametric** (scipy `ppf`) — params are scalars (`measure.value`):
+**Parametric** (closed-form `ppf`) — params are scalars (`measure.value`):
 
 | kind | params | support |
 |---|---|---|
@@ -102,7 +102,7 @@ validate your sampler: empirical quantiles of your draws should match these with
 
 ## 7. Reference
 
-- **Realize / sample:** `compiler/distributions.py` (`construct` / `Dist.ppf` / `Dist.cdf` /
-  `truncate`) and `compiler/build_dist` in `compile.py`. Reuse directly (Python) or port §4–§5.
+- **Realize / sample:** `compiler/distributions.mjs` (`construct` / `Dist.ppf` / `Dist.cdf` /
+  `truncate`) and `buildDist` in `compiler/compile.mjs`. Reuse directly (JavaScript) or port §4–§5.
 - **Full field spec:** `schema/SCHEMA.md`; machine schema `project-distributions.schema.json`.
-- **Formula grammar** (already evaluated in the compiled artifact): `compiler/formula.py`, DESIGN.md.
+- **Formula grammar** (already evaluated in the compiled artifact): `compiler/formula.mjs`, DESIGN.md.

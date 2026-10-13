@@ -312,8 +312,12 @@ function recordDraw(d: Draws, i: number, traj: MonthTraj, fx: number, unit: RunU
   // whenever operating cost was material — e.g. tax exceeding net income.)
   const netFrom = (grossEur: number, opcost: number): number => {
     const grossProfit = Math.max(0, grossEur) * (1 - cogsRate); // billed revenue − cost of revenue
-    if (unit.personal)
-      return (s.net_tax_multiplier != null ? grossProfit * s.net_tax_multiplier : PERSONAL_AFTER_TAX(grossProfit)) - opcost;
+    if (unit.personal) {
+      if (s.net_tax_multiplier != null) return grossProfit * s.net_tax_multiplier - opcost;
+      // A unit-specific schedule (e.g. self-employed vs salaried, or a company route) wins over the portfolio-wide one;
+      // it receives the operating cost (it may be tax-deductible there) and returns the final net.
+      return unit.afterTax ? unit.afterTax(Math.max(0, grossEur), grossProfit, s, opcost) : PERSONAL_AFTER_TAX(grossProfit) - opcost;
+    }
     const pretax = grossProfit - opcost; // less deductible operating cost
     return pretax > 0 ? pretax * (1 - BUSINESS_TAX) : pretax;
   };
@@ -583,7 +587,7 @@ export function sweepOptimalPrice(unit: RunUnit, seed: number = SEED): Partial<R
 
 /** Run a project's base graph (correlations from the global RHO table). */
 export function run(p: Project, seed: number = SEED, opts: { sweep?: boolean } = {}): RunResult {
-  return runUnit({ id: p.id, fx: p.fx, nodes: p.nodes, sim: p.sim, rho: RHO[p.id] || {}, margin: p.margin, tvMultiple: p.tvMultiple, cost: p.cost, personal: p.personal, priceSweep: p.priceSweep, revenueLines: p.revenueLines, cogsLines: p.cogsLines, costLines: p.costLines }, seed, opts);
+  return runUnit({ id: p.id, fx: p.fx, nodes: p.nodes, sim: p.sim, rho: RHO[p.id] || {}, margin: p.margin, tvMultiple: p.tvMultiple, cost: p.cost, personal: p.personal, afterTax: p.afterTax, priceSweep: p.priceSweep, revenueLines: p.revenueLines, cogsLines: p.cogsLines, costLines: p.costLines }, seed, opts);
 }
 
 /**

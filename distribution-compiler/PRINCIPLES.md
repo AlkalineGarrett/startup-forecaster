@@ -57,7 +57,7 @@ general_knowledge, and speculations live once at the top level, referenced by id
 (`obs_` / `gk_` / `spec_`). A fact used by five nodes is *one* observation those five nodes all
 reference by that shared id — the shared id is the correlation record. Which nodes use it is *not*
 stored on the observation (that list drifted stale); it is derived on demand from the node references
-in `projects/*.json` (`agentic-fetcher/citations.py`). A node holds no evidence of its own.
+in `projects/*.json` (`agentic-fetcher/citations.mjs`). A node holds no evidence of its own.
 
 **A value carries its trail.** Every grounded number — a param, an atom's/anchor's `at`, an input, a
 cross-check, a splice threshold — is a `value`:

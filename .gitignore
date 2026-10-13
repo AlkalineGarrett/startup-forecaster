@@ -1,8 +1,5 @@
 node_modules/
 .DS_Store
-__pycache__/
-*.pyc
-.pytest_cache/
 
 agentic-fetcher/ocrtool
 distribution-compiler/build/

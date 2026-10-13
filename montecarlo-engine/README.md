@@ -100,7 +100,7 @@ optional; nodes with no compiled distribution fall back to a metalog fit through
 
 ## Wiring your own portfolio: `portfolio.config.mjs`
 
-A portfolio repo describes itself in one file at its root, `portfolio.config.mjs` (every field is documented
+A workspace describes its portfolio in one file at its root, `portfolio.config.mjs` (every field is documented
 in [`config.mjs`](config.mjs); the example's is [`examples/portfolio.config.mjs`](examples/portfolio.config.mjs)):
 
 ```js

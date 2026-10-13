@@ -1,9 +1,9 @@
 // The one place a portfolio tells the engine where its pieces live: `portfolio.config.mjs`.
 //
 // Every entrypoint (build, server, precompute, artifacts, coverage, and the pipeline/ generators) reads
-// it, so a portfolio repo's npm scripts need no env plumbing. Resolution:
+// it, so a workspace's npm scripts need no env plumbing. Resolution:
 //   1. MC_CONFIG (a path), else
-//   2. ./portfolio.config.mjs in the current directory, else
+//   2. the nearest portfolio.config.mjs at or above the current directory, else
 //   3. the engine's fictional example (examples/portfolio.config.mjs).
 // Paths in the config are relative to the config file. Individual env vars still override a field
 // (MC_PORTFOLIO, MC_DATA_ROOT, MC_MANIFEST, MC_DISTRIBUTION_DATA, MC_COMPILER, GROUNDING_SOURCES; build.mjs's MC_OUT).
@@ -19,9 +19,9 @@
 //       evidence: "src/evidence-data.ts",
 //       pairwise: "src/pairwise-data.ts",
 //     },
-//     distributionData: "../my-distribution-data",  // optional: a distribution-compiler data project
-//     compiler: "../startup-forecaster/distribution-compiler",         // optional: lets the pipeline (re)compile it
-//     groundingSources: "../grounding-sources",     // optional: source registry (titles/urls for evidence)
+//     distributionData: "distributions",            // optional: a distribution-compiler data project
+//     compiler: "../startup-forecaster/distribution-compiler",  // optional: lets the pipeline (re)compile it
+//     groundingSources: "sources",                  // optional: the source archive (titles/urls for evidence)
 //     engineImport: "montecarlo-engine/src",        // how generated modules import the engine
 //     dossiers: "dossiers",                         // optional: per-venture research folders (startup-forecaster)
 //   };
@@ -33,9 +33,10 @@ const DIR = dirname(fileURLToPath(import.meta.url));
 
 function findConfig() {
   if (process.env.MC_CONFIG) return resolve(process.env.MC_CONFIG);
-  const local = resolve("portfolio.config.mjs");
-  if (existsSync(local)) return local;
-  return join(DIR, "examples", "portfolio.config.mjs");
+  for (let d = resolve("."); ; d = dirname(d)) {
+    if (existsSync(join(d, "portfolio.config.mjs"))) return join(d, "portfolio.config.mjs");
+    if (dirname(d) === d) return join(DIR, "examples", "portfolio.config.mjs");
+  }
 }
 
 export const CONFIG_PATH = findConfig();

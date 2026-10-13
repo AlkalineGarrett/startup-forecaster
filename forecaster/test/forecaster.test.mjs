@@ -1,10 +1,10 @@
-// End to end in a throwaway portfolio: scaffold a venture with every preset, compile its placeholders with
-// the distribution-compiler, generate the engine modules, run the model (golden), and read its status.
-// Needs the sibling montecarlo-engine and distribution-compiler repos (python3 + numpy for the compiler).
+// End to end in a throwaway workspace (`forecaster init`): scaffold a venture with every preset, compile its placeholders with
+// the distribution-compiler, generate the engine modules, run the model (golden), build the page, and read its status.
+// Needs the montecarlo-engine and distribution-compiler beside it.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, existsSync } from "node:fs";
+import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,38 +12,11 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, "..", "bin", "forecaster.mjs");
 const WS = resolve(HERE, "..", "..");
-const ENGINE = join(WS, "montecarlo-engine"), COMPILER = join(WS, "distribution-compiler");
+const ENGINE = join(WS, "montecarlo-engine");
 
 function portfolio() {
-  const root = mkdtempSync(join(tmpdir(), "forecaster-"));
-  mkdirSync(join(root, "node_modules"));
-  symlinkSync(ENGINE, join(root, "node_modules", "montecarlo-engine"));
-  mkdirSync(join(root, "src", "projects"), { recursive: true });
-  writeFileSync(join(root, "portfolio.config.mjs"), `export default {
-  bootstrap: "src/projects.ts", dataRoot: "src", manifest: "portfolio.manifest.mjs", golden: "golden.json",
-  generated: { distributions: "src/distributions-data.ts", evidence: "src/evidence-data.ts" },
-  distributionData: "data", compiler: ${JSON.stringify(COMPILER)}, dossiers: "dossiers" };\n`);
-  writeFileSync(join(root, "portfolio.manifest.mjs"), `export const PORTFOLIO_MODULES = {
-  "portfolio-context.ts": ["distributions-data.ts", "evidence-data.ts"],
-  "accounting.ts": [
-    // forecaster:modules
-  ],
-  "apply-distributions.ts": ["projects.ts"],
-};\n`);
-  writeFileSync(join(root, "src", "projects.ts"), `import type { Project } from "montecarlo-engine/src/types.ts";
-import { configurePortfolio } from "montecarlo-engine/src/portfolio-context.ts";
-import { applyDistributions } from "montecarlo-engine/src/apply-distributions.ts";
-import "./distributions-data.ts";
-// forecaster:imports
-const PROJECTS: Project[] = [];
-// forecaster:register PROJECTS
-applyDistributions(PROJECTS);
-configurePortfolio({ projects: PROJECTS });
-`);
-  writeFileSync(join(root, "src", "distributions-data.ts"), `import { configurePortfolio } from "montecarlo-engine/src/portfolio-context.ts";\nconfigurePortfolio({ distributions: {} });\n`);
-  writeFileSync(join(root, "src", "evidence-data.ts"), `export {};\n`);
-  mkdirSync(join(root, "data", "corpus"), { recursive: true });
-  for (const f of ["observations.json", "general-knowledge.json", "speculations.json"]) writeFileSync(join(root, "data", "corpus", f), "{}\n");
+  const root = join(mkdtempSync(join(tmpdir(), "forecaster-")), "ws");
+  cli(dirname(root), "init", root, "--name", "Test portfolio");
   return root;
 }
 const cli = (root, ...args) => execFileSync(process.execPath, [CLI, ...args], { cwd: root, encoding: "utf8" });
@@ -55,16 +28,24 @@ test("scaffold → compile → generate → run → status, for every preset", {
   cli(root, "new", "demo-seats", "--preset", "b2b-per-seat", "--name", "Demo Seats");
   cli(root, "new", "demo-org", "--preset", "b2b-per-org", "--name", "Demo Org");
   assert.ok(existsSync(join(root, "dossiers", "demo-app", "research-brief.md")));
-  assert.match(readFileSync(join(root, "src", "projects.ts"), "utf8"), /PROJECTS\.push\(demo_seats\);/);
+  assert.match(readFileSync(join(root, "src", "projects.ts"), "utf8"), /VENTURES\.push\(demo_seats\);/);
   assert.throws(() => cli(root, "new", "demo-app", "--preset", "consumer-freemium", "--name", "Again"), /already exists/);
 
-  const out = pipeline(root, "golden");
+  const out = pipeline(root, "build");
   assert.match(out, /✓ compile/, "placeholders compile cleanly (a compile error fails the stage)");
   assert.match(out, /✓ golden/);
+  assert.match(out, /✓ build/, "the bundle builds (no top-level name collides with the engine's)");
+  assert.ok(existsSync(join(root, "dist", "montecarlo.html")));
   const golden = JSON.parse(readFileSync(join(root, "golden.json"), "utf8"));
   for (const id of ["demo-app", "demo-seats", "demo-org"]) {
     assert.ok(golden[id] && Number.isFinite(golden[id].mean) && golden[id].p80 >= golden[id].p20, `${id} simulated`);
   }
+
+  // the fetcher's tools run on the fresh, empty archive
+  const fetcher = (tool, ...args) => execFileSync(process.execPath, [join(WS, "agentic-fetcher", tool), ...args], { cwd: root, encoding: "utf8" });
+  assert.match(fetcher("search.mjs", "churn"), /0 source/);
+  fetcher("check_sources.mjs");
+  fetcher("fetch_request.mjs", "list");
 
   const status = JSON.parse(cli(root, "status", "--json"));
   for (const s of status) {

@@ -15,21 +15,33 @@ evidence, every uncertainty a distribution, the whole portfolio simulated togeth
 most influential assumptions first → audit → write up). Install it as a Claude Code skill by linking this
 folder into a skills directory, e.g. `ln -s "$PWD" ~/.claude/skills/startup-forecaster`.
 
-## Your data lives elsewhere
+## Your data lives in a workspace
 
-These are tools only. A **portfolio** is your own repo with a `portfolio.config.mjs` (see
-[`montecarlo-engine/config.mjs`](montecarlo-engine/config.mjs)), next to a **distribution-data** project and a
-**source archive**. Point them at this checkout (e.g. the portfolio's `package.json` depends on
-`"montecarlo-engine": "file:../startup-forecaster/montecarlo-engine"`, and its config's `compiler` at
-`../startup-forecaster/distribution-compiler`). [`montecarlo-engine/examples/`](montecarlo-engine/examples) holds
-a fictional portfolio to start from.
+These are tools only. Your forecasts live in one **workspace** folder next to this checkout:
+
+```sh
+node startup-forecaster/forecaster/bin/forecaster.mjs init my-forecasts
+```
+
+```
+my-forecasts/
+  portfolio.config.mjs   where everything lives; every tool finds the workspace through it
+  src/                   the ventures as code (the engine simulates these)
+  distributions/         each assumption's distribution and the evidence behind it
+  sources/               the source archive: fetched pages and documents, their text, the fetch queue
+  dossiers/<venture>/    description, research brief, outcomes
+  plans/                 build and execution plans
+```
+
+[`montecarlo-engine/examples/`](montecarlo-engine/examples) holds a small fictional portfolio.
 
 ## Test
 
 ```sh
-npm test     # engine (node) + compiler + fetcher (python3 · pytest · numpy/scipy) + forecaster end to end
+npm test     # engine + compiler + fetcher + forecaster end to end
 ```
 
-Requires Node ≥ 22.6 and Python 3 with `pytest`, `numpy`, `scipy`, `jsonschema`.
+Requires Node ≥ 22.6 (no npm dependencies). The OCR of scanned sources uses macOS Vision (`swiftc`, `pdftoppm`), and
+`pdftotext` extracts text PDFs.
 
 MIT licensed.

@@ -136,7 +136,7 @@
     },
     "observation": {
       "type": "object",
-      "description": "One fact drawn from a document. Which nodes use it is derived on demand from projects/*.json (agentic-fetcher/citations.py), not stored — the stored cited_by cache drifted stale and was dropped (I11).",
+      "description": "One fact drawn from a document. Which nodes use it is derived on demand from projects/*.json (agentic-fetcher/citations.mjs), not stored — the stored cited_by cache drifted stale and was dropped (I11).",
       "required": [
         "statement",
         "verification"

@@ -1,6 +1,6 @@
 // Engine test over the fictional example portfolio (examples/habit-tracker.ts). This is the
 // portfolio the PUBLIC engine ships with — it lets the engine's simulate path be tested without any
-// real venture data. The real portfolio's golden test travels with the data repo.
+// real venture data. A real portfolio's golden test lives in its workspace.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

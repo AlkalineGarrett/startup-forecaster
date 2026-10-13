@@ -13,34 +13,35 @@ consumes) with `debug_computed_percentiles` filled.
 
 | path | what |
 |---|---|
-| `compiler/compile.py` | resolve references + formulas → compiled artifact per project |
-| `compiler/distributions.py` | the sampling kernel (`construct` / `Dist.ppf` / `cdf` / `truncate`) |
-| `compiler/formula.py` | the computed-value formula grammar |
-| `compiler/preview.py` | fit a distribution to target quantiles (design aid) |
-| `compiler/scaffold.py` | lift a simulator's hand-authored nodes into a project file as tracked speculations (input: `montecarlo-engine` `coverage.mjs --json`) |
+| `compiler/compile.mjs` | resolve references + formulas → compiled artifact per project |
+| `compiler/distributions.mjs` | the sampling kernel (`construct` / `Dist.ppf` / `cdf` / `truncate`) |
+| `compiler/formula.mjs` | the computed-value formula grammar |
+| `compiler/preview.mjs` | fit a distribution to target quantiles (design aid) |
+| `compiler/scaffold.mjs` | lift a simulator's hand-authored nodes into a project file as tracked speculations (input: `montecarlo-engine` `coverage.mjs --json`) |
 | `schema/`, `project-distributions.schema.json` | the normative format spec + machine schema |
 | `PRINCIPLES.md` · `DATA-CONTRACT.md` (how a simulator consumes the compiled output) | the format contract (invariants: `schema/SCHEMA.md` §8) |
 
-## Data it reads (the two-location convention)
+## Data it reads
 
-The compiler reads the **data project** given by `FORECASTER_DATA` (default: current directory):
+The compiler reads the workspace's **data project** — the `distributionData` folder named in its
+`portfolio.config.mjs` (found by walking up from the current directory; `FORECASTER_DATA` overrides, and
+outside a workspace it is the current directory). `compiler/workspace.mjs` resolves it.
 
 - `corpus/observations.json` — the flat evidence map (`obs_<id>` → measure + `doc` backref)
 - `corpus/general-knowledge.json`, `corpus/speculations.json` — priors / speculations
 - `projects/<project>.json` — the node source
 
-It has **no dependency on the source cache** (`grounding-sources/`): it resolves values from
-`observations.json`, not from the doc identity registry. The schema it validates against lives
-in this folder.
+It does not read the source archive: values resolve from `observations.json`, not from the document
+registry. The schema it validates against lives in this folder.
 
 ```sh
-# from inside the data project (FORECASTER_DATA defaults to .):
-FORECASTER_DATA=. python3 ../startup-forecaster/distribution-compiler/compiler/compile.py projects/<project>.json --write
+# from the workspace root:
+node ../startup-forecaster/distribution-compiler/compiler/compile.mjs distributions/projects/<project>.json --write
 ```
 
 ## Tests
 
 ```sh
-python3 -m pytest tests/ -q      # the distribution + formula kernels (corpus-independent)
+npm test
 ```
 The end-to-end proof is byte-identical recompilation of the 11 projects against the split corpus.

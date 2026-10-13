@@ -192,6 +192,15 @@ export interface Project {
    */
   personal?: boolean;
   /**
+   * Optional per-project after-tax schedule for a PERSONAL track, overriding the portfolio-wide
+   * `personalAfterTax` — e.g. a self-employed practice taxed differently from salaried job tracks.
+   * Receives the billed gross revenue for the year (EUR, before cost of revenue), the gross profit
+   * (after cost of revenue), the draw's scenario state and the year's operating cost (EUR); returns the
+   * final after-tax cash NET of operating cost (so a schedule can treat that cost as deductible).
+   * Variants inherit it.
+   */
+  afterTax?: (grossRevenueEur: number, grossProfitEur: number, s: ScenarioState, opcostEur: number) => number;
+  /**
    * No longer being pursued. Still fully modeled (golden/pairwise unchanged) but moved out of the
    * main Overview + tab bar into a dedicated "Archived" view; its full model stays drill-through
    * accessible from there. Distinct from `personal` (which only gates the Pairwise view).
@@ -225,6 +234,8 @@ export interface RunUnit {
   cost?: (s: ScenarioState) => number;
   /** A personal-income track (job/consulting): after-tax uses the portfolio's personal-tax schedule, not a business margin. */
   personal?: boolean;
+  /** Per-unit personal after-tax schedule (see Project.afterTax); falls back to the portfolio schedule. */
+  afterTax?: (grossRevenueEur: number, grossProfitEur: number, s: ScenarioState, opcostEur: number) => number;
   /** Shared-market tag: units with the same non-empty market model the SAME buyer pool, so a
    * portfolio sum takes the max within a market group per draw instead of double-counting them. */
   market?: string;

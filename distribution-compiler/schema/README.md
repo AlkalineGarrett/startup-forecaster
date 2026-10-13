@@ -40,7 +40,7 @@ node: {
 - Documents / observations / general_knowledge / speculations live in a **shared corpus at
   the root**, referenced by id. One fact used by many nodes is one observation; the shared id is
   the correlation record. Which nodes use it is derived on demand from `projects/*.json`
-  (`agentic-fetcher/citations.py`), not stored on the observation.
+  (`agentic-fetcher/citations.mjs`), not stored on the observation.
 - Full field-by-field reference, invariants (I1–I19), and worked examples are in the HTML.
 
 ## Worked examples — one illustrative node per kind
@@ -74,31 +74,31 @@ why its `p05 = p10 = $0`.
 ## generators/
 
 Reusable scripts that compute every number and graph in the doc. All are dependency-free
-(pure Python 3 stdlib) and read/write only under `generators/data/` — except `gen_mix_viz.py`,
+(plain Node, no packages) and read/write only under `generators/data/` — except `gen_mix_viz.mjs`,
 which writes its standalone page next to this README.
 
 | script | produces |
 |---|---|
-| `compute_params.py` | beta / normal / gamma / uniform params → derived percentiles (prints) |
-| `metalog_fit.py` | lower-semi-bounded metalog OLS fit → curve + two-part percentiles → `data/metalog_curve.json` |
-| `gen_graphs.py` | the per-example density-graph SVGs → `data/graphs.json` |
-| `build_metalog_example.py` | the metalog two-part figure (reads `data/metalog_curve.json`) → `data/metalog_figure.html` |
-| `gen_mix_viz.py` | the standalone `field-crew-adoption-mixture.html` (density + CDF) |
-| `gpd_fit.py` | the GPD tail splice — body + slope-matched Generalized Pareto → percentiles + curve → `data/gpd_curve.json` |
-| `series_extrapolate.py` | the CAGR extrapolation of a `measure.series` → `data/ts_curve.json` |
-| `build_tail_series_figures.py` | the GPD log-density and time-series figures (reads the two `data/*_curve.json`) → `data/gpd_fig.html`, `data/ts_fig.html` |
-| `verify.py` | quick `<pre>`-block span-balance check on an HTML file |
+| `compute_params.mjs` | beta / normal / gamma / uniform params → derived percentiles (prints) |
+| `metalog_fit.mjs` | lower-semi-bounded metalog OLS fit → curve + two-part percentiles → `data/metalog_curve.json` |
+| `gen_graphs.mjs` | the per-example density-graph SVGs → `data/graphs.json` |
+| `build_metalog_example.mjs` | the metalog two-part figure (reads `data/metalog_curve.json`) → `data/metalog_figure.html` |
+| `gen_mix_viz.mjs` | the standalone `field-crew-adoption-mixture.html` (density + CDF) |
+| `gpd_fit.mjs` | the GPD tail splice — body + slope-matched Generalized Pareto → percentiles + curve → `data/gpd_curve.json` |
+| `series_extrapolate.mjs` | the CAGR extrapolation of a `measure.series` → `data/ts_curve.json` |
+| `build_tail_series_figures.mjs` | the GPD log-density and time-series figures (reads the two `data/*_curve.json`) → `data/gpd_fig.html`, `data/ts_fig.html` |
+| `verify.mjs` | quick `<pre>`-block span-balance check on an HTML file |
 
 Note: the graphs are already embedded in `schema-grounded.html`. The generators are kept as
 provenance for the computed content — re-run them to audit or regenerate the numbers.
-`gen_mix_viz.py` regenerates the standalone viz wholesale; `gen_graphs.py`,
-`build_metalog_example.py` and `build_tail_series_figures.py` emit the figure blocks spliced into the doc.
-Run order: `gen_graphs.py`, `metalog_fit.py` → `build_metalog_example.py`, `gpd_fit.py` + `series_extrapolate.py`
-→ `build_tail_series_figures.py`, `gen_mix_viz.py`.
+`gen_mix_viz.mjs` regenerates the standalone viz wholesale; `gen_graphs.mjs`,
+`build_metalog_example.mjs` and `build_tail_series_figures.mjs` emit the figure blocks spliced into the doc.
+Run order: `gen_graphs.mjs`, `metalog_fit.mjs` → `build_metalog_example.mjs`, `gpd_fit.mjs` + `series_extrapolate.mjs`
+→ `build_tail_series_figures.mjs`, `gen_mix_viz.mjs`.
 
 ## Verifying the HTML
 
 ```sh
 # <pre> span balance
-python3 generators/verify.py schema-grounded.html
+node generators/verify.mjs schema-grounded.html
 ```

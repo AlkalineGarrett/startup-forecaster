@@ -1,0 +1,2926 @@
+{
+ "e::beta_fill": {
+  "unit": "fraction 0-1",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "beta",
+   "alpha": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 4.5
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "beta": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2.4
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::beta_mismatch": {
+  "unit": "fraction 0-1",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "beta",
+   "alpha": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 4.5
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "beta": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2.4
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "debug_computed_percentiles": {
+   "p05": 0.2,
+   "p10": 0.28,
+   "p50": 0.9,
+   "p90": 0.89,
+   "p95": 0.93
+  }
+ },
+ "e::splice_gpd": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "splice",
+   "segments": [
+    {
+     "name": "body",
+     "distribution": {
+      "kind": "lognormal",
+      "median": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 20
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sigma": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 2.3374939712499927
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    },
+    {
+     "name": "tail",
+     "distribution": {
+      "kind": "generalized_pareto",
+      "location": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 400
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "scale": {
+       "value_type": "computed_value",
+       "formula": "slope_match(segments[0], splices[0])",
+       "measure": {}
+      },
+      "shape": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0.927
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    }
+   ],
+   "splices": [
+    {
+     "at": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 400
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::pm": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "point_mass",
+   "atoms": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 0.6
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 50
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 0.4
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::pm_bad_w": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "point_mass",
+   "atoms": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 0.7
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 50
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 0.4
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::pm_neg_w": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "point_mass",
+   "atoms": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": -0.2
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 50
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 1.2
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::pm_zero_w": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "point_mass",
+   "atoms": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 0
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 50
+      },
+      "reasoning": "r",
+      "confidence": 30
+     },
+     "weight": 0
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::mix": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "weighted_combination",
+   "components": [
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 10
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 2
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     },
+     "weight": 0.5
+    },
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 30
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 3
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     },
+     "weight": 0.5
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::hurdle": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "weighted_combination",
+   "components": [
+    {
+     "distribution": {
+      "kind": "point_mass",
+      "atoms": [
+       {
+        "value": {
+         "value_type": "inferred_value",
+         "measure": {
+          "value": 0
+         },
+         "reasoning": "r",
+         "confidence": 30
+        },
+        "weight": 1
+       }
+      ]
+     },
+     "weight": 0.3
+    },
+    {
+     "distribution": {
+      "kind": "lognormal",
+      "median": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 30
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sigma": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0.7
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     },
+     "weight": 0.7
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::mix_metalog": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "weighted_combination",
+   "components": [
+    {
+     "distribution": {
+      "kind": "metalog",
+      "k": 3,
+      "lower_bound": 0,
+      "anchors": [
+       {
+        "prob": 0.1,
+        "value": {
+         "value_type": "inferred_value",
+         "measure": {
+          "value": 5
+         },
+         "reasoning": "r",
+         "confidence": 30
+        }
+       },
+       {
+        "prob": 0.5,
+        "value": {
+         "value_type": "inferred_value",
+         "measure": {
+          "value": 9
+         },
+         "reasoning": "r",
+         "confidence": 30
+        }
+       },
+       {
+        "prob": 0.9,
+        "value": {
+         "value_type": "inferred_value",
+         "measure": {
+          "value": 30
+         },
+         "reasoning": "r",
+         "confidence": 30
+        }
+       }
+      ]
+     },
+     "weight": 0.5
+    },
+    {
+     "distribution": {
+      "kind": "uniform",
+      "low": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "high": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 4
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     },
+     "weight": 0.5
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_zm": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "lower_bound": 0.0,
+   "zero_mass": 0.13,
+   "k": 5,
+   "anchors": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 15
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 17.5
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 19.99
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 29
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 39.99
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 69
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_bounded": {
+  "unit": "fraction 0-1",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "boundedness": "bounded",
+   "lower": 0,
+   "upper": 1,
+   "k": 3,
+   "anchors": [
+    {
+     "prob": 0.25,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.445
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.6
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.83
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_upper": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "boundedness": "upper-semi-bounded",
+   "upper": 1,
+   "terms": 3,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.6
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.85
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.95
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_semi": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "boundedness": "semi-bounded",
+   "k": 3,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 2
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 5
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 40
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_out": {
+  "unit": "fraction 0-1",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "k": 3,
+   "lower_bound": 0,
+   "upper_bound": 1,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.5
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.9
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 1.0
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_nonmono": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "k": 3,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 100
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 1
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 50
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_overfit": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "k": 3,
+   "lower_bound": 0,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 1
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 2
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.6,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 30
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_k4": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "k": 4,
+   "lower_bound": 0,
+   "anchors": [
+    {
+     "prob": 0.2,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 3
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.4,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 5
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.6,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 8
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.8,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 14
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_k2": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "k": 2,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 3
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 5
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 8
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::metalog_k5_under": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 3
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 5
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 9
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::piecewise": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "piecewise",
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 3000
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 12000
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::piecewise_noprob": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "piecewise",
+   "anchors": [
+    {
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 3
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::piecewise_dec": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "piecewise",
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 3
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::piecewise_one": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "piecewise",
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 10
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::normal_bad": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 10
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": -1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::uniform_bad": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "uniform",
+   "low": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 5
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "high": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::lognormal_bad": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "lognormal",
+   "median": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sigma": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::gamma": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "gamma",
+   "shape": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1.3
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "rate": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2.1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::gamma_bad": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "gamma",
+   "shape": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "rate": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2.1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::beta_bad": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "beta",
+   "alpha": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": -1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "beta": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::gpd": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "generalized_pareto",
+   "location": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 400
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "scale": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 530
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "shape": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0.4
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::gpd_neg": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "generalized_pareto",
+   "location": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "scale": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 10
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "shape": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": -0.5
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::gpd_bad": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "generalized_pareto",
+   "location": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "scale": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "shape": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0.5
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::unknown": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "nonesuch"
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::nokind": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "alpha": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::splice3": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "splice",
+   "segments": [
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 1
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    },
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 1
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    },
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 1
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    }
+   ],
+   "splices": [
+    {
+     "at": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 1
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::splice_high": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "splice",
+   "segments": [
+    {
+     "distribution": {
+      "kind": "lognormal",
+      "median": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 20
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sigma": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0.2
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    },
+    {
+     "distribution": {
+      "kind": "generalized_pareto",
+      "location": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 400
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "scale": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 10
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "shape": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0.2
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     }
+    }
+   ],
+   "splices": [
+    {
+     "at": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 400
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_ok": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "lognormal",
+   "median": {
+    "value_type": "computed_value",
+    "formula": "exp((log(obs_iv.low) + log(obs_iv.high)) / 2)",
+    "measure": {}
+   },
+   "sigma": {
+    "value_type": "computed_value",
+    "formula": "(log(obs_a.value) - log(obs_b.value)) / 2.5631",
+    "measure": {}
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_auth_mismatch": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_a.value * 2",
+    "measure": {
+     "value": 30
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_unknown_id": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_nope.value + 1",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_div0": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_a.value / obs_zero.value",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_div0f": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_b.value / 0.0",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_log0": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "log(obs_zero.value)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_badfn": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "abs(obs_a.value)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_syntax": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_a.value +",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_syntax2": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "(obs_a.value",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_none": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_none.value * 2",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_none2": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "2 - obs_none.value",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_neg_none": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "-obs_none.value",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_keyerr": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_a.nonesuch",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_mod": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_a.value % 3",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_minmax": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "max(min(obs_a.value, 4), obs_b.value, 1)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_min_none": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "min(obs_a.value, obs_none.value)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_cagr": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "extrapolate_cagr(obs_s.series, 2026)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_linear": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "extrapolate_linear(obs_s.series, 2026)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_pow": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "2 ** 3 ** 2 - -obs_b.value ** 2 + 10 ** -2",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_sqrt_neg": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "sqrt(0 - obs_a.value)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_exp_big": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "exp(1000)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_series_none": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "extrapolate_cagr(obs_a.series, 2026)",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_quant": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_q.quantiles.p50 + 1",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_idx": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "segments[0]",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_gk_spec": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "gk_g.value * 10 + spec_s.quantiles.p50",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::f_bareword": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "obs_a + 1",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::inputs": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "in_c.value + in_a.value",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "reference": "in_b",
+    "measure": {}
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "inputs": {
+   "in_c": {
+    "value_type": "computed_value",
+    "formula": "in_a.value * 2",
+    "measure": {}
+   },
+   "in_a": {
+    "value_type": "direct_value",
+    "reference": "obs_a"
+   },
+   "in_b": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1.5
+    },
+    "reasoning": "x",
+    "confidence": 20
+   }
+  }
+ },
+ "e::inputs_cycle": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "computed_value",
+    "formula": "in_x.value",
+    "measure": {}
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "inputs": {
+   "in_x": {
+    "value_type": "computed_value",
+    "formula": "in_y.value + 1",
+    "measure": {}
+   },
+   "in_y": {
+    "value_type": "computed_value",
+    "formula": "in_x.value + 1",
+    "measure": {}
+   }
+  }
+ },
+ "e::ref_notfound": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_missing",
+    "measure": {
+     "value": 5
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_mismatch": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_a",
+    "measure": {
+     "value": 12
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_interval_ok": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_iv",
+    "measure": {
+     "value": 3
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_interval_out": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_iv",
+    "measure": {
+     "value": 9
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_noscalar": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_none",
+    "measure": {
+     "value": 9
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_noscalar_inf": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "reference": "obs_none",
+    "measure": {
+     "value": 9
+    },
+    "reasoning": "x",
+    "confidence": 3
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_quantile": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_q",
+    "quantile": "p50"
+   },
+   "sd": {
+    "value_type": "direct_value",
+    "reference": "spec_s",
+    "measure": {
+     "value": 2
+    },
+    "quantile": "p50"
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_quantile_missing": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_q",
+    "measure": {
+     "value": 7
+    },
+    "quantile": "p75"
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_inline_from_ref": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_a"
+   },
+   "sd": {
+    "value_type": "direct_value",
+    "reference": "doc_x/obs_b"
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_nothing": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "reference": null,
+    "reasoning": "x",
+    "confidence": 3
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::ref_unresolvable": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "reference": "gk_missing",
+    "missing_document": "need a doc",
+    "reasoning": "x",
+    "confidence": 3
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::dv_reasoning": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "direct_value",
+    "reference": "obs_a",
+    "measure": {
+     "value": 10
+    },
+    "reasoning": "adjusted"
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::schema_conf": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "x",
+    "confidence": "high"
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::schema_extra": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "zeta": 1,
+  "alpha": 2
+ },
+ "e::schema_vt": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "guessed",
+    "measure": {
+     "value": 1
+    }
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::schema_missing": {
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  }
+ },
+ "e::schema_types": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": "high",
+  "reasoning": "r"
+ },
+ "e::conf_float": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "x",
+    "confidence": 30.0
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1.0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::frac_out": {
+  "unit": "fraction 0-1",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0.5
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::trunc": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 10
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 50
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "truncation": {
+   "lower": 0
+  }
+ },
+ "e::trunc_dict": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "metalog",
+   "k": 3,
+   "lower_bound": 0,
+   "anchors": [
+    {
+     "prob": 0.1,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.3
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.5,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.6
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    },
+    {
+     "prob": 0.9,
+     "value": {
+      "value_type": "inferred_value",
+      "measure": {
+       "value": 0.9
+      },
+      "reasoning": "r",
+      "confidence": 30
+     }
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "truncation": {
+   "upper": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1.0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  }
+ },
+ "e::trunc_none": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "uniform",
+   "low": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "high": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "truncation": {
+   "lower": 2,
+   "upper": 3
+  }
+ },
+ "e::trunc_mix": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "weighted_combination",
+   "components": [
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 0
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 1
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     },
+     "weight": 0.5
+    },
+    {
+     "distribution": {
+      "kind": "normal",
+      "mean": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 5
+       },
+       "reasoning": "r",
+       "confidence": 30
+      },
+      "sd": {
+       "value_type": "inferred_value",
+       "measure": {
+        "value": 1
+       },
+       "reasoning": "r",
+       "confidence": 30
+      }
+     },
+     "weight": 0.5
+    }
+   ]
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "truncation": {
+   "lower": -1,
+   "upper": 6
+  }
+ },
+ "e::cross": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 10
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "cross_checks": [
+   {
+    "value_type": "computed_value",
+    "formula": "obs_a.value * 3",
+    "measure": {}
+   },
+   {
+    "value_type": "computed_value",
+    "formula": "nope.value",
+    "measure": {}
+   }
+  ]
+ },
+ "e::skeleton": {
+  "unit": "x",
+  "distribution": null
+ },
+ "e::todo": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "_todo": "later"
+ },
+ "e::authored_pct_int": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "uniform",
+   "low": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "high": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 10
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r",
+  "debug_computed_percentiles": {
+   "p05": 0.5,
+   "p10": 1,
+   "p50": 5,
+   "p90": 9,
+   "p95": 9.5
+  }
+ },
+ "e::int_values": {
+  "unit": "count",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "uniform",
+   "low": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 2
+    },
+    "reasoning": "x",
+    "confidence": 1
+   },
+   "high": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 4.0
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "r"
+ },
+ "e::unicode": {
+  "unit": "€/mo — “quoted”",
+  "model_definition": "m",
+  "distribution": {
+   "kind": "normal",
+   "mean": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   },
+   "sd": {
+    "value_type": "inferred_value",
+    "measure": {
+     "value": 1
+    },
+    "reasoning": "r",
+    "confidence": 30
+   }
+  },
+  "support_score": 30,
+  "reasoning": "naïve café x"
+ }
+}

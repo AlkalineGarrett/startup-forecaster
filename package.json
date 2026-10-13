@@ -14,8 +14,8 @@
   "scripts": {
     "test": "npm run test:engine && npm run test:compiler && npm run test:fetcher && npm run test:forecaster",
     "test:engine": "npm --prefix montecarlo-engine test",
-    "test:compiler": "cd distribution-compiler && python3 -m pytest tests -q",
-    "test:fetcher": "cd agentic-fetcher && python3 -m pytest tests -q",
+    "test:compiler": "npm --prefix distribution-compiler test",
+    "test:fetcher": "npm --prefix agentic-fetcher test",
     "test:forecaster": "npm --prefix forecaster test"
   }
 }

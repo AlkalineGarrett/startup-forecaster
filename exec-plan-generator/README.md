@@ -50,8 +50,12 @@ plan its own accent triad (the tinted columns); omit it to inherit the default t
   details: [ { id, cls:"det edge-o", meta, title, body:[block] }, ... ],  // one per task + gate
 }
 
-// task  = { id, lv:"5", label, deps:["w1p1", ...] }   deps = 1-level-deep prerequisite ids
+// task  = { id, lv:"5", label, deps:["w1p1", ...], status? }   deps = 1-level-deep prerequisite ids
 // block = { p } | { term, text } | { ul:[...] } | { ol:[...] }
+//
+// Optional progress (e.g. from a task store): task.status in_progress | done | blocked | dropped,
+// gate row status "decided", and detail.status (a one-line status shown under the meta line).
+// todo / open / absent render exactly as before; the status CSS is appended only when used.
 ```
 
 ## Rules baked into the template / JS (not the data)

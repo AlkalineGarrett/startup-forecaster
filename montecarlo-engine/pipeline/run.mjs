@@ -49,7 +49,7 @@ const STAGES = {
     const before = digest();
     const projects = readdirSync(join(CONFIG.distributionData, "projects")).filter((f) => f.endsWith(".json") && !f.startsWith("_")).sort();
     for (const f of projects) {
-      sh("python3", [join(CONFIG.compiler, "compiler", "compile.py"), join("projects", f), "--write", "--quiet"], {
+      sh(process.execPath, [join(CONFIG.compiler, "compiler", "compile.mjs"), join("projects", f), "--write", "--quiet"], {
         cwd: CONFIG.distributionData, env: { FORECASTER_DATA: CONFIG.distributionData },
       });
     }

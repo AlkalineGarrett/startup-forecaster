@@ -191,7 +191,7 @@
   "model_definition": "lower-semi-bounded metalog, 13% at $0",
   "distribution": {
    "kind": "metalog",
-   "lower_bound": 0.0,
+   "lower_bound": 0,
    "zero_mass": 0.13,
    "k": 5,
    "anchors": [

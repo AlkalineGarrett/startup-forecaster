@@ -1,0 +1,8 @@
+{
+  "name": "agentic-fetcher",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}

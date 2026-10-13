@@ -49,7 +49,7 @@ function classify({ key, unit, n, sweep }) {
     return { key, unit, sweep, node: n.id, label: n.label, source: "compiled", support: d.support ?? null, band: band(d.support),
       grounding: SOURCE[key] ? g.cls : null, refs: g.refs, gaps: g.gaps };
   }
-  // Hand-authored: export what was authored, so a scaffolder (distribution-compiler/compiler/scaffold.py)
+  // Hand-authored: export what was authored, so a scaffolder (distribution-compiler/compiler/scaffold.mjs)
   // can lift it into the data project verbatim. `bound` is the metalog bound the hand path samples with.
   const bound = n.bound ?? (n.kind === "gate" || n._frac ? "bounded" : "semi-lo");
   return {

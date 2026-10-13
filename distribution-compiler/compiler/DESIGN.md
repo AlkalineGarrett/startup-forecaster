@@ -34,18 +34,18 @@ load project + corpus
 
 ### Distribution kinds → `Q(p)` / percentiles
 
-- **parametric** (`lognormal, beta, normal, gamma, uniform, generalized_pareto`) — scipy `ppf`.
+- **parametric** (`lognormal, beta, normal, gamma, uniform, generalized_pareto`) — closed-form `ppf` (`numerics.mjs`).
 - **point_mass** — atoms + allocation → a discrete/weighted quantile step function.
 - **weighted_combination** — components + allocation → mixture; percentiles by numeric inversion
   of the combined CDF.
 - **splice** — segments joined at `splices[].at`; piecewise quantile with a continuous CDF
   (canonical case: a parametric body + a `generalized_pareto` tail whose `scale` is
-  `slope_match`ed at the splice — ported from `schema/generators/gpd_fit.py`).
+  `slope_match`ed at the splice — ported from `schema/generators/gpd_fit.mjs`).
 - **metalog** — anchors at plotting positions `i/(n+1)`, k-term fit; lower-semi-bounded variant
-  supported (ported from `schema/generators/metalog_fit.py`), with the monotonicity assert.
+  supported (ported from `schema/generators/metalog_fit.mjs`), with the monotonicity assert.
 
 Percentiles are computed analytically where the family gives a `ppf`, else by a numeric CDF grid
-(`grid_percentiles` in `schema/generators/compute_params.py`).
+(`grid_percentiles` in `schema/generators/compute_params.mjs`).
 
 ### Formula grammar (closed, I22)
 
@@ -79,7 +79,7 @@ No node ids — formulae never reference other nodes.
 ## Agent workflow
 
 1. Author `projects/<project>.json` — as lean or as complete as you like.
-2. `python3 compiler/compile.py projects/<project>.json` → build artifact + diff + diagnostics.
+2. `node compiler/compile.mjs projects/<project>.json` → build artifact + diff + diagnostics.
 3. Fix flagged mismatches; re-run until clean.
 
 A project is **fresh and clean** when `build/<project>.compiled.json` exists, its recorded
@@ -91,9 +91,9 @@ as a dangling id.
 
 ```
 compiler/
-  compile.py        # CLI driver: load → resolve → evaluate → construct → derive → check → emit
-  distributions.py  # kind → Q(p) / percentiles (scipy + ported generators)
-  formula.py        # the closed I22 grammar evaluator
+  compile.mjs        # CLI driver: load → resolve → evaluate → construct → derive → check → emit
+  distributions.mjs  # kind → Q(p) / percentiles (numerics.mjs)
+  formula.mjs        # the closed I22 grammar evaluator
   DESIGN.md         # this file
 build/
   <project>.compiled.json
@@ -117,7 +117,7 @@ that fixture is the canonical, runnable example of every kind. Each param below 
 | `weighted_combination` | `components: [{ distribution, weight }]` — the mixture; a `point_mass` component gives a two-part/hurdle model |
 | `splice` | `segments: [{distribution} body, {distribution} tail]`, `splices: [{ at }]`. `at` is the **x-value** where the tail takes over; the tail's `location` references the **same** value; the tail's `scale` is a `computed_value` with `formula: "slope_match(segments[0], splices[0])"`, so only `shape` is authored |
 | `metalog` | `anchors: [{ value }]` (or `{ at }`; `{ prob, value }` when the value restates a source's stated quantile via `quantile: "pNN"`), `lower_bound` (or `boundedness`+`lower`), `upper_bound` (or `boundedness`+`upper`), `zero_mass` (mass at the lower bound — the $0 free-tier hurdle), `k` (or `terms`) |
-| `piecewise` | `anchors: [{ prob, value }]` — monotone interpolation through stated quantiles: log-linear between positive points, linear (floored at 0) when one is ≤ 0, end segments extended. The simulator's own fallback rule; `scaffold.py` emits it where an exact metalog can't be fit (a point on a bound) |
+| `piecewise` | `anchors: [{ prob, value }]` — monotone interpolation through stated quantiles: log-linear between positive points, linear (floored at 0) when one is ≤ 0, end segments extended. The simulator's own fallback rule; `scaffold.mjs` emits it where an exact metalog can't be fit (a point on a bound) |
 
 **Free-tier / hurdle model:** use a `metalog` with `zero_mass`, or a `weighted_combination` with a
 `point_mass` component at the boundary. (Not a `splice` of a `point_mass` — a splice partitions by
@@ -125,9 +125,9 @@ x-value and degenerates on a point-mass body.)
 
 **Don't hand-solve params — use the preview/fit tool:**
 ```
-python3 compiler/preview.py '{"kind":"lognormal","median":9,"sigma":0.64}'   # percentiles + mean + support
-python3 compiler/preview.py fit beta p10=0.25 p90=0.70                        # params from target quantiles
-python3 compiler/preview.py fit lognormal p50=9 p90=20                        # (also: normal, gamma)
+node compiler/preview.mjs '{"kind":"lognormal","median":9,"sigma":0.64}'   # percentiles + mean + support
+node compiler/preview.mjs fit beta p10=0.25 p90=0.70                        # params from target quantiles
+node compiler/preview.mjs fit lognormal p50=9 p90=20                        # (also: normal, gamma)
 ```
 (σ shortcut for a lognormal: `sigma = ln(p90/p10) / (2·1.2816)`.)
 
@@ -152,7 +152,7 @@ p05/p95) pair of source observations `<lo>`, `<hi>`:
 | normal | `mean` | `(<lo>.value + <hi>.value) / 2` |
 | normal | `sd` | `(<hi>.value - <lo>.value) / <z-spread>` |
 
-`<z-spread>` = `2.5631` for p10/p90, `3.2897` for p05/p95. `compiler/preview.py fit lognormal
+`<z-spread>` = `2.5631` for p10/p90, `3.2897` for p05/p95. `compiler/preview.mjs fit lognormal
 p10=… p90=…` prints these formulas ready to paste (replace `<lo>/<hi>` with your two source obs).
 This turns a lognormal/normal node from 2 inferred params into 2 **computed** ones — fully
 grounded, zero judgement. `inferred_value` then remains only for genuinely un-formulaic params
@@ -166,11 +166,11 @@ A value's `reference` resolves to `in_<id>` (a node input), or `doc_<sha>/obs_<i
 is present but does not resolve (id not found) or resolves without a scalar (I4). Corpus starts
 empty; add entries with the file-locked, schema-checked writers (safe for parallel agents):
 ```
-python3 ../startup-forecaster/agentic-fetcher/add_observation.py doc_<sha> obs_<id> --unit "…" --statement "…" \
+node ../startup-forecaster/agentic-fetcher/add_observation.mjs doc_<sha> obs_<id> --unit "…" --statement "…" \
     --quote "<verbatim from the core>" --cited-by project::node \
     [--value <v> | --mean <v> | --interval "lo,hi" | --quantiles "p10:v,p50:v" | --series "2021:v,2024:v"]
-python3 ../startup-forecaster/agentic-fetcher/add_observation.py doc_<sha> obs_<id> --quote "…" --check   # verify only, no write
-python3 ../startup-forecaster/agentic-fetcher/add_knowledge.py gk|spec  <id> --statement "…" --reasoning "…" [--value <v> --unit …]
+node ../startup-forecaster/agentic-fetcher/add_observation.mjs doc_<sha> obs_<id> --quote "…" --check   # verify only, no write
+node ../startup-forecaster/agentic-fetcher/add_knowledge.mjs gk|spec  <id> --statement "…" --reasoning "…" [--value <v> --unit …]
 ```
 The quote is matched against `cores/doc_<sha12>.txt` after normalizing whitespace + unicode
 (dashes/quotes/NBSP), so a figure split across lines or an en-dash still verifies
@@ -181,14 +181,14 @@ The compile **grounding-mix** readout counts a *bare* `inferred_value` (no refer
 grounded one (a shape param fit to a referenced anchor is fine); it nudges only on bare judgement.
 
 **Need a source you don't have?** See `../startup-forecaster/agentic-fetcher/SOURCING.md` — the ladder is: search the archive
-(`../startup-forecaster/agentic-fetcher/search.py`) → WebSearch/WebFetch to find it → if you can get the bytes,
-`../startup-forecaster/agentic-fetcher/install_source.py <file> --url <url> --title "…"` (archives + extracts a searchable core +
+(`../startup-forecaster/agentic-fetcher/search.mjs`) → WebSearch/WebFetch to find it → if you can get the bytes,
+`../startup-forecaster/agentic-fetcher/install_source.mjs <file> --url <url> --title "…"` (archives + extracts a searchable core +
 registers the `doc_<sha>`), then `add_observation` against it → if it's gated/paywalled/JS-rendered,
-`../startup-forecaster/agentic-fetcher/fetch_request.py add --url … --for project::node` to pool it into the human-fetch queue and
-leave the node as `missing_document` debt. At end of run the human works `fetch_request.py list`,
+`../startup-forecaster/agentic-fetcher/fetch_request.mjs add --url … --for project::node` to pool it into the human-fetch queue and
+leave the node as `missing_document` debt. At end of run the human works `fetch_request.mjs list`,
 installs the files (which auto-resolves the queue), and a follow-up pass grounds the freed nodes.
 
 ## Out of scope
 
 - Cross-node / corpus-correlation checks — which nodes use an observation is derived on demand from the
-  node references by `agentic-fetcher/citations.py`, never stored on the observation.
+  node references by `agentic-fetcher/citations.mjs`, never stored on the observation.

@@ -65,7 +65,7 @@ the correlation record. A node holds no evidence of its own — only references 
 | `blocked_on` | string | present iff `verification: unverifiable` — names what unblocks it, e.g. *"OCR sidecar for chartmogul PDF benchmark table"* |
 
 *(There is no `cited_by` field. Which nodes use an observation is derived on demand from the node
-references in `projects/*.json` — see `agentic-fetcher/citations.py` — never stored, because a stored
+references in `projects/*.json` — see `agentic-fetcher/citations.mjs` — never stored, because a stored
 list drifts into stale/phantom entries.)*
 
 **`verification` states**:
@@ -236,7 +236,7 @@ sorted anchors sits at `p = i/(n+1)`), so **no percentile is stored**. Unlike an
 elicited band, a published p10/p50/p90, or a speculation recording a model's authored judgement),
 each anchor restates one of them: `{ prob, value: { value_type: "direct_value", reference, quantile:
 "pNN" } }` with `prob` = that quantile. The percentile is then the source's, not authored here
-(I1 holds); the compiler checks each value against the stated point. `compiler/scaffold.py` emits
+(I1 holds); the compiler checks each value against the stated point. `compiler/scaffold.mjs` emits
 exactly this when lifting a simulator's hand-authored node into a project file.
 
 ### 4.4b piecewise — interpolation through stated quantiles
@@ -403,7 +403,7 @@ aboutness, and sameness are read by an agent.
   shape. *(P2)*
 - **I11 — Dedup & correlation.** Two references to the same `(statement, measure)` share one
   observation. Which nodes use it is derived on demand from `projects/*.json`
-  (`agentic-fetcher/citations.py`), never stored — a stored list would drift into stale/phantom
+  (`agentic-fetcher/citations.mjs`), never stored — a stored list would drift into stale/phantom
   entries. *(P1)*
 - **I12 — One path to evidence.** A node reaches a document only via
   `distribution → reference → observation → its document` in the shared corpus; there is no per-node
@@ -475,6 +475,6 @@ There is no `propagate`/`compose` kind and no node references another node.
   every kind (point_mass, weighted_combination, metalog, lognormal, beta, normal, gamma, uniform),
   the full field-by-field reference, and the invariants rendered.
 - **`generators/`** — dependency-free scripts computing every param, percentile, and graph
-  (`compute_params.py`, `metalog_fit.py`, `gen_graphs.py`, `gen_mix_viz.py`,
-  `build_metalog_example.py`, `verify.py`). See `README.md`.
-- **Verification:** `generators/verify.py` (`<pre>` span balance in the HTML companion).
+  (`compute_params.mjs`, `metalog_fit.mjs`, `gen_graphs.mjs`, `gen_mix_viz.mjs`,
+  `build_metalog_example.mjs`, `verify.mjs`). See `README.md`.
+- **Verification:** `generators/verify.mjs` (`<pre>` span balance in the HTML companion).

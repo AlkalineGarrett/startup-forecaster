@@ -7,12 +7,12 @@ and again before a run consumes it.
 
 **Marking rule (the whole point):** a document or observation is marked `"audit": "verified"` **only
 after** it passes the audit below. Freshly added entries are `"audit": "unaudited"` (stamped by
-`add_observation.py` / `make_derivative.py`). A defect that can't be fixed on the spot is
+`add_observation.mjs` / `make_derivative.mjs`). A defect that can't be fixed on the spot is
 `"audit": "flagged"` with a note, and is not used until resolved. Never mark `verified` before the
 check runs. (`verification` on an observation is the *mechanical* quote-in-core match; `audit` is
 this *legitimacy/metadata* review — both must be clean.)
 
-**Enforced, not optional.** `check_sources.py` **S8** fails while any observation's `audit` is absent
+**Enforced, not optional.** `check_sources.mjs` **S8** fails while any observation's `audit` is absent
 or `unaudited`, so the coordinating session cannot compile/consume the corpus until this pass has run
 (see [`SOURCING.md`](SOURCING.md) §5). This is the gate that stops a batch from silently
 shipping un-reviewed.
@@ -67,7 +67,7 @@ or split a bundle into real single-source documents first.
 
 ## Audit 3 — derivative documents
 
-A derivative document (`origin: "derivative"`, made by `make_derivative.py`) is derived from
+A derivative document (`origin: "derivative"`, made by `make_derivative.mjs`) is derived from
 originals in one of two ways (`derivation_kind`):
 
 - **`computed`** (stronger evidence — reproducible). Audit by: (1) each value in `derivation.inputs`
@@ -97,7 +97,7 @@ justified representation? Per node:
    can't support).
 2. **Params** — do the params follow from the cited evidence? Recompute: lognormal median/sigma from
    the right two quantiles (z-spread 2.5631 p10/p90, 3.2897 p05/p95); FX (direction + value);
-   derivatives; metalog anchors = the stated quantiles; splice `slope_match`. `compiler/preview.py`
+   derivatives; metalog anchors = the stated quantiles; splice `slope_match`. `compiler/preview.mjs`
    checks a construction or a fit.
 3. **Tightness** — is the spread justified? Flag OVERCONFIDENT (too-narrow given weak/single-source/
    judgement evidence) and UNDER-confident (absurdly wide).
@@ -115,11 +115,11 @@ unaudited).
 
 ## Running it (repeatable)
 
-1. `python3 ../startup-forecaster/agentic-fetcher/audit_prepare.py obs [N]` (or `docs`) — slices the not-yet-verified corpus into N
+1. `node ../startup-forecaster/agentic-fetcher/audit_prepare.mjs obs [N]` (or `docs`) — slices the not-yet-verified corpus into N
    balanced batch files under `build/audit/batch_*.json` (gitignored scratch).
 2. Spawn one agent per batch with the prompt template below; each writes `verdicts_<tag>.json`.
 3. Aggregate the verdicts; fix/remove per the resolutions above.
-4. `python3 ../startup-forecaster/agentic-fetcher/mark_audited.py --pass-list <verdicts...>` marks every `legit`/`ok` entry
+4. `node ../startup-forecaster/agentic-fetcher/mark_audited.mjs --pass-list <verdicts...>` marks every `legit`/`ok` entry
    `"audit": "verified"` (and stamps the date). Re-run audits after any later edit — an edited entry
    drops back to unaudited.
 

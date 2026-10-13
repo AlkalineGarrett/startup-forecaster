@@ -1,0 +1,53 @@
+{
+ "obs_a": {
+  "measure": {
+   "value": 10
+  }
+ },
+ "obs_b": {
+  "measure": {
+   "value": 2.5
+  }
+ },
+ "obs_iv": {
+  "measure": {
+   "interval": {
+    "low": 1,
+    "high": 5
+   }
+  }
+ },
+ "obs_q": {
+  "measure": {
+   "quantiles": {
+    "p10": 3,
+    "p50": 7.0,
+    "p90": 20
+   }
+  }
+ },
+ "obs_s": {
+  "measure": {
+   "series": [
+    {
+     "period": 2019,
+     "value": 100
+    },
+    {
+     "period": 2023,
+     "value": 146.41
+    }
+   ]
+  }
+ },
+ "obs_none": {
+  "measure": {
+   "unit": "x"
+  }
+ },
+ "obs_zero": {
+  "measure": {
+   "value": 0
+  }
+ }
+}

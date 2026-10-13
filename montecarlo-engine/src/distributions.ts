@@ -1,8 +1,8 @@
 // Distribution construction: a grounded description (kind + resolved scalar params) → a quantile
-// function Q(u) driven by one copula uniform. Port of distribution-compiler's
-// `compiler/distributions.py` (its DATA-CONTRACT.md, §4): `construct(dist)` returns a `Dist` with `.ppf(u)`/`.cdf(x)`/`.support`;
-// `realize(node)` applies the node's optional truncation. scipy's parametric families are replaced
-// by closed forms here (normal via rng's erf/probit; beta via a ported incomplete-beta inverse).
+// function Q(u) driven by one copula uniform. Counterpart of distribution-compiler's
+// `compiler/distributions.mjs` (its DATA-CONTRACT.md, §4): `construct(dist)` returns a `Dist` with `.ppf(u)`/`.cdf(x)`/`.support`;
+// `realize(node)` applies the node's optional truncation. The parametric families use closed forms
+// here (normal via rng's erf/probit; beta via a ported incomplete-beta inverse).
 //
 // `distribution.kind` IS the family and its params are grounded — percentiles are a derived readout,
 // never the input.

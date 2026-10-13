@@ -2,7 +2,7 @@
 //
 // This module declares the portfolio-data bindings ONCE, as mutable module state, and exposes
 // `configurePortfolio()` to populate them. Engine modules import these bindings from here; a
-// portfolio (the data repo) calls `configurePortfolio(...)` at init to attach its data. This is a
+// portfolio (in the user's workspace) calls `configurePortfolio(...)` at init to attach its data. This is a
 // configure-once, single-session context — matching the app's existing single-user design, and
 // required by the bundler (build.mjs concatenates modules into one scope, so each canonical name
 // must be declared exactly once and cannot be aliased).

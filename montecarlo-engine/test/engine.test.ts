@@ -59,3 +59,21 @@ test("stock/flow fix: churned cohort earns far less than stock × price × 12", 
   const naive = 20000 * 0.05 * 30 * 12; // = 360k/yr
   assert.ok(r.p50 < naive * 0.6, `cohort median (${Math.round(r.p50)}) well below the naive stock figure (${naive})`);
 });
+
+test("a personal unit's own afterTax schedule overrides the portfolio default (and sees gross revenue)", () => {
+  const base = { ...saasUnit(), personal: true };
+  const seen: number[] = [];
+  const withHook = { ...base, afterTax: (rev: number, gp: number, _s: unknown, opcost: number) => { seen.push(rev - gp); return rev * 0.5 - opcost; } };
+  const r0 = runUnit(base), r1 = runUnit(withHook);
+  assert.strictEqual(r0.p50, r1.p50, "revenue is untouched by the tax hook");
+  assert.ok(Math.abs(r1.afterTax50 - r1.p50 * 0.5) / Math.max(1, r1.p50) < 0.02, "after-tax follows the hook (≈ half of revenue)");
+  assert.ok(seen.length > 0 && seen.every((d) => d >= -1e-6), "hook receives gross revenue ≥ gross profit");
+});
+
+test("the afterTax hook receives the operating cost and returns the final net", () => {
+  const base = { ...saasUnit(), personal: true, cost: () => 1000 };
+  const costs: number[] = [];
+  const r = runUnit({ ...base, afterTax: (rev: number, _gp: number, _s: unknown, opcost: number) => { costs.push(opcost); return rev; } });
+  assert.ok(costs.some((c) => c > 0), "operating cost reaches the hook");
+  assert.ok(Math.abs(r.afterTax50 - r.p50) / Math.max(1, r.p50) < 0.02, "the engine does not subtract the cost again");
+});

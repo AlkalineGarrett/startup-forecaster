@@ -133,7 +133,7 @@ export function buildHtml() {
 // Write the artifact when run directly (`node build.mjs`); stay side-effect-free when imported.
 // Output path is the config's `out` (default <portfolio>/dist/montecarlo.html); MC_OUT overrides it,
 // resolved against the current working directory. Compare realpaths so invocation through a
-// node_modules symlink (data repo → file: dependency) still counts as "run directly".
+// node_modules symlink (workspace → file: dependency) still counts as "run directly".
 const runDirectly = (() => {
   if (!process.argv[1]) return false;
   try { return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
