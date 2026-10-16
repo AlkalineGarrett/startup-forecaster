@@ -3,7 +3,7 @@
 What the compiler produces and how a simulator (or any reader) consumes it. The authoring format is
 [`schema/SCHEMA.md`](schema/SCHEMA.md); the compiler's per-kind key table is
 [`compiler/DESIGN.md`](compiler/DESIGN.md). [`montecarlo-engine`](../montecarlo-engine) implements this
-contract (`pipeline/gen-distributions.mjs` reads the compiled artifacts; `src/distributions.ts` samples them).
+contract (`simulation/gen-distributions.mjs` reads the compiled artifacts; `src/distributions.ts` samples them).
 
 ---
 
@@ -14,7 +14,7 @@ contract (`pipeline/gen-distributions.mjs` reads the compiled artifacts; `src/di
 | source | `projects/<project>.json` | one file per project; human/agent-authored, lean (subset of slots filled) |
 | **compiled** | `build/<project>.compiled.json` | **consume this** — the same node set with every derived slot filled and checked, plus a `_meta` block |
 
-The build artifact is produced by `node compiler/compile.mjs projects/<project>.json --write`.
+The build artifact is produced by `npx forecaster compile projects/<project>.json --write`.
 Consume the **compiled** artifact, not the source: in it, every `computed_value` formula is
 evaluated, every reference resolved to a scalar, and `debug_computed_percentiles` filled.
 

@@ -1,24 +1,17 @@
 // Multi-factor Gaussian copula. Instead of one global "luck" factor, each node loads on a
 // small set of NAMED latent factors, so dependence is elicitable one node at a time and is
-// positive-semi-definite by construction. Globals (macro, ai_demand) are drawn once per
-// iteration and SHARED across every project (common random numbers); project-local factors
-// (execution quality, per-funnel channel quality, per-project demand-curve) are drawn fresh
-// per project. w_i = Σ_k λ_ik·z_k + √(1−Σλ²)·ε_i ; u_i = Φ(w_i) — marginal preserved exactly.
+// positive-semi-definite by construction. The portfolio's global factors (configurePortfolio({ globalFactors }),
+// default ["macro"]) are drawn once per iteration and SHARED across every project (common random numbers); any
+// other factor a node loads on (execution quality, a per-funnel channel, a demand curve) is project-local,
+// drawn fresh per project. w_i = Σ_k λ_ik·z_k + √(1−Σλ²)·ε_i ; u_i = Φ(w_i) — marginal preserved exactly.
 import { phi } from "./rng.ts";
 import type { Loadings } from "./types.ts";
+import { GLOBAL_FACTORS } from "./portfolio-context.ts";
 
-/** Macroeconomic / hiring-cycle factor, shared across all projects. */
+/** Macroeconomic factor, the default shared factor. Coupling only happens where a node loads on a global
+ * factor, so a workspace's own global (e.g. a shared market or a shared network) can couple just two projects. */
 export const F_MACRO = "macro";
-/** AI-market demand & capability curve, shared across the AI-exposed projects. */
-export const F_AI = "ai_demand";
-/** Latent candidate quality (same CV, same interview performance), shared across the job tracks. */
-export const F_CANDIDATE = "candidate_quality";
-/** The one professional network, drawn down once — couples warm consulting to job referrals. */
-export const F_NETWORK = "network";
-/** Factors drawn once per iteration and shared across projects (common random numbers). Coupling
- * only happens where a node loads on one, so a "global" factor can still couple just two projects. */
-export const GLOBAL_FACTORS: string[] = [F_MACRO, F_AI, F_CANDIDATE, F_NETWORK];
-/** Per-project execution quality (the old scalar "luck", now one named factor). */
+/** Per-project execution quality (the scalar "luck" loading, as one named factor). */
 export const F_EXEC = "exec";
 
 /** Idiosyncratic coefficient √(1 − Σλ²). Σλ² > 1 is a data error; clamp to 0 (fully shared). */

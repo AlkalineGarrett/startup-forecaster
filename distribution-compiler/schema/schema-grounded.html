@@ -101,25 +101,30 @@
   named <code>inputs</code> , a <code>distribution</code> (of one kind), and the narrative around it — truncation, reconciliation, cross-checks, a support score — plus a throwaway <code>debug_computed_percentiles</code> readout. Everything the node uses is a
   <b>reference into the corpus by id</b>; nothing about a percentile is ever stored.</p>
   <div class="figure">
-    <svg viewBox="0 0 900 552" role="img" aria-label="A shared corpus at the root holds documents (each with observations), general_knowledge, speculations, and a null-gap. A node on the right holds node-local inputs, an optional truncation, a distribution of one kind (point_mass, weighted_combination, or a parametric family such as lognormal or beta), optional reconciliation and cross_checks, a support_score with a reasoning, and a throwaway debug_computed_percentiles readout — all direct fields of the node. The node's distribution and inputs reference into the corpus by id; an observation's cited_by lists every node that uses it, which is the correlation record.">
+    <svg viewBox="0 0 900 552" role="img" aria-label="A shared corpus across two roots: the source archive's documents.json registry holds each document's identity, and the data project's corpus holds a flat observations map (each observation naming its document by doc), general_knowledge, speculations, and a null-gap. A node on the right holds node-local inputs, an optional truncation, a distribution of one kind (point_mass, weighted_combination, or a parametric family such as lognormal or beta), optional reconciliation and cross_checks, a support_score with a reasoning, and a throwaway debug_computed_percentiles readout — all direct fields of the node. The node's distribution and inputs reference into the corpus by id; which nodes use an observation is derived from those references, and that shared id is the correlation record.">
       <defs>
         <marker id="tar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0e6e78"/></marker>
         <marker id="rar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a63a2b"/></marker>
+        <marker id="aar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b06d12"/></marker>
       </defs>
 
       <!-- ===== SHARED CORPUS (left) ===== -->
-      <text x="20" y="42" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700" letter-spacing="0.06em" fill="#0e6e78">SHARED CORPUS · root</text>
-      <rect x="20" y="52" width="292" height="160" rx="12" fill="#fbfcfd" stroke="#cdd4dc"/>
-      <text x="32" y="76" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" fill="#151922">document</text>
-      <text x="116" y="76" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#59636f">doc_&lt;sha256[:12]&gt;</text>
-      <text x="32" y="94" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">sha256 · url · publisher · trust_score</text>
-      <text x="32" y="107" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">capture · core · derivation</text>
-      <rect x="30" y="116" width="272" height="86" rx="6" fill="#ffffff" stroke="#8fc4c8"/>
-      <text x="40" y="134" font-family="ui-monospace,Menlo,monospace" font-size="10.5" font-weight="700" fill="#0a565e">obs_… statement</text>
-      <text x="40" y="149" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">measure { value/interval/mean · population · period }</text>
-      <text x="40" y="163" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">quote · locator · verification</text>
-      <text x="40" y="177" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#b06d12">cited_by[ ] ↩ one obs, many nodes = correlation</text>
-      <text x="40" y="191" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#8a94a0">observations{ } — facts drawn from this document</text>
+      <text x="20" y="42" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700" letter-spacing="0.06em" fill="#0e6e78">SHARED CORPUS · two roots</text>
+      <rect x="20" y="52" width="292" height="68" rx="12" fill="#fbfcfd" stroke="#cdd4dc"/>
+      <text x="32" y="72" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" fill="#151922">document</text>
+      <text x="116" y="72" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#59636f">doc_&lt;sha256[:12]&gt;</text>
+      <text x="32" y="88" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">sha256 · title · url · publisher · core</text>
+      <text x="32" y="101" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">capture · origin · derivation · audit</text>
+      <text x="32" y="114" font-family="ui-monospace,Menlo,monospace" font-size="8.5" fill="#8a94a0">&lt;groundingSources&gt;/documents.json</text>
+
+      <rect x="20" y="136" width="292" height="78" rx="12" fill="#ffffff" stroke="#8fc4c8"/>
+      <text x="32" y="156" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700" fill="#0a565e">observation</text>
+      <text x="124" y="156" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#59636f">obs_&lt;id&gt;</text>
+      <text x="32" y="171" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#b06d12">doc: doc_&lt;sha12&gt; ↩ names its document</text>
+      <text x="32" y="184" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">statement · measure · quote · locator</text>
+      <text x="32" y="197" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#39424e">verification · audit · source_capture</text>
+      <text x="32" y="209" font-family="ui-monospace,Menlo,monospace" font-size="8.5" fill="#8a94a0">&lt;distributionData&gt;/corpus/observations.json</text>
+      <path d="M286,136 L286,123" fill="none" stroke="#b06d12" stroke-width="1.6" marker-end="url(#aar)"/>
 
       <rect x="20" y="224" width="292" height="44" rx="12" fill="#ffffff" stroke="#c4ccd4"/>
       <text x="32" y="245" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700" fill="#3a4450">general_knowledge</text>
@@ -149,7 +154,7 @@
 
       <rect x="398" y="181" width="462" height="156" rx="6" fill="#e2f1f2" stroke="#8fc4c8"/>
       <text x="408" y="199" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700" fill="#0a565e">distribution · kind</text>
-      <text x="408" y="217" font-family="ui-monospace,Menlo,monospace" font-size="9.5" fill="#0a565e">point_mass — atoms [{ at + trail, weight }] · allocation</text>
+      <text x="408" y="217" font-family="ui-monospace,Menlo,monospace" font-size="9.5" fill="#0a565e">point_mass — atoms [{ value trail, weight }] · allocation</text>
       <text x="408" y="234" font-family="ui-monospace,Menlo,monospace" font-size="9.5" fill="#0a565e">weighted_combination — components [{ distribution, weight }] · allocation</text>
       <text x="408" y="251" font-family="ui-monospace,Menlo,monospace" font-size="9.5" fill="#0a565e">lognormal · beta · normal · gamma · uniform · generalized_pareto · metalog</text>
       <text x="408" y="268" font-family="ui-monospace,Menlo,monospace" font-size="8.5" fill="#8a94a0">(combining nodes into outputs is the simulator's job — out of scope)</text>
@@ -174,9 +179,12 @@
     </svg>
     <p class="figcap"><b>One map.</b> The node holds <span class="mono">inputs</span> and a <span class="mono">distribution</span>;
     its <span class="mono">distribution</span> (and inputs, and cross-checks) <em>reference into</em> the shared corpus by id —
-    an <span class="mono">observation</span> in a document, a <span class="mono">general_knowledge</span> prior, a
-    <span class="mono">speculation</span>, or a <span class="mono" style="color:#a63a2b">null</span> gap. Each observation's
-    <span class="mono">cited_by</span> lists every node that uses it — that shared id is the correlation record. Percentiles
+    an <span class="mono">observation</span> (which names its document by <span class="mono">doc</span>), a
+    <span class="mono">general_knowledge</span> prior, a <span class="mono">speculation</span>, or a
+    <span class="mono" style="color:#a63a2b">null</span> gap. Documents live in the source archive's
+    <span class="mono">documents.json</span>, so one archive can serve several data projects; observations, general knowledge
+    and speculations live in the data project's <span class="mono">corpus/</span>. Which nodes use an observation is derived
+    on demand from the node references, never stored — that shared id is the correlation record. Percentiles
     are only ever read off the distribution into <span class="mono">debug_computed_percentiles</span>; nothing about them is stored.</p>
   </div>
 </section>
@@ -200,50 +208,61 @@
 <section>
   <div class="lbl">the shape</div>
   <h2>A node</h2>
-  <p>Documents, observations, general knowledge, and speculations are a <b>shared corpus at the root</b> — a fact used by many
-  nodes is <em>one</em> observation, referenced by id (that shared id is the correlation record). A node holds no
+  <p>Documents, observations, general knowledge, and speculations are a <b>shared corpus</b> — a fact used by many
+  nodes is <em>one</em> observation, referenced by id (that shared id is the correlation record). Documents live in the
+  source archive's <code>documents.json</code> (the config's <code>groundingSources</code>, <code>sources/</code> by default);
+  observations, general knowledge and speculations live flat in the data project's <code>corpus/</code> (the config's
+  <code>distributionData</code>, <code>distributions/</code> by default). A node holds no
   evidence of its own; it holds a distribution defined by how it is <b>constructed</b>, then an optional
-  <code>debug_computed_percentiles</code> readout the simulator can recompute at will.</p>
+  <code>debug_computed_percentiles</code> readout the simulator can recompute at will. The block is the one-object view
+  <code>project-distributions.schema.json</code> describes, <code>{ documents, observations, general_knowledge,
+  speculations, nodes }</code>.</p>
   <div class="codebox"><pre>{
-  <span class="cmt">// ==== shared corpus (root): documents + observations + general_knowledge, referenced by id ====</span>
+  <span class="cmt">// ==== shared corpus: documents + observations + general_knowledge + speculations, referenced by id ====</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json — the source-identity registry</span>
   "documents": {
     "doc_&lt;sha256[:12]&gt;": {
-      "sha256": "…", <span class="cmt">// content hash = identity; identical bytes are one record</span>
+      "sha256": "…", <span class="cmt">// content hash = identity; identical bytes are one record (a derivative's: the hash of its derivation)</span>
       "title": "…",
-      "url": "…",
-      "origin": "primary | secondary | internal",
-      "trust_score": 0-100,
-      "capture": "full_text | image_only | js_shell | partial | failed",
-      "core": "cores/doc_&lt;id&gt;.txt", <span class="cmt">// lean, image-OCR'd read agents open instead of the raw file</span>
-      "derivation": { … }, <span class="cmt">// only if this doc was computed from others: { method, from[] }</span>
-      "observations": {
-        "obs_id": {
-          "statement": "…",
-          "measure": { … },
-          "quote": "…",
-          "locator": "…",
-          "verification": "verified",
-          "cited_by": [
-            "project::node",
-            …
-          ] <span class="cmt">// every node that uses this fact — the correlation record</span>
-        }
-      }
+      "url": "…", <span class="cmt">// "" or null when unknown; "" for a derivative</span>
+      "publisher": "…", <span class="cmt">// the source's host; "derived" for a derivative</span>
+      "core": "cores/doc_&lt;sha12&gt;.txt", <span class="cmt">// the lean, searchable text a quote is checked against</span>
+      "capture": "fetched | transcribed",
+      "origin": "primary | derivative",
+      "derivation_kind": "computed | reasoning", <span class="cmt">// derivative only, with derived_from[ ] and derivation { … }</span>
+      "audit": "verified | flagged", <span class="cmt">// absent = not audited</span>
+      "audit_date": "YYYY-MM-DD"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json — every observation, flat, each naming its document</span>
+  "observations": {
+    "obs_id": {
+      "doc": "doc_&lt;sha256[:12]&gt;", <span class="cmt">// resolves in documents.json</span>
+      "statement": "…",
+      "measure": { … },
+      "quote": "…", <span class="cmt">// verbatim from the doc's core; null only with a capture_note</span>
+      "locator": "…",
+      "verification": "verified | unchecked | not_in_doc | unverifiable",
+      "audit": "unaudited | verified | flagged",
+      "audit_date": "YYYY-MM-DD"
+    } <span class="cmt">// no cited_by: which nodes use it is derived on demand from projects/*.json</span>
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_id": {
       "statement": "…",
-      "measure": { … }
+      "measure": { … },
+      "reasoning": "…" <span class="cmt">// why it is admissible without a single citation</span>
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/speculations.json — a stated-but-unsourced number (a load-bearing guess)</span>
   "speculations": {
-    <span class="cmt">// a stated-but-unsourced number (a load-bearing guess) — distinct from a sourced obs and from common-knowledge gk</span>
     "spec_id": {
       "statement": "…",
-      "measure": { … }
+      "measure": { … },
+      "reasoning": "…" <span class="cmt">// why we lean on it and what would confirm it</span>
     }
-  }, <span class="cmt">// ==== nodes: reference the corpus by id; each holds its distribution and the grounding around it ====</span>
+  }, <span class="cmt">// ==== nodes (&lt;distributionData&gt;/projects/&lt;project&gt;.json): reference the corpus by id; each holds its distribution and the grounding around it ====</span>
   "nodes": {
     "project::node": {
       "unit": "…",
@@ -270,7 +289,7 @@
       },
       "distribution": {
         "kind": "point_mass | weighted_combination | splice | metalog | lognormal | beta | normal | gamma | uniform | generalized_pareto | …",
-        …, <span class="cmt">// point_mass: atoms [{ name, at + trail, weight }] + allocation. weighted_combination: components [{ name, distribution, weight }] + allocation. splice: segments [{ distribution }] + splices (transitions — body→tail, or mass→body). metalog: anchors [{ name, at }] fit to an ordered sample (percentile = rank i/(n+1)) + boundedness. a parametric kind: its named params (median/sigma, alpha/beta, …), each a value. every value carries:</span>
+        …, <span class="cmt">// point_mass: atoms [{ name, value trail, weight }] + allocation (the trail's measure is the position). weighted_combination: components [{ name, distribution, weight }] + allocation. splice: segments [{ distribution }] + splices [{ at }] (transitions — body→tail, or mass→body; at is the threshold, and appears only here). metalog: anchors [{ name, value trail }] (or { prob, value: { …, quantile } } for stated quantiles) fit to an ordered sample (percentile = rank i/(n+1)) + boundedness. a parametric kind: its named params (median/sigma, alpha/beta, …), each a value. every value carries:</span>
         "process": "…", <span class="cmt">// the mechanical HOW — the transform/allocation applied</span>
         "reasoning": "…", <span class="cmt">// the WHY — self-contained justification</span>
         "confidence": 0-100 <span class="cmt">// how firm it is</span>
@@ -338,67 +357,76 @@
 <section>
   <div class="lbl">the schema · field by field</div>
   <h2>Every record, and the rule each field carries</h2>
-  <p>Documents, observations, and general knowledge live in a <b>shared corpus at the root</b>, referenced by id —
-  <code>node → distribution → reference → observation → document</code>. A fact used by five nodes is one observation
-  with five entries in its <code>cited_by</code>, not five copies. Fields that point elsewhere are ids; the teal tag
-  on the right names the principle the field serves. Nothing about a percentile is ever stored: a node holds a
+  <p>Documents, observations, general knowledge and speculations form a <b>shared corpus</b>, referenced by id —
+  <code>node → distribution → reference → observation → its document</code>. Documents are the source archive's
+  <code>documents.json</code>; observations, general knowledge and speculations are flat maps in the data project's
+  <code>corpus/</code>. A fact used by five nodes is one observation that five nodes reference, not five copies; which
+  nodes use it is derived on demand from <code>projects/*.json</code> (<code>agentic-fetcher/citations.mjs</code>), never
+  stored. A <b>reference</b> names a corpus entry: <code>doc_&lt;sha12&gt;/&lt;obs id&gt;</code> (the document, then the
+  observation's key in <code>observations.json</code>), a bare <code>obs_&lt;id&gt;</code>, a <code>gk_&lt;id&gt;</code> or a
+  <code>spec_&lt;id&gt;</code>; observation ids are unique within a data project. The tools write these records
+  (<code>agentic-fetcher</code>: <code>install-source</code>, <code>add-observation</code>, <code>make-derivative</code>,
+  <code>mark-audited</code>); a field marked <i>by hand</i> is set during an audit. Fields that point elsewhere are ids; the
+  teal tag on the right names the principle the field serves. Nothing about a percentile is ever stored: a node holds a
   <b>distribution</b>, and <code>debug_computed_percentiles</code> is recomputed from it.</p>
 
   <!-- document -->
   <div class="rec">
-    <header><span class="rname">document</span> <span class="idform">doc_&lt;sha256[:12]&gt;</span>
-      <span class="role">an archived source — and the home for its observations</span></header>
+    <header><span class="rname">document</span> <span class="idform">doc_&lt;sha256[:12]&gt;  (in documents.json)</span>
+      <span class="role">an archived source's identity — what it is and where its text core is</span></header>
     <table class="fields">
-      <tr><td class="fname">sha256</td><td class="ftype">string</td><td class="fnote">content hash; the id derives from it, so identical bytes are <b>one record</b> — the basis for dedup.</td></tr>
-      <tr><td class="fname">url · title · publisher</td><td class="ftype">string</td><td class="fnote">the address, name, and who published it — held <b>once</b> here, so no observation or node restates it.</td></tr>
-      <tr><td class="fname">origin</td><td class="ftype">enum</td><td class="fnote"><span class="enum"><span>primary</span><span>secondary</span><span>internal</span></span> — how close to the fact this source sits.</td></tr>
-      <tr><td class="fname">trust_score</td><td class="ftype">int 0–100</td><td class="fnote">credibility, judged <b>once</b> for the document — see the scale below. Optional; a primary instrument needs no argument.</td></tr>
-      <tr><td class="fname">capture</td><td class="ftype">enum</td><td class="fnote"><span class="enum"><span>full_text</span><span>image_only</span><span>js_shell</span><span>partial</span><span>failed</span></span> — whether the archived bytes actually hold the figures.</td></tr>
-      <tr><td class="fname">core</td><td class="ftype">string</td><td class="fnote">path to the lean, image-OCR'd read (<span class="mono">cores/&lt;doc_id&gt;.txt</span>) agents open instead of the raw file — so a 453 MB corpus never blows context.</td></tr>
-      <tr><td class="fname">derivation</td><td class="ftype">object</td><td class="fnote">present only for a document <em>computed from others</em> — <span class="mono">{ method, from[ ], how, script? }</span>; every <span class="mono">from</span> id resolves. Distinct from a node's distribution.</td></tr>
-      <tr><td class="fname">observations</td><td class="ftype">{ }</td><td class="fnote">the facts drawn from this document (below). Grouped here so the document-level fields are never repeated.</td></tr>
-    </table>
-  </div>
-
-  <div class="callout">
-    <div class="eyebrow">trust_score — a 0–100 read of the source, with anchors</div>
-    <table class="scale">
-      <tr><td>90–100</td><td>Primary / official</td><td>a regulator's instrument, government statistics (a national statistics office, a public business register), an audited filing, a direct large-<em>n</em> measurement.</td></tr>
-      <tr><td>75–89</td><td>Reputable benchmark</td><td>an established industry report with a disclosed methodology and a large sample.</td></tr>
-      <tr><td>55–74</td><td>Credible secondary</td><td>a vendor's own pricing/changelog page (authoritative for its own numbers), a well-sourced practitioner analysis.</td></tr>
-      <tr><td>35–54</td><td>Weak / promotional</td><td>marketing content, a self-reported survey, a small or undisclosed sample.</td></tr>
-      <tr><td>15–34</td><td>Anecdotal</td><td>a single case, a forum or blog claim, uncorroborated.</td></tr>
-      <tr><td>0–14</td><td>Untrusted</td><td>unknown provenance, or a capture that may not reflect the real source.</td></tr>
+      <tr><td class="fname">sha256</td><td class="ftype">string</td><td class="fnote">the content hash, which is the identity: identical bytes are <b>one record</b>. A derivative's is the hash of its derivation.</td></tr>
+      <tr><td class="fname">title</td><td class="ftype">string | null</td><td class="fnote">provenance — held <b>once</b> here, so no observation or node restates it.</td></tr>
+      <tr><td class="fname">url</td><td class="ftype">string | null</td><td class="fnote">where it came from; <span class="mono">""</span> or <span class="mono">null</span> when unknown, <span class="mono">""</span> for a derivative.</td></tr>
+      <tr><td class="fname">publisher</td><td class="ftype">string</td><td class="fnote">the source's host for an installed source; <span class="mono">"derived"</span> for a derivative; may be <span class="mono">""</span>.</td></tr>
+      <tr><td class="fname">core</td><td class="ftype">path</td><td class="fnote">the lean, searchable text a quote is checked against, relative to the archive: <span class="mono">cores/doc_&lt;sha12&gt;.txt</span>. Absent while the source has no text layer (its observations are then <span class="mono">unverifiable</span>).</td></tr>
+      <tr><td class="fname">capture</td><td class="ftype">enum</td><td class="fnote"><span class="enum"><span>fetched</span><span>transcribed</span></span> — <span class="mono">fetched</span>: the core is extracted from the archived bytes. <span class="mono">transcribed</span>: an agent typed the source's content into a text file, so a quote verifies only against that transcription (weaker evidence). Absent = not recorded.</td></tr>
+      <tr><td class="fname">capture_corroborated</td><td class="ftype">string</td><td class="fnote"><i>by hand</i>: a dated note that a transcribed core was checked against the live page.</td></tr>
+      <tr><td class="fname">origin</td><td class="ftype">enum</td><td class="fnote"><span class="enum"><span>primary</span><span>derivative</span></span> — <span class="mono">primary</span>: an external source. <span class="mono">derivative</span>: composed from other corpus entries by <span class="mono">make-derivative</span>. Absent = an external source not yet classified.</td></tr>
+      <tr><td class="fname">derivation_kind</td><td class="ftype">enum</td><td class="fnote">derivative only: <span class="enum"><span>computed</span><span>reasoning</span></span> — a reproducible statistic (stronger) or a judgement over the sources (weaker).</td></tr>
+      <tr><td class="fname">derived_from</td><td class="ftype">string[ ]</td><td class="fnote">derivative only: the <span class="mono">doc_&lt;sha&gt;</span>, <span class="mono">doc_&lt;sha&gt;/&lt;obs id&gt;</span>, <span class="mono">gk_</span> or <span class="mono">spec_</span> ids it derives from; every one resolves. <span class="ref">P7</span></td></tr>
+      <tr><td class="fname">derivation</td><td class="ftype">object</td><td class="fnote">derivative only: the record <span class="mono">sha256</span> hashes, <span class="mono">{ kind, method, inputs?, reasoning?, result, unit, derived_from, description }</span> — <span class="mono">inputs</span> (the records) for <span class="mono">computed</span>, <span class="mono">reasoning</span> (the text) for <span class="mono">reasoning</span>. Distinct from a node's distribution.</td></tr>
+      <tr><td class="fname">verification</td><td class="ftype">enum</td><td class="fnote">derivative only: <span class="mono">unchecked</span>, as <span class="mono">make-derivative</span> writes it (<span class="mono">unverified</span> on older records).</td></tr>
+      <tr><td class="fname">audit</td><td class="ftype">enum</td><td class="fnote">absent = not audited · <span class="enum"><span>verified</span><span>flagged</span></span> — <span class="mono">verified</span>: passed <span class="mono">audit-evidence</span> (<span class="mono">mark-audited</span> writes it). <span class="mono">flagged</span>: <i>by hand</i>, a known defect, not used until resolved; says why in <span class="mono">audit_note</span>.</td></tr>
+      <tr><td class="fname">audit_date · audit_note</td><td class="ftype">YYYY-MM-DD · string</td><td class="fnote">when <span class="mono">audit</span> was set; <i>by hand</i>, what the audit found or corrected.</td></tr>
     </table>
   </div>
 
   <!-- observation -->
   <div class="rec nest">
-    <header><span class="rname">observation</span> <span class="idform">obs_&lt;id&gt;  (inside a document)</span>
-      <span class="role">a single fact from that document — the dedup unit</span></header>
+    <header><span class="rname">observation</span> <span class="idform">&lt;obs id&gt;  (in observations.json)</span>
+      <span class="role">a single fact drawn from a document — the dedup unit</span></header>
     <table class="fields">
-      <tr><td class="fname">statement</td><td class="ftype">string</td><td class="fnote">the fact in one self-contained sentence.</td></tr>
-      <tr><td class="fname">measure</td><td class="ftype">measure</td><td class="fnote"><b>what the document says</b>, in its native form — a value, an interval, a mean, or stated quantiles, with its <span class="mono">population</span> / <span class="mono">period</span> / <span class="mono">denominator</span> context (the superstructure above). May be <span class="mono">null</span> for a numberless fact; the date lives in the measure's <span class="mono">period</span>, not a separate citation type.</td></tr>
-      <tr><td class="fname">quote · locator</td><td class="ftype">string · string</td><td class="fnote">the exact sentence in <em>this</em> document, and where to find it (present in the document's <span class="mono">core</span>). <b>May be <span class="mono">null</span></b> when the figure is read from a non-textual capture (a chart/table image) — then a <span class="mono">capture_note</span> says so and <span class="mono">verification</span> is not <span class="mono">verified</span>.</td></tr>
-      <tr><td class="fname">capture_note</td><td class="ftype">string</td><td class="fnote">present only when <span class="mono">quote = null</span>: why there is no verbatim quote — e.g. "value read from a chart/table image; verbatim sentence not extracted".</td></tr>
-      <tr><td class="fname">verification · blocked_on</td><td class="ftype">enum · string</td><td class="fnote"><span class="enum"><span>verified</span><span>unchecked</span><span>not_in_doc</span><span>unverifiable</span></span> — <span class="mono">verified</span>: quote found in the <span class="mono">core</span>. <span class="mono">unchecked</span>: not yet swept. <span class="mono">not_in_doc</span>: swept, figure absent (a negative result, not a gap). <span class="mono">unverifiable</span>: real but from a source not yet parseable (scanned PDF/image) — carries <span class="mono">blocked_on</span> naming what unblocks it (e.g. an OCR sidecar), usually with <span class="mono">quote: null</span> + <span class="mono">capture_note</span>. <span class="ref">P7</span></td></tr>
-      <tr><td class="fname">cited_by</td><td class="ftype">[ ] derived</td><td class="fnote"><span class="ref">→ node refs</span>, across every node whose distribution references this fact. This shared id <em>is</em> the correlation record. <span class="ref">P7</span></td></tr>
+      <tr><td class="fname">doc</td><td class="ftype">string</td><td class="fnote"><span class="ref">→ document</span> — the <span class="mono">doc_&lt;sha12&gt;</span> it is drawn from; it resolves in <span class="mono">documents.json</span>. <span class="ref">P7</span></td></tr>
+      <tr><td class="fname">statement</td><td class="ftype">string</td><td class="fnote">the fact in words, one self-contained sentence.</td></tr>
+      <tr><td class="fname">measure</td><td class="ftype">measure</td><td class="fnote"><b>what the document says</b>, in its native form — a value, an interval, a mean, or stated quantiles, with its <span class="mono">population</span> / <span class="mono">period</span> / <span class="mono">denominator</span> context (the superstructure above). May be <span class="mono">null</span> for a purely qualitative fact; the date lives in the measure's <span class="mono">period</span>, not a separate citation type.</td></tr>
+      <tr><td class="fname">quote</td><td class="ftype">string | null</td><td class="fnote">verbatim text from the doc's <span class="mono">core</span>. <b>May be <span class="mono">null</span></b> when the figure is read from a non-textual capture (a chart/table image), paired with <span class="mono">capture_note</span>.</td></tr>
+      <tr><td class="fname">capture_note</td><td class="ftype">string</td><td class="fnote">why there is no verbatim quote — e.g. "value read from a chart/table image; verbatim sentence not extracted". Present iff <span class="mono">quote: null</span>.</td></tr>
+      <tr><td class="fname">locator</td><td class="ftype">string</td><td class="fnote">where in the doc; may be <span class="mono">""</span>.</td></tr>
+      <tr><td class="fname">verification · blocked_on</td><td class="ftype">enum · string</td><td class="fnote"><span class="enum"><span>verified</span><span>unchecked</span><span>not_in_doc</span><span>unverifiable</span></span> — the mechanical quote match, set by <span class="mono">add-observation</span>. <span class="mono">verified</span>: a non-empty <span class="mono">quote</span> is present in the document's <span class="mono">core</span> (after whitespace and unicode dash/quote normalisation). <span class="mono">unchecked</span>: not yet swept, or the quote is too short to prove anything. <span class="mono">not_in_doc</span>: swept, quote absent (a negative result, not an open gap). <span class="mono">unverifiable</span>: the document has no core to check against yet (a scanned PDF before OCR, an image) — carries <span class="mono">blocked_on</span> (<i>by hand</i>) naming what unblocks it (e.g. an OCR sidecar), typically with <span class="mono">quote: null</span> + <span class="mono">capture_note</span>. <span class="ref">P7</span></td></tr>
+      <tr><td class="fname">audit</td><td class="ftype">enum</td><td class="fnote"><span class="enum"><span>unaudited</span><span>verified</span><span>flagged</span></span> — the separate legitimacy review. <span class="mono">unaudited</span>: what <span class="mono">add-observation</span> and <span class="mono">make-derivative</span> write. <span class="mono">verified</span>: passed <span class="mono">audit-evidence</span> (<span class="mono">mark-audited</span> writes it). <span class="mono">flagged</span>: <i>by hand</i>, a known defect, not used until resolved; says why in <span class="mono">audit_note</span>. <span class="mono">check-sources</span> S8 fails while any observation is neither <span class="mono">verified</span> nor <span class="mono">flagged</span>.</td></tr>
+      <tr><td class="fname">audit_date · audit_note</td><td class="ftype">YYYY-MM-DD · string</td><td class="fnote">when <span class="mono">audit</span> was set; <i>by hand</i>, what the audit found or corrected.</td></tr>
+      <tr><td class="fname">source_capture</td><td class="ftype">enum</td><td class="fnote"><span class="enum"><span>transcribed</span><span>fetched</span></span> — <span class="mono">transcribed</span>, copied by <span class="mono">add-observation</span> when the document is a transcription, so the weaker evidence shows on the observation itself; <span class="mono">fetched</span> when an audit re-grounds it on fetched bytes.</td></tr>
+      <tr><td class="fname">derived · derivation_kind</td><td class="ftype">true · enum</td><td class="fnote">on a derivative document's result observation (written by <span class="mono">make-derivative</span>): <span class="mono">derived: true</span> and <span class="enum"><span>computed</span><span>reasoning</span></span>, as on its document.</td></tr>
     </table>
   </div>
+  <p class="muted">There is no <span class="mono">cited_by</span> field. Which nodes use an observation is derived on demand
+  from the node references in <span class="mono">projects/*.json</span> (<span class="mono">agentic-fetcher/citations.mjs</span>),
+  never stored, because a stored list drifts into stale or phantom entries.</p>
 
   <!-- general_knowledge -->
   <div class="rec">
-    <header><span class="rname">general_knowledge</span> <span class="idform">gk_&lt;id&gt;</span>
+    <header><span class="rname">general_knowledge</span> <span class="idform">gk_&lt;id&gt;  (in corpus/general-knowledge.json)</span>
       <span class="role">a broadly-held prior — needs no document, and is not a gap</span></header>
     <table class="fields">
-      <tr><td class="fname">statement · measure</td><td class="ftype">string · measure</td><td class="fnote">a prior no single source owns (a vertical-SaaS base rate, a reachable-vs-registered spread) and its optional magnitude.</td></tr>
-      <tr><td class="fname">reasoning</td><td class="ftype">string</td><td class="fnote">optional — <b>why it's admissible without a source</b>: why this counts as common knowledge. (An <span class="mono">observation</span> needs none — its <span class="mono">quote</span>/<span class="mono">locator</span> is its justification.) Was called <span class="mono">note</span>.</td></tr>
+      <tr><td class="fname">statement · measure</td><td class="ftype">string · measure</td><td class="fnote">a reference-class prior admissible without a single citation (a vertical-SaaS base rate, a reachable-vs-registered spread) and its magnitude.</td></tr>
+      <tr><td class="fname">reasoning</td><td class="ftype">string</td><td class="fnote"><b>why it's admissible without a source</b>: why this counts as common knowledge. (An <span class="mono">observation</span> needs none — its <span class="mono">quote</span>/<span class="mono">locator</span> is its justification.)</td></tr>
     </table>
   </div>
 
   <!-- speculation -->
   <div class="rec">
-    <header><span class="rname">speculation</span> <span class="idform">spec_&lt;id&gt;</span>
+    <header><span class="rname">speculation</span> <span class="idform">spec_&lt;id&gt;  (in corpus/speculations.json)</span>
       <span class="role">a stated-but-unsourced number — a load-bearing guess, flagged as such</span></header>
     <table class="fields">
       <tr><td class="fname">statement · measure</td><td class="ftype">string · measure</td><td class="fnote">the assumed figure and its magnitude. Distinct from an <span class="mono">observation</span> (has a document + quote) and from <span class="mono">general_knowledge</span> (broadly held): a <span class="mono">spec_</span> is an assumption the model leans on but no source backs — so its <span class="mono">value_type</span> may be <span class="mono">direct_value</span> while its low <span class="mono">confidence</span> and the <span class="mono">spec_</span> prefix flag the risk (e.g. the PV-active share).</td></tr>
@@ -485,8 +513,7 @@
       <span class="role">a fixed point-mass position (a value) plus a weight</span></header>
     <table class="fields">
       <tr><td class="fname">name</td><td class="ftype">string</td><td class="fnote">what this regime is ("status quo", "deep bundling").</td></tr>
-      <tr><td class="fname">at</td><td class="ftype">number</td><td class="fnote">the position — the atom's value (a ×multiplier, a count, …). Grounded by the value trail below.</td></tr>
-      <tr><td class="fname">value_type · reference · process · reasoning · confidence</td><td class="ftype">value</td><td class="fnote">an atom <em>is</em> a <span class="mono">value</span> (defined below): the trail grounding where <span class="mono">at</span> comes from. Each position is an independent judgement, so each carries its own.</td></tr>
+      <tr><td class="fname">value_type · reference · measure · process · reasoning · confidence</td><td class="ftype">value</td><td class="fnote">an atom <em>is</em> a <span class="mono">value</span> (defined below): its <span class="mono">measure</span> gives the position (a ×multiplier, a count, …) and the rest of the trail grounds it. The position may instead be nested under <span class="mono">value</span>. Each position is an independent judgement, so each carries its own. (<span class="mono">at</span> is reserved for a splice point, not an atom.)</td></tr>
       <tr><td class="fname">weight</td><td class="ftype">number</td><td class="fnote">the atom's mass. The number rides here; its <em>provenance</em> is the one <span class="mono">allocation</span>, not per-atom.</td></tr>
     </table>
   </div>
@@ -508,8 +535,8 @@
       <span class="role">an observed sample value — its percentile is its rank position, not authored</span></header>
     <table class="fields">
       <tr><td class="fname">name</td><td class="ftype">string</td><td class="fnote">what this observed point is — the vendor/source of the price, or the label of the sampled outcome.</td></tr>
-      <tr><td class="fname">at</td><td class="ftype">number</td><td class="fnote">the observed value itself — one point of the ordered sample. Its <b>percentile is its rank</b>: the <span class="mono">i</span>-th of <span class="mono">n</span> sorted anchors sits at <span class="mono">p = i/(n+1)</span> (the <span class="mono">plotting_position</span>), so no percentile is authored.</td></tr>
-      <tr><td class="fname">value_type · reference</td><td class="ftype">value</td><td class="fnote">an anchor <em>is</em> a <span class="mono">value</span> — usually <span class="mono">direct_value</span> (the source's observed number, taken as-is) with a <span class="mono">reference</span> to the observation it comes from. Unlike an <span class="mono">atom</span> it carries <b>no weight</b>: mass is spread by the metalog fit, not concentrated at the point.</td></tr>
+      <tr><td class="fname">value_type · reference · measure</td><td class="ftype">value</td><td class="fnote">an anchor <em>is</em> a <span class="mono">value</span>: one observed value of the ordered sample, its number in the trail's <span class="mono">measure</span> (or nested under <span class="mono">value</span>) — usually <span class="mono">direct_value</span> (the source's observed number, taken as-is) with a <span class="mono">reference</span> to the observation it comes from. Its <b>percentile is its rank</b>: the <span class="mono">i</span>-th of <span class="mono">n</span> sorted anchors sits at <span class="mono">p = i/(n+1)</span> (the <span class="mono">plotting_position</span>), so no percentile is stored. Unlike an <span class="mono">atom</span> it carries <b>no weight</b>: mass is spread by the metalog fit, not concentrated at the point.</td></tr>
+      <tr><td class="fname">prob · value</td><td class="ftype">number · value</td><td class="fnote">for <b>stated quantiles</b> only (the source states percentiles in <span class="mono">measure.quantiles</span>): <span class="mono">{ prob, value: { value_type: "direct_value", reference, quantile: "pNN" } }</span>, with <span class="mono">prob</span> = that quantile. The percentile is the source's, not authored here (I1); the compiler checks the value against the stated point.</td></tr>
     </table>
   </div>
 
@@ -581,14 +608,14 @@
 
   <!-- value -->
   <div class="rec nest">
-    <header><span class="rname">value</span> <span class="idform">a parametric param (median, sigma, alpha…) · an atom's at · an input · a cross_check</span>
+    <header><span class="rname">value</span> <span class="idform">a parametric param (median, sigma, alpha…) · an atom · an anchor · a splice point's at · an input · a cross_check</span>
       <span class="role">the recurring shape — a grounded number and the trail behind it</span></header>
     <table class="fields">
       <tr><td class="fname">value_type</td><td class="ftype">string</td><td class="fnote">how the value relates to its source — open vocabulary, suggested <span class="enum"><span>direct_value</span><span>value_bounds</span><span>inferred_value</span><span>computed_value</span><span>directional</span></span>. <span class="mono">direct_value</span> takes the source's own number as-is (no <span class="mono">process</span>/<span class="mono">reasoning</span>) — including one that just <em>references a shared value</em> by id (an input, another value); a <span class="mono">computed_value</span> carries a <span class="mono">formula</span>; the others transform it.</td></tr>
       <tr><td class="fname">reference</td><td class="ftype">ref | null</td><td class="fnote"><span class="ref">→ observation | general_knowledge | speculation | input</span> by id; the <span class="mono">obs_</span>/<span class="mono">gk_</span>/<span class="mono">spec_</span>/<span class="mono">in_</span> prefix says which. <span class="mono">null</span> means a specific document is intended but not yet archived — a counted gap, not a silent hole. <span class="ref">P7</span></td></tr>
       <tr><td class="fname">formula</td><td class="ftype">string</td><td class="fnote">for a <span class="mono">computed_value</span> instead of a <span class="mono">reference</span> — <b>one grammar</b>: an expression over ids (<span class="mono">obs_x.value * in_other.value</span>, an <span class="mono">inputs</span> DAG) <b>and</b> the distribution's own structure (<span class="mono">segments[i]</span>, <span class="mono">splices[i]</span>), with arithmetic and a <b>closed function set</b> (extensible only by spec change): <span class="mono">min</span>/<span class="mono">max</span> (pick among grounded alternatives), <span class="mono">extrapolate_cagr</span>/<span class="mono">extrapolate_linear(series_ref, target)</span> over a <span class="mono">series</span>, and <span class="mono">slope_match(segment, splice)</span> for a C¹ tail scale. <span class="ref">I22</span></td></tr>
       <tr><td class="fname">basis</td><td class="ftype">object?</td><td class="fnote">optional <span class="mono">{ metric, unit_of }</span> marking <em>what kind</em> of metric the number is (<span class="mono">logo</span> vs <span class="mono">revenue</span> retention; per <span class="mono">user</span>/<span class="mono">account</span>/<span class="mono">business</span>). Combining incompatible bases in one node is a modeling error, not a formatting nit. <span class="ref">I21</span></td></tr>
-      <tr><td class="fname">measure</td><td class="ftype">measure</td><td class="fnote">the number the value holds, in the <span class="mono">measure</span> superstructure (above). Required unless <span class="mono">direct_value</span> (which takes the source's own measure). An <span class="mono">atom</span> carries its number as <span class="mono">at</span> instead.</td></tr>
+      <tr><td class="fname">measure</td><td class="ftype">measure</td><td class="fnote">the number the value holds, in the <span class="mono">measure</span> superstructure (above). Required unless <span class="mono">direct_value</span> (which takes the source's own measure). An atom's or anchor's position is this <span class="mono">measure</span>.</td></tr>
       <tr><td class="fname">process</td><td class="ftype">string</td><td class="fnote">the mechanical <b>how</b> — the transform, formula-in-words, or reduction applied. On any non-<span class="mono">direct_value</span> value.</td></tr>
       <tr><td class="fname">reasoning</td><td class="ftype">string</td><td class="fnote">the <b>why</b> — the self-contained justification, referring to other ids. On any non-<span class="mono">direct_value</span> value.</td></tr>
       <tr><td class="fname">confidence</td><td class="ftype">int 0–100</td><td class="fnote">how firm this value is — a census figure scores high, a load-bearing speculation low. Optional but recommended on every value.</td></tr>
@@ -635,7 +662,7 @@
     <li><span class="k">I10</span><div><b>Native measure, no template.</b> a measure records only the parts the source states — including a dated <span class="mono">series</span> for multi-point sources; no measure is back-filled into a p10/p50/p90 shape. <span class="b">P2</span></div></li>
     <li><span class="k">I11</span><div><b>Dedup &amp; correlation.</b> two references to the same <span class="mono">(statement, measure)</span> share one observation; which nodes use it is derived on demand from the node references, never stored — that shared id is the only correlation record. <span class="b">P1</span></div></li>
     <li><span class="k">I12</span><div><b>One path to evidence.</b> a node reaches a document only via <span class="mono">distribution → reference → observation → its document</span> in the shared corpus; there is no per-node evidence list. <span class="b">P7</span></div></li>
-    <li><span class="k">I13</span><div><b>Derived documents show their work.</b> a document with a <span class="mono">derivation</span> carries <span class="mono">{ method, from[ ] }</span> and every <span class="mono">from</span> id resolves. <span class="b">P7</span></div></li>
+    <li><span class="k">I13</span><div><b>Derived documents show their work.</b> a document with a <span class="mono">derivation</span> carries <span class="mono">{ kind, method, derived_from[ ] }</span> and every <span class="mono">derived_from</span> id resolves. <span class="b">P7</span></div></li>
     <li><span class="k">I14</span><div><b>Ready = no open gap.</b> a node is ready iff none of its references — in allocation, truncation, or a parametric param — is <span class="mono">null</span>. <span class="b">P7</span></div></li>
     <li><span class="k">I15</span><div><b>Null is a tracked gap.</b> any <span class="mono">reference = null</span> requires a <span class="mono">missing_document</span>; the build reports the null count as the evidence debt to drive to zero. <span class="b">P7</span></div></li>
     <li><span class="k">I16</span><div><b>Well-formed &amp; unit-consistent.</b> derived quantiles are non-decreasing, any <span class="mono">truncation</span> bounds order and lie within the distribution's own range, and the node's <span class="mono">unit</span> agrees with its <span class="mono">model_definition</span>. <span class="b">P3</span></div></li>
@@ -653,7 +680,7 @@
     <span class="mono">core</span>, an <span class="mono">allocation.constraint</span> formula evaluates true, quantiles are ordered, a measure is present-and-numeric. It must
     never assert <em>support</em>, <em>aboutness</em>, or <em>sameness</em>. <b>Mechanical:</b> I1–I4, I6's presence,
     I11's dedup key, I12, I13, I14, I15, I16. <b>Semantic (read by an agent or you):</b> every
-    <span class="mono">value_type</span> and <span class="mono">measure</span>, the <span class="mono">trust_score</span>,
+    <span class="mono">value_type</span> and <span class="mono">measure</span>, a source's legitimacy (<span class="mono">audit</span>),
     whether a quote backs the value, whether a distribution is grounded, whether an interval's width is truly demanded
     by conflicting sources (I7), and observation <b>sameness</b> (I11).</p>
   </div>
@@ -668,52 +695,95 @@
     <div class="exhead"><span class="kind">point_mass</span><h3>field-crew::platform_bundling_severity</h3></div>
     <p class="md">Revenue severity when a dominant platform changes how it bundles crew scheduling. Four outcome regimes; one allocation of mass.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root): referenced by id from any node ----</span>
+  <span class="cmt">// ---- shared corpus: referenced by id from any node ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json — the source-identity registry</span>
   "documents": {
-    "doc_research_md": {
-      "sha256": "3f9c1a…",
+    "doc_f72970d46a9f": {
+      "sha256": "f72970d46a9f9e0c8c6871d398d5b860d1b66ad3602488b8454278ae3fd3a4b6", <span class="cmt">// a derivative: the hash of its derivation</span>
       "title": "RESEARCH.md — field-crew platform-bundling mixture",
-      "origin": "internal",
-      "capture": "full_text",
-      "core": "cores/doc_research_md.txt",
-      "observations": {
-        "obs_research_mixture": {
-          "statement": "Two-sided point-mass mixture over the platform-bundling regimes, E[x] ~ 0.81.",
-          "measure": {
-            "unit": "multiplier",
-            "mean": 0.81
-          },
-          "cited_by": [ "field-crew::platform_bundling_severity" ]
-        }
-      }
+      "url": "",
+      "publisher": "derived",
+      "core": "cores/doc_f72970d46a9f.txt",
+      "origin": "derivative",
+      "derivation_kind": "reasoning",
+      "derived_from": [
+        "doc_64a9c25a504b/obs_api_expansion",
+        "doc_64a9c25a504b/obs_free_scheduler",
+        "gk_platform_bundling"
+      ],
+      "derivation": {
+        "kind": "reasoning",
+        "method": "reasoning",
+        "reasoning": "Weighed the four platform-bundling regimes against the suite's release history and the bundling base rate: a two-sided point-mass mixture with E[x] ~ 0.81.",
+        "result": 0.81,
+        "unit": "multiplier",
+        "derived_from": [
+          "doc_64a9c25a504b/obs_api_expansion",
+          "doc_64a9c25a504b/obs_free_scheduler",
+          "gk_platform_bundling"
+        ],
+        "description": "RESEARCH.md — field-crew platform-bundling mixture"
+      },
+      "verification": "unchecked",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     },
-    "doc_suite_release_notes": {
-      "sha256": "a1b2c7…",
-      "title": "Accounting-suite release notes — scheduling & jobs-API changes (fictional vendor, 2024–2026)",
+    "doc_64a9c25a504b": {
+      "sha256": "64a9c25a504b0a63b63a55be07bc5719fc97e0a72a6f08c97b632cd679fb3f47",
+      "title": "Accounting-suite release notes — scheduling &amp; jobs-API changes (fictional vendor, 2024–2026)",
       "url": "https://example.com/release-notes",
+      "publisher": "example.com",
+      "core": "cores/doc_64a9c25a504b.txt",
+      "capture": "fetched",
       "origin": "primary",
-      "capture": "full_text",
-      "core": "cores/doc_suite_release_notes.txt",
-      "observations": {
-        "obs_api_expansion": {
-          "statement": "The last three releases (v8.2, v9.0, v9.4) each widened the public jobs API; v9.4's free basic scheduler covers only single-user, single-visit bookings.",
-          "quote": "The basic scheduler is included at no charge for single-user accounts with one visit per job.",
-          "locator": "Release notes v9.4, What's new",
-          "verification": "verified",
-          "cited_by": [ "field-crew::platform_bundling_severity" ]
-        },
-        "obs_free_scheduler": {
-          "statement": "The suite folds a basic scheduler into its core plan — platform self-service absorbs part of the paid-scheduling revenue.",
-          "verification": "verified",
-          "cited_by": [ "field-crew::platform_bundling_severity" ]
-        }
-      }
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json — flat; each names its document in "doc"</span>
+  "observations": {
+    "obs_research_mixture": {
+      "doc": "doc_f72970d46a9f",
+      "statement": "Two-sided point-mass mixture over the platform-bundling regimes, E[x] ~ 0.81.",
+      "measure": {
+        "unit": "multiplier",
+        "mean": 0.81
+      },
+      "quote": "Conclusion: 0.81 multiplier",
+      "locator": "derivation result line",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12",
+      "derived": true,
+      "derivation_kind": "reasoning"
+    },
+    "obs_api_expansion": {
+      "doc": "doc_64a9c25a504b",
+      "statement": "The last three releases (v8.2, v9.0, v9.4) each widened the public jobs API; v9.4's free basic scheduler covers only single-user, single-visit bookings.",
+      "measure": null,
+      "quote": "The basic scheduler is included at no charge for single-user accounts with one visit per job.",
+      "locator": "Release notes v9.4, What's new",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    },
+    "obs_free_scheduler": {
+      "doc": "doc_64a9c25a504b",
+      "statement": "The suite folds a basic scheduler into its core plan — platform self-service absorbs part of the paid-scheduling revenue.",
+      "measure": null,
+      "quote": "A basic scheduler is now part of every core plan.",
+      "locator": "Release notes v9.0, Plans",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_platform_bundling": {
       "statement": "Horizontal business suites routinely absorb an adjacent point tool once its feature becomes table stakes.",
-      "measure": null
+      "measure": null,
+      "reasoning": "a widely observed pattern in business software — common enough that no single source is cited"
     }
   }, <span class="cmt">// ---- the node: references the corpus above by id ----</span>
   "nodes": {
@@ -725,9 +795,12 @@
         "atoms": [
           {
             "name": "status quo",
-            "at": 1.00,
             "value_type": "inferred_value",
             "reference": "obs_research_mixture",
+            "measure": {
+              "unit": "multiplier",
+              "value": 1.00
+            },
             "process": "set the modal regime at ×1.00 — the 'change' is a feature reshuffle, not an extinction",
             "reasoning": "a reshuffle leaves the scheduling revenue roughly unchanged",
             "confidence": 45,
@@ -735,9 +808,12 @@
           },
           {
             "name": "integration upside",
-            "at": 1.30,
             "value_type": "inferred_value",
             "reference": "obs_api_expansion",
+            "measure": {
+              "unit": "multiplier",
+              "value": 1.30
+            },
             "process": "set the upside at ×1.30 — a wider API adds integration work and raises the revenue",
             "reasoning": "each of the last three releases widened the API somewhere",
             "confidence": 35,
@@ -745,9 +821,12 @@
           },
           {
             "name": "partial bundling",
-            "at": 0.55,
             "value_type": "inferred_value",
             "reference": "obs_free_scheduler",
+            "measure": {
+              "unit": "multiplier",
+              "value": 0.55
+            },
             "process": "set the partial-bundling regime at ×0.55 — the suite's free scheduler takes the simplest bookings",
             "reasoning": "the bundled scheduler self-serves part of the work, taking roughly half the revenue",
             "confidence": 30,
@@ -755,9 +834,12 @@
           },
           {
             "name": "deep bundling",
-            "at": 0.15,
             "value_type": "inferred_value",
             "reference": "obs_free_scheduler",
+            "measure": {
+              "unit": "multiplier",
+              "value": 0.15
+            },
             "process": "set the deep-bundling regime at ×0.15 — the suite fully bundles crew scheduling",
             "reasoning": "near-extinction of the scheduling revenue when the platform fully bundles it",
             "confidence": 30,
@@ -815,7 +897,7 @@
     <p class="figcap">Four fixed positions, each a spike whose height is its <span class="mono">weight</span> (one <span class="mono">allocation</span>, summing to 1). The mean ×0.81 is the derived readout — no smooth curve, the support <em>is</em> the four atoms.</p>
   </div>
   <div class="note"><b>Each atom carries its own value trail.</b> Just like a <code>lognormal</code>'s <code>median</code>/<code>sigma</code>,
-  every atom's position (<code>at</code>) has a <code>value_type</code>, a <code>reference</code>, and its own
+  every atom's position (its <code>measure</code>) has a <code>value_type</code>, a <code>reference</code>, and its own
   <code>process</code>/<code>reasoning</code>/<code>confidence</code> — so where ×1.30 or ×0.55 comes from is traced, not bare.
   The <code>weight</code> stays on the atom, but its provenance is the single <code>allocation</code> decision (constraint <code>sum == 1</code>),
   not four separate ones. Positions are independent judgements; the weights are one joint split. And the atoms define the
@@ -830,51 +912,63 @@
     <div class="exhead"><span class="kind">lognormal</span><h3>field-crew::n_crews_reachable</h3></div>
     <p class="md">Reachable small field-service firms. A log-normal around a register-derived <code>median</code>, truncated above by the registered firm count.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_register": {
-      "sha256": "d4e8f2…",
+    "doc_7efcd52968b8": {
+      "sha256": "7efcd52968b8a1406eb97a7c530b983f43b3b0e24375594fb9de693cc85abb16",
       "title": "National business register — active firms by trade code, field services / small crews (fictional)",
       "url": "https://example.org/business-register",
+      "publisher": "example.org",
+      "core": "cores/doc_7efcd52968b8.txt",
+      "capture": "fetched",
       "origin": "primary",
-      "capture": "full_text",
-      "core": "cores/doc_register.txt",
-      "observations": {
-        "obs_register_firms": {
-          "statement": "Registered small field-service firms: 13,120 (2019), 13,740 (2022), 14,260 (2023, latest published).",
-          "measure": {
-            "unit": "count",
-            "value": 14260
-          },
-          "verification": "verified",
-          "cited_by": [
-            "field-crew::n_crews_reachable",
-            "field-crew::adoption_rate"
-          ] <span class="cmt">// one fact, two nodes</span>
-        }
-      }
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     },
-    "doc_trade_survey": {
-      "sha256": "b3c9e1…",
+    "doc_ac3a04ad2225": {
+      "sha256": "ac3a04ad2225721df1063fea81bda5bc9f84a21699580fef3e7759402aa435fd",
       "title": "Field-service trade survey — monthly contract-volume estimate (fictional)",
       "url": "https://example.org/trade-survey",
+      "publisher": "example.org",
+      "core": "cores/doc_ac3a04ad2225.txt",
+      "capture": "fetched",
       "origin": "primary",
-      "capture": "full_text",
-      "core": "cores/doc_trade_survey.txt",
-      "observations": {
-        "obs_contract_flow": {
-          "statement": "The survey estimates roughly 58,000 recurring maintenance contracts signed per month across the segment.",
-          "measure": {
-            "unit": "contracts/month",
-            "value": 58000,
-            "period": "2026"
-          },
-          "verification": "verified",
-          "cited_by": [ "field-crew::n_crews_reachable" ]
-        }
-      }
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_register_firms": {
+      "doc": "doc_7efcd52968b8",
+      "statement": "Registered small field-service firms: 13,120 (2019), 13,740 (2022), 14,260 (2023, latest published).",
+      "measure": {
+        "unit": "count",
+        "value": 14260
+      },
+      "quote": "Active firms, field services / small crews, 2023: 14,260",
+      "locator": "Register table, trade-code totals by year",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }, <span class="cmt">// one fact, two nodes: n_crews_reachable and adoption_rate both reference it</span>
+    "obs_contract_flow": {
+      "doc": "doc_ac3a04ad2225",
+      "statement": "The survey estimates roughly 58,000 recurring maintenance contracts signed per month across the segment.",
+      "measure": {
+        "unit": "contracts/month",
+        "value": 58000,
+        "period": "2026"
+      },
+      "quote": "roughly 58,000 recurring maintenance contracts are signed each month",
+      "locator": "Trade survey, contract-volume section",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_reachable_spread": {
       "statement": "Reference-class spread for a reachable-vs-registered count is roughly a log-sigma of 0.5.",
@@ -885,6 +979,7 @@
       "reasoning": "a ~0.5 log-sigma is the standard spread for serviceable-base-vs-registered ratios across business registers — common enough that no single source is cited"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/speculations.json</span>
   "speculations": {
     "spec_ready_share": {
       "statement": "Scheduling-ready-and-reachable share of registered field-service firms — a load-bearing judgement term, ~15-35% (no source publishes it).",
@@ -1045,8 +1140,9 @@
     <div class="exhead"><span class="kind">weighted_combination</span><h3>field-crew::adoption_rate</h3></div>
     <p class="md">Share who subscribe at maturity. A structural non-adopter mass near zero, plus a low-single-digit penetration body.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
-  <span class="cmt">// obs_register_firms is the SAME record example 2 defines — one observation, cited_by both nodes; not copied here.</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// obs_register_firms is the SAME record example 2 defines — one observation, referenced by both nodes; not copied here.</span>
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_vertical_saas_baserate": {
       "statement": "Mature penetration for a solo/small-team vertical SaaS in a fragmented micro-trade market is typically 1-8%; ~10-13% only for a category-defining tool.",
@@ -1056,11 +1152,13 @@
           "low": 0.01,
           "high": 0.08
         }
-      }
+      },
+      "reasoning": "vertical-SaaS penetration reference class — common enough that no single source is cited"
     },
     "gk_free_scheduler": {
       "statement": "The dominant accounting suite already bundles a free basic scheduler, so the tool saves time, not money — a materially larger share never adopts (structural near-zero).",
-      "measure": null
+      "measure": null,
+      "reasoning": "the suite's free scheduler is widely known in the trade; a free incumbent feature is a standard reason a share of the market never pays"
     }
   }, <span class="cmt">// ---- the node: references the corpus above by id ----</span>
   "nodes": {
@@ -1191,8 +1289,9 @@
     <p class="figcap">The amber near-zero band (20% of the mass, clipped here — its true density ≈ 22) plus the teal Beta body (80%). The full density + CDF is on its own page; <span class="mono">p10/p50/p90 = 0.7% / 5.2% / 13.7%</span>.</p>
   </div>
   <div class="note ok"><b>The shared corpus at work.</b> This node's denominator is <code>obs_register_firms</code> — the very
-  observation example 2 defines. It is stored once and its <code>cited_by</code> lists both nodes; that shared id is
-  the correlation record, so the simulator knows the two nodes move together.</div>
+  observation example 2 defines. It is stored once in <code>observations.json</code> and both nodes reference it; that
+  shared id is the correlation record, so the simulator knows the two nodes move together. (Which nodes use it is read
+  off those references, not stored on the observation.)</div>
 </section>
 
 <!-- EXAMPLE 4 -->
@@ -1203,29 +1302,39 @@
     <div class="exhead"><span class="kind">beta</span><h3>field-crew::share_of_jobs_scheduled</h3></div>
     <p class="md">Share of a crew's jobs booked through the app. A left-skewed Beta on [0,1] — mass toward high capture, its floor set by a workflow-tool reference class.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_ops_survey_2024": {
-      "sha256": "e7a1c4…",
+    "doc_b2d24a54ad32": {
+      "sha256": "b2d24a54ad323d16f642096b432441c11a3d498ba25c5fd13db6f86f1af7823a",
       "title": "Small field-service operations survey 2024 (fictional, n=1,200 firms)",
       "url": "https://example.org/ops-survey-2024",
+      "publisher": "example.org",
+      "core": "cores/doc_b2d24a54ad32.txt",
+      "capture": "fetched",
       "origin": "primary",
-      "capture": "full_text",
-      "core": "cores/doc_ops_survey_2024.txt",
-      "observations": {
-        "obs_job_mix": {
-          "statement": "Of jobs booked by small crews, 88% are single-visit and 97% finish within a day — routine bookings the app can own end-to-end.",
-          "measure": {
-            "unit": "fraction of jobs that are single-visit",
-            "value": 0.88,
-            "period": "2024"
-          },
-          "verification": "verified",
-          "cited_by": [ "field-crew::share_of_jobs_scheduled" ]
-        }
-      }
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_job_mix": {
+      "doc": "doc_b2d24a54ad32",
+      "statement": "Of jobs booked by small crews, 88% are single-visit and 97% finish within a day — routine bookings the app can own end-to-end.",
+      "measure": {
+        "unit": "fraction of jobs that are single-visit",
+        "value": 0.88,
+        "period": "2024"
+      },
+      "quote": "88% of jobs are single-visit and 97% are completed within one day",
+      "locator": "Ops survey 2024, job-mix table",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_workflow_capture": {
       "statement": "A workflow tool that genuinely replaces a process typically captures 40–85% of qualifying work; leakage is edge cases, not reluctance.",
@@ -1334,51 +1443,66 @@
     <div class="exhead"><span class="kind">normal</span><h3>habit-app::active_days_per_year</h3></div>
     <p class="md">Days per year a retained user logs at least one habit. A Normal whose centre is calendar days × a verified active-day rate, its spread set by the lapsed-year / top-quartile-year range.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_engagement_benchmark_2026": {
-      "sha256": "c2f5a9…",
+    "doc_23911877b9e2": {
+      "sha256": "23911877b9e23b852e0c48f2531225684b3edc4fb025432779afc0ae4aa903ad",
       "title": "Consumer app engagement benchmark 2026 (fictional industry report, n=500 apps)",
       "url": "https://example.org/engagement-benchmark-2026",
-      "origin": "secondary",
-      "trust_score": 70,
-      "capture": "full_text",
-      "core": "cores/doc_engagement_benchmark_2026.txt",
-      "observations": {
-        "obs_active_day_rate": {
-          "statement": "Retained users of habit apps were active on 40.0% of days in 2025 (a five-year low); top-quartile apps 45.2%, the rest 38.1%.",
-          "measure": {
-            "unit": "fraction",
-            "value": 0.40,
-            "period": "2025"
-          },
-          "quote": "Retained users were active on 40.0% of days in 2025",
-          "locator": "Engagement Benchmark 2026, retention section",
-          "verification": "verified",
-          "cited_by": [ "habit-app::active_days_per_year" ]
-        }
-      }
+      "publisher": "example.org",
+      "core": "cores/doc_23911877b9e2.txt",
+      "capture": "fetched",
+      "origin": "primary",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     },
-    "doc_user_survey_2026": {
-      "sha256": "9b0d31…",
+    "doc_4bd3fdeb2d1b": {
+      "sha256": "4bd3fdeb2d1b1eff0323f43ae16e69e0bc112547e66deff10a37bec95d170ebb",
       "title": "Habit-app user survey 2026 (fictional, n=5,000)",
       "url": "https://example.org/user-survey-2026",
-      "origin": "secondary",
-      "capture": "full_text",
-      "core": "cores/doc_user_survey_2026.txt",
-      "observations": {
-        "obs_user_breaks": {
-          "statement": "49% of users report a break of a month or more in the past year — lapsed months are real.",
-          "measure": {
-            "unit": "fraction",
-            "value": 0.49,
-            "period": "2026"
-          },
-          "cited_by": [ "habit-app::active_days_per_year" ]
-        }
-      }
+      "publisher": "example.org",
+      "core": "cores/doc_4bd3fdeb2d1b.txt",
+      "capture": "fetched",
+      "origin": "primary",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_active_day_rate": {
+      "doc": "doc_23911877b9e2",
+      "statement": "Retained users of habit apps were active on 40.0% of days in 2025 (a five-year low); top-quartile apps 45.2%, the rest 38.1%.",
+      "measure": {
+        "unit": "fraction",
+        "value": 0.40,
+        "period": "2025"
+      },
+      "quote": "Retained users were active on 40.0% of days in 2025",
+      "locator": "Engagement Benchmark 2026, retention section",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    },
+    "obs_user_breaks": {
+      "doc": "doc_4bd3fdeb2d1b",
+      "statement": "49% of users report a break of a month or more in the past year — lapsed months are real.",
+      "measure": {
+        "unit": "fraction",
+        "value": 0.49,
+        "period": "2026"
+      },
+      "quote": null, <span class="cmt">// the figure is a chart label, so there is no sentence to match</span>
+      "capture_note": "value read from a chart/table image; verbatim sentence not extracted",
+      "locator": "User survey 2026, breaks chart",
+      "verification": "unchecked", <span class="cmt">// a null quote is never verified (I6)</span>
+      "audit": "verified",
+      "audit_date": "2026-10-12",
+      "audit_note": "49% checked by hand against the archived chart"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_calendar_days": {
       "statement": "A calendar year is 365 days.",
@@ -1496,42 +1620,53 @@
     <div class="exhead"><span class="kind">gamma</span><h3>habit-app::referrals_per_user</h3></div>
     <p class="md">Referred sign-ups per paying user over the window. A Gamma on [0, ∞) — most users never refer anyone, a minority bring several — with a long word-of-mouth tail.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
-  <span class="cmt">// doc_engagement_benchmark_2026 is the SAME document example 5 defines; this is a second observation drawn from it.</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// doc_23911877b9e2 (the engagement benchmark) is the SAME document example 5 registers; obs_referral_share is a second observation drawn from it.</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_engagement_benchmark_2026": {
-      "observations": {
-        "obs_referral_share": {
-          "statement": "Top-quartile apps get 64% of new users from existing users' referrals rather than paid ads; word of mouth is the most efficient growth channel.",
-          "measure": {
-            "unit": "fraction",
-            "value": 0.64,
-            "period": "2025"
-          },
-          "verification": "verified",
-          "cited_by": [ "habit-app::referrals_per_user" ]
-        }
-      }
-    },
-    "doc_recommend_survey_2025": {
-      "sha256": "4d7e60…",
+    "doc_70a364c44ae8": {
+      "sha256": "70a364c44ae8c791e032ee68e01db4f06802452c549342d2fca12489af4f0122",
       "title": "Consumer recommendation survey 2025 (fictional, n=20,000 respondents)",
       "url": "https://example.org/recommend-survey-2025",
-      "origin": "secondary",
-      "capture": "full_text",
-      "core": "cores/doc_recommend_survey_2025.txt",
-      "observations": {
-        "obs_would_recommend": {
-          "statement": "Only 68.2% of users would recommend any app they use — most enthusiasm never turns into a referral.",
-          "measure": {
-            "unit": "fraction",
-            "value": 0.682
-          },
-          "cited_by": [ "habit-app::referrals_per_user" ]
-        }
-      }
+      "publisher": "example.org",
+      "core": "cores/doc_70a364c44ae8.txt",
+      "capture": "fetched",
+      "origin": "primary",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_referral_share": {
+      "doc": "doc_23911877b9e2",
+      "statement": "Top-quartile apps get 64% of new users from existing users' referrals rather than paid ads; word of mouth is the most efficient growth channel.",
+      "measure": {
+        "unit": "fraction",
+        "value": 0.64,
+        "period": "2025"
+      },
+      "quote": "Top-quartile apps acquired 64% of new users through referrals",
+      "locator": "Engagement Benchmark 2026, acquisition section",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    },
+    "obs_would_recommend": {
+      "doc": "doc_70a364c44ae8",
+      "statement": "Only 68.2% of users would recommend any app they use — most enthusiasm never turns into a referral.",
+      "measure": {
+        "unit": "fraction",
+        "value": 0.682
+      },
+      "quote": "68.2% of respondents would recommend at least one app they use",
+      "locator": "Recommendation survey 2025, headline findings",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_referral_baserate": {
       "statement": "Satisfied consumer-app users commonly bring about 0.5 additional sign-ups over a multi-year window, tailing to ~1.5 for enthusiasts.",
@@ -1723,35 +1858,46 @@
 
 <!-- EXAMPLE 8 -->
 <section>
-  <div class="lbl">example · distribution = metalog</div>
+  <div class="lbl">example · distribution = metalog (with zero_mass)</div>
   <h2>An observed sample fit to a curve, with a mass at the free tier</h2>
   <div class="ex">
     <div class="exhead"><span class="kind">metalog</span><h3>field-crew::addon::arpu_usd_mo</h3></div>
-    <p class="md">A route-planning add-on's monthly list price per crew. The observed vendor prices are an <b>ordered sample</b> — each price's rank is its percentile — fit to a <b>lower-semi-bounded metalog</b> (a quantile-parameterized distribution); the $0 free tier is a <span class="mono">point_mass</span> <b>spliced</b> below the paid body — a two-part (hurdle) model.</p>
+    <p class="md">A route-planning add-on's monthly list price per crew. The observed vendor prices are an <b>ordered sample</b> — each price's rank is its percentile — fit to a <b>lower-semi-bounded metalog</b> (a quantile-parameterized distribution); the $0 free tier is the metalog's <span class="mono">zero_mass</span>, a mass at the lower bound — a two-part (hurdle) model.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_addon_roundup": {
-      "sha256": "55ada1…",
+    "doc_c9b4ff7df9e9": {
+      "sha256": "c9b4ff7df9e913365a326e6792fda7bf34424f6de98b8e4145f53bbc0a398baa",
       "title": "Route-planning add-ons for field-service software — price roundup (fictional, live 2026)",
       "url": "https://example.com/route-planning-roundup",
-      "origin": "secondary",
-      "capture": "full_text",
-      "core": "cores/doc_addon_roundup.txt",
-      "observations": {
-        "obs_addon_price_list": {
-          "statement": "Live-2026 route-planning add-on list prices: Vendor A $12, Vendor B $18 (promo), Vendor C $24.99–129.99, mid add-ons ~$32, premium planners ~$44.99, Vendor D $72, Vendor E $84; two scheduling suites bundle the feature at $0.",
-          "measure": {
-            "unit": "USD/month",
-            "interval": {
-              "low": 0,
-              "high": 84
-            }
-          },
-          "verification": "verified",
-          "cited_by": [ "field-crew::addon::arpu_usd_mo" ]
+      "publisher": "example.com",
+      "core": "cores/doc_c9b4ff7df9e9.txt",
+      "capture": "transcribed", <span class="cmt">// a script-rendered page: an agent typed its price table into the core</span>
+      "capture_corroborated": "2026-10-11: transcribed prices checked against the live page",
+      "origin": "primary",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_addon_price_list": {
+      "doc": "doc_c9b4ff7df9e9",
+      "statement": "Live-2026 route-planning add-on list prices: Vendor A $12, Vendor B $18 (promo), Vendor C $24.99–129.99, mid add-ons ~$32, premium planners ~$44.99, Vendor D $72, Vendor E $84; two scheduling suites bundle the feature at $0.",
+      "measure": {
+        "unit": "USD/month",
+        "interval": {
+          "low": 0,
+          "high": 84
         }
-      }
+      },
+      "quote": "Vendor D: $72/month. Vendor E: $84/month.",
+      "locator": "Roundup, price table",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12",
+      "source_capture": "transcribed" <span class="cmt">// copied from the document, so the weaker evidence shows here</span>
     }
   }, <span class="cmt">// ---- the node ----</span>
   "nodes": {
@@ -1759,90 +1905,63 @@
       "unit": "USD/month (list)",
       "model_definition": "Monthly list price per crew ($)",
       "distribution": {
-        "kind": "splice",
-        "segments": [
+        "kind": "metalog",
+        "lower_bound": 0, <span class="cmt">// lower-semi-bounded: prices can't go negative</span>
+        "zero_mass": 0.13, <span class="cmt">// the $0 free tier — two suites bundle the feature free (obs_addon_price_list); ~13% of the market is on them</span>
+        "k": 5,
+        "anchors": [
           {
-            "name": "free tier",
-            "distribution": {
-              "kind": "point_mass",
-              "atoms": [
-                {
-                  "name": "free ($0)",
-                  "at": 0,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list",
-                  "weight": 1
-                }
-              ],
-              "allocation": {
-                "constraint": "sum(atoms[].weight) == 1",
-                "references": [ "obs_addon_price_list" ],
-                "process": "a single atom at $0 — the whole segment's mass sits on the free tier",
-                "confidence": 25
-              }
+            "name": "Vendor A (cheapest paid)",
+            "value_type": "direct_value",
+            "reference": "obs_addon_price_list",
+            "measure": {
+              "unit": "USD/month",
+              "value": 12
             }
           },
           {
-            "name": "paid",
-            "distribution": {
-              "kind": "metalog",
-              "boundedness": "lower-semi-bounded",
-              "lower": 0,
-              "plotting_position": "i/(n+1)",
-              "terms": 5,
-              "anchors": [
-                {
-                  "name": "Vendor A (cheapest paid)",
-                  "at": 12,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list"
-                },
-                {
-                  "name": "Vendor B (promo)",
-                  "at": 18,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list"
-                },
-                {
-                  "name": "Vendor C entry",
-                  "at": 24.99,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list"
-                },
-                {
-                  "name": "mid add-on tier",
-                  "at": 32,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list"
-                },
-                {
-                  "name": "premium planner",
-                  "at": 44.99,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list"
-                },
-                {
-                  "name": "Vendor D (top mainstream)",
-                  "at": 72,
-                  "value_type": "direct_value",
-                  "reference": "obs_addon_price_list"
-                }
-              ]
+            "name": "Vendor B (promo)",
+            "value_type": "direct_value",
+            "reference": "obs_addon_price_list",
+            "measure": {
+              "unit": "USD/month",
+              "value": 18
             }
-          }
-        ],
-        "splices": [
+          },
           {
-            "at": {
-              "value_type": "inferred_value",
-              "reference": "obs_addon_price_list",
-              "measure": {
-                "unit": "fraction of mass",
-                "value": 0.13
-              },
-              "process": "~13% of the market is on a suite that bundles the feature at $0",
-              "reasoning": "the free tier holds the bottom 13% of the distribution; above it, the paid metalog",
-              "confidence": 25
+            "name": "Vendor C entry",
+            "value_type": "direct_value",
+            "reference": "obs_addon_price_list",
+            "measure": {
+              "unit": "USD/month",
+              "value": 24.99
+            }
+          },
+          {
+            "name": "mid add-on tier",
+            "value_type": "direct_value",
+            "reference": "obs_addon_price_list",
+            "measure": {
+              "unit": "USD/month",
+              "value": 32
+            }
+          },
+          {
+            "name": "premium planner",
+            "value_type": "direct_value",
+            "reference": "obs_addon_price_list",
+            "measure": {
+              "unit": "USD/month",
+              "value": 44.99
+            }
+          },
+          {
+            "name": "Vendor D (top mainstream)",
+            "value_type": "direct_value",
+            "reference": "obs_addon_price_list",
+            "measure": {
+              "unit": "USD/month",
+              "value": 72
             }
           }
         ]
@@ -1850,14 +1969,14 @@
       "support_score": 55,
       "reasoning": "the six paid anchors are live-2026 vendor list prices (obs_addon_price_list) placed at their rank-percentiles, so the body is well-grounded; the ~13% $0 mass (two suites bundle it free) is judgement, and the upper tail extrapolates above the top-observed $72 (the class lists up to ~$130, e.g. Vendor C's top tier) — so support is moderate",
       "debug_computed_percentiles": {
-        <span class="cmt">// read off the two-part fit — the $0 mass fills the bottom 13%, so p05 = p10 = 0</span>
+        <span class="cmt">// read off the two-part fit — the zero_mass fills the bottom 13%, so p05 = p10 = 0</span>
         "p05": 0,
         "p10": 0,
         "p25": 12,
         "p50": 24,
         "p90": 83,
         "p95": 133,
-        "mean": 46
+        "mean": 47
       }
     }
   }
@@ -1899,7 +2018,7 @@
       </svg>
     <p class="figcap">The six paid prices (ink dots) sit at their rank-percentiles on a lower-semi-bounded metalog (teal); the red stem is the 13% free-tier <b>mass</b> at $0. Because that mass fills the bottom 13%, the overall <span class="mono">p05 = p10 = $0</span>, then <span class="mono">p50/p90 = $24 / $83</span> — all read off the two-part fit.</p>
   </div>
-  <div class="note"><b>The price list <em>is</em> the quantiles.</b> Sorted, the observed prices are quantile anchors — the <span class="mono">i</span>-th of <span class="mono">n</span> sits at <span class="mono">p = i/(n+1)</span>, so nothing about a percentile is authored; a <b>metalog</b> (a quantile-parameterized distribution) interpolates them into a smooth curve, <b>lower-semi-bounded</b> at $0 (prices can't go negative; the upper tail is free — the class does list up to ~$130). The $0 free tier is a real <b>mass</b>, not the smallest sample point, so it is a <span class="mono">point_mass</span> segment <b>spliced</b> below the paid metalog — a textbook <b>two-part (hurdle)</b> model over <b>semicontinuous</b> data. Unlike a <span class="mono">point_mass</span> <span class="mono">atom</span>, an <span class="mono">anchor</span> carries <b>no weight</b>: the density is set by how the prices are <em>spaced</em>.</div>
+  <div class="note"><b>The price list <em>is</em> the quantiles.</b> Sorted, the observed prices are quantile anchors — the <span class="mono">i</span>-th of <span class="mono">n</span> sits at <span class="mono">p = i/(n+1)</span>, so nothing about a percentile is authored; a <b>metalog</b> (a quantile-parameterized distribution) interpolates them into a smooth curve, <b>lower-semi-bounded</b> at $0 (prices can't go negative; the upper tail is free — the class does list up to ~$130). The $0 free tier is a real <b>mass</b>, not the smallest sample point, so it is the metalog's <span class="mono">zero_mass</span>: that fraction sits exactly at <span class="mono">lower_bound</span> and the rest is the curve — a textbook <b>two-part (hurdle)</b> model over <b>semicontinuous</b> data. (Not a <span class="mono">splice</span> of a <span class="mono">point_mass</span>: a splice partitions by x-value and degenerates on a point-mass body.) Unlike a <span class="mono">point_mass</span> <span class="mono">atom</span>, an <span class="mono">anchor</span> carries <b>no weight</b>: the density is set by how the prices are <em>spaced</em>.</div>
 </section>
 
 <!-- EXAMPLE 9 -->
@@ -1910,35 +2029,43 @@
     <div class="exhead"><span class="kind">splice</span><h3>habit-app::daily_installs</h3></div>
     <p class="md">Daily new installs of an indie habit app once it settles. A quiet-app lognormal <b>body</b>, but the reference class is violently heavy-tailed: the archived <b>mean</b> is ~41× the median, so it is a <b>splice</b> — the body transitions into a <b>generalized_pareto</b> tail that carries the rare viral launches, never a hard cap.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_indie_install_survey": {
-      "sha256": "5e442f…",
+    "doc_4e2eb42c1a96": {
+      "sha256": "4e2eb42c1a96cb6c905d4f188c90ee7a3f9c63ceb4d7b8771ca5cd379515aace",
       "title": "Indie app developer survey — lifetime installs per app (fictional, 212 developers)",
       "url": "https://example.org/indie-install-survey",
-      "origin": "secondary",
-      "capture": "full_text",
-      "core": "cores/doc_indie_install_survey.txt",
-      "observations": {
-        "obs_install_powerlaw": {
-          "statement": "Installs per app (lifetime): mean 18,040, median 440, 70th pct 3,700, 30th pct 85 — a ~41× mean/median power law.",
-          "measure": {
-            "unit": "installs (lifetime, per app)",
-            "mean": 18040,
-            "quantiles": {
-              "p30": 85,
-              "p50": 440,
-              "p70": 3700
-            }
-          },
-          "quote": "Lifetime installs per app: Average 18,040; 70th Percentile 3,700; Median 440; 30th Percentile 85.",
-          "locator": "Install survey, lifetime-installs table",
-          "verification": "verified",
-          "cited_by": [ "habit-app::daily_installs" ]
-        }
-      }
+      "publisher": "example.org",
+      "core": "cores/doc_4e2eb42c1a96.txt",
+      "capture": "fetched",
+      "origin": "primary",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_install_powerlaw": {
+      "doc": "doc_4e2eb42c1a96",
+      "statement": "Installs per app (lifetime): mean 18,040, median 440, 70th pct 3,700, 30th pct 85 — a ~41× mean/median power law.",
+      "measure": {
+        "unit": "installs (lifetime, per app)",
+        "mean": 18040,
+        "quantiles": {
+          "p30": 85,
+          "p50": 440,
+          "p70": 3700
+        }
+      },
+      "quote": "Lifetime installs per app: Average 18,040; 70th Percentile 3,700; Median 440; 30th Percentile 85.",
+      "locator": "Install survey, lifetime-installs table",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/general-knowledge.json</span>
   "general_knowledge": {
     "gk_undiscovered": {
       "statement": "~80% of indie apps are never discovered in the store — the per-app body settles near-dead.",
@@ -1990,7 +2117,7 @@
                 "reference": "obs_install_powerlaw",
                 "measure": {
                   "unit": "sigma_log",
-                  "value": 2.34
+                  "value": 2.3375
                 },
                 "process": "set the log-sigma so the body p90 ≈ 400/day (a sustained, modestly-visible app)",
                 "reasoning": "an app that ranks in store search once reaches a few hundred installs/day",
@@ -2099,43 +2226,52 @@
     <div class="exhead"><span class="kind">series → computed_value</span><h3>field-crew::n_crews_reachable · firm-count input</h3></div>
     <p class="md">A multi-year register count is a <span class="mono">series</span> in the measure, not a single value. A <span class="mono">computed_value</span> reads it with <span class="mono">extrapolate_cagr</span> and carries the trend to the model year — an auditable projection, not a hand-typed number.</p>
     <div class="codebox"><pre>{
-  <span class="cmt">// ---- shared corpus (root) ----</span>
+  <span class="cmt">// ---- shared corpus ----</span>
+  <span class="cmt">// &lt;groundingSources&gt;/documents.json</span>
   "documents": {
-    "doc_register_series": {
-      "sha256": "d4e8f2…",
+    "doc_05ad7c634114": {
+      "sha256": "05ad7c6341140ed0de666275b1c35ccc9dbf530d5562c4a938a28d5a60775c93",
       "title": "National business register — active firms, field services / small crews, by year (fictional)",
       "url": "https://example.org/business-register",
+      "publisher": "example.org",
+      "core": "cores/doc_05ad7c634114.txt",
+      "capture": "fetched",
       "origin": "primary",
-      "capture": "full_text",
-      "core": "cores/doc_register_series.txt",
-      "observations": {
-        "obs_register_series": {
-          "statement": "Registered small field-service firms: 13,120 (2019), 13,350 (2021), 13,740 (2022), 14,260 (2023, latest published).",
-          "measure": {
-            "unit": "firms",
-            "series": [
-              {
-                "period": "2019",
-                "value": 13120
-              },
-              {
-                "period": "2021",
-                "value": 13350
-              },
-              {
-                "period": "2022",
-                "value": 13740
-              },
-              {
-                "period": "2023",
-                "value": 14260
-              }
-            ]
+      "audit": "verified",
+      "audit_date": "2026-10-12"
+    }
+  },
+  <span class="cmt">// &lt;distributionData&gt;/corpus/observations.json</span>
+  "observations": {
+    "obs_register_series": {
+      "doc": "doc_05ad7c634114",
+      "statement": "Registered small field-service firms: 13,120 (2019), 13,350 (2021), 13,740 (2022), 14,260 (2023, latest published).",
+      "measure": {
+        "unit": "firms",
+        "series": [
+          {
+            "period": "2019",
+            "value": 13120
           },
-          "verification": "verified",
-          "cited_by": [ "field-crew::n_crews_reachable" ]
-        }
-      }
+          {
+            "period": "2021",
+            "value": 13350
+          },
+          {
+            "period": "2022",
+            "value": 13740
+          },
+          {
+            "period": "2023",
+            "value": 14260
+          }
+        ]
+      },
+      "quote": "2019: 13,120 · 2021: 13,350 · 2022: 13,740 · 2023: 14,260",
+      "locator": "Register table, active firms by year",
+      "verification": "verified",
+      "audit": "verified",
+      "audit_date": "2026-10-12"
     }
   }, <span class="cmt">// ---- the node's inputs (the firm-count basis) ----</span>
   "nodes": {
@@ -2232,8 +2368,8 @@
   <code>uniform</code> (the <code>adoption_rate</code> structural band), and <code>metalog</code>
   (<code>field-crew::addon::arpu_usd_mo</code>, an observed price list read as an ordered sample) — their evidence (a
   business register, vendor release notes, an operations survey, an engagement benchmark, vendor pricing,
-  vertical-SaaS base rates) is invented for illustration and drawn from the
-  nodes' own <code>sources</code>. Two further examples show a <code>splice</code> (lognormal body → <code>generalized_pareto</code> tail, <code>habit-app::daily_installs</code>) and <code>measure.series</code> with <code>extrapolate_cagr</code> (<code>field-crew::n_crews_reachable</code>). <code>debug_computed_percentiles</code> are
+  vertical-SaaS base rates) is invented for illustration and recorded in the
+  shared corpus (<code>documents.json</code> and <code>corpus/</code>). Two further examples show a <code>splice</code> (lognormal body → <code>generalized_pareto</code> tail, <code>habit-app::daily_installs</code>) and <code>measure.series</code> with <code>extrapolate_cagr</code> (<code>field-crew::n_crews_reachable</code>). <code>debug_computed_percentiles</code> are
   computed from each distribution, shown for reference — never authored. Node combination is the simulator's job, out of
   scope here. This is the spec the ground-up rebuild works from.
 </footer>

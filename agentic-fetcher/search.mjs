@@ -7,9 +7,9 @@
 // documents.json. No project/node mapping — sources are about sources; for node→evidence use
 // the projects/ layer.
 //
-//     node search.mjs "net revenue retention"      # literal phrase; falls back to any-of-words if 0
-//     node search.mjs "\\b3[0-9]% churn"            # a real regex (has metachars) — used as-is
-//     node search.mjs "seat price" --sources 40 --context 2
+//     npx forecaster search "net revenue retention"      # literal phrase; falls back to any-of-words if 0
+//     npx forecaster search "\\b3[0-9]% churn"            # a real regex (has metachars) — used as-is
+//     npx forecaster search "seat price" --sources 40 --context 2
 //
 // A query with regex metacharacters is a JavaScript regular expression, matched case-insensitively
 // with the u flag (so \w, \b and \d are ASCII; use \p{L} for any letter).

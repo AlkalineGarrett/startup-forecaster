@@ -37,18 +37,19 @@ node: {
   `normal`, `gamma`, `uniform`, `generalized_pareto`, …), each stating
   its named params directly. Every param is a `value` carrying a
   `{ value_type, reference|formula, measure, process, reasoning, confidence }` trail.
-- Documents / observations / general_knowledge / speculations live in a **shared corpus at
-  the root**, referenced by id. One fact used by many nodes is one observation; the shared id is
+- Documents / observations / general_knowledge / speculations form a **shared corpus**, referenced
+  by id: documents in the source archive's `documents.json`, the rest flat under the data project's
+  `corpus/` (SCHEMA.md §1–2). One fact used by many nodes is one observation; the shared id is
   the correlation record. Which nodes use it is derived on demand from `projects/*.json`
   (`agentic-fetcher/citations.mjs`), not stored on the observation.
-- Full field-by-field reference, invariants (I1–I19), and worked examples are in the HTML.
+- Full field-by-field reference, invariants, and worked examples are in the HTML.
 
 ## Worked examples — one illustrative node per kind
 
 Every kind is worked against an illustrative leaf for one of two fictional products — `habit-app` (a consumer
 habit-tracking app) and `field-crew` (scheduling software for small field-service crews). Their sources,
-vendors and figures are invented for illustration. (`metalog` and `generalized_pareto` appear as `splice`
-segments, in the last two rows.) The
+vendors and figures are invented for illustration. (`generalized_pareto` appears as a `splice`
+tail segment.) The
 `debug_computed_percentiles` in each are **computed from the stated params** (by the
 scripts below), not authored — so they can drift from the file's old hand-authored
 quantiles, which is the point.
@@ -62,14 +63,14 @@ quantiles, which is the point.
 | `normal` | `habit-app::active_days_per_year` | mean 110, sd 41 | 57 / 110 / 163 |
 | `gamma` | `habit-app::referrals_per_user` | Gamma(1.25, 2.0) | 0.10 / 0.47 / 1.36 |
 | `uniform` | the `adoption_rate` structural band | flat [0.003, 0.012] | 0.0039 / 0.0075 / 0.0111 |
-| `splice` (mass → metalog) | `field-crew::addon::arpu_usd_mo` | point_mass $0 (13%) + lower-semi-bounded metalog (6 anchors) | $0 / $24 / $83 |
-| `splice` (body → GPD) | `habit-app::daily_installs` | lognormal(20, σ2.34) → generalized_pareto(ξ0.927, slope-matched) | 20 / 400 / 4,685 … p99.99 ≈ 347k, mean 815 |
+| `metalog` (with `zero_mass`) | `field-crew::addon::arpu_usd_mo` | lower-semi-bounded metalog (6 anchors, k 5) + `zero_mass` 0.13 at $0 | $0 / $24 / $83 |
+| `splice` (body → GPD) | `habit-app::daily_installs` | lognormal(20, σ2.34) → generalized_pareto(ξ0.927, slope-matched) | p50 20 / p90 400 / p99 4,685 … p99.99 ≈ 347k, mean 815 (p10 ≈ 1) |
 | `measure.series` + `extrapolate_cagr` | `field-crew::n_crews_reachable` firm-count input | business-register series 2019→2023, 2.1%/yr | → 15,180 firms (2026) |
 
-The `arpu` case is a **two-part (hurdle) model over semicontinuous data**, expressed as a `splice`: the observed
-price list is an ordered sample (percentile = rank `i/(n+1)`), fit to a lower-semi-bounded metalog (a
-quantile-parameterized distribution); the $0 free tier is a `point_mass` segment spliced below it, which is
-why its `p05 = p10 = $0`.
+The `arpu` case is a **two-part (hurdle) model over semicontinuous data**, expressed as one `metalog`: the
+observed price list is an ordered sample (percentile = rank `i/(n+1)`), fit to a lower-semi-bounded metalog (a
+quantile-parameterized distribution); the $0 free tier is its `zero_mass` (13% of the mass sits exactly at
+`lower_bound`), which is why its `p05 = p10 = $0`.
 
 ## generators/
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Project-distributions schema — grounded · constructed · derived",
-  "description": "Machine-readable form of the project-distributions schema. The canonical prose spec is schema/SCHEMA.md and its illustrated companion is schema/schema-grounded.html; where they and this file differ, SCHEMA.md wins. A node states a `distribution` CONSTRUCTED from a shared corpus of grounded evidence; percentiles are a DERIVED readout (debug_computed_percentiles), never authored. Everything traces to a source. This describes the LOGICAL model; for the current run it is physically split — the shared corpus (documents/general_knowledge/speculations) lives in corpus/*.json and the nodes (keyed project::node) live in projects/*.json, one file per project. The prior run's single-file data is frozen under archive/calibration-run-1/.",
+  "description": "Machine-readable form of the project-distributions schema. The canonical prose spec is schema/SCHEMA.md and its illustrated companion is schema/schema-grounded.html; where they and this file differ, SCHEMA.md wins. A node states a `distribution` CONSTRUCTED from a shared corpus of grounded evidence; percentiles are a DERIVED readout (debug_computed_percentiles), never authored. Everything traces to a source. This describes the LOGICAL model, which is stored across two roots (SCHEMA.md §1): `documents` is the source archive's documents.json; `observations`, `general_knowledge` and `speculations` are the data project's corpus/observations.json, corpus/general-knowledge.json and corpus/speculations.json; `nodes` are the data project's projects/*.json, one file per project.",
   "type": "object",
   "required": [
     "nodes"
@@ -9,12 +9,19 @@
   "properties": {
     "documents": {
       "type": "object",
-      "description": "Shared corpus at the root: archived sources, each keyed by doc_<sha256[:12]>.",
+      "description": "The source-identity registry (the archive's documents.json), keyed by doc_<sha256[:12]>.",
       "propertyNames": {
         "pattern": "^doc_"
       },
       "additionalProperties": {
         "$ref": "#/$defs/document"
+      }
+    },
+    "observations": {
+      "type": "object",
+      "description": "Every observation of the data project (corpus/observations.json), flat, keyed by its id (obs_<id> by convention); each names its document in `doc`.",
+      "additionalProperties": {
+        "$ref": "#/$defs/observation"
       }
     },
     "general_knowledge": {
@@ -48,15 +55,15 @@
   "$defs": {
     "document": {
       "type": "object",
-      "description": "An archived source and the home for its observations (I12: node → distribution → reference → observation → document).",
+      "description": "An archived source's identity: what it is and where its lean text core is. Observations live apart from it (the flat observations map) and point back with `doc` (I12: node → distribution → reference → observation → document).",
       "required": [
-        "sha256",
-        "observations"
+        "sha256"
       ],
       "properties": {
         "sha256": {
           "type": "string",
-          "description": "content hash = identity; identical bytes are one record"
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "content hash = identity (the key is doc_<sha256[:12]>); identical bytes are one record. A derivative's is the hash of its derivation."
         },
         "title": {
           "type": [
@@ -68,80 +75,142 @@
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "description": "where it came from; \"\" or null when unknown, \"\" for a derivative"
         },
         "publisher": {
-          "type": "string"
+          "type": "string",
+          "description": "the source's host for an installed source, \"derived\" for a derivative; may be \"\""
+        },
+        "core": {
+          "type": "string",
+          "description": "path of the lean, searchable text a quote is checked against, relative to the archive (cores/doc_<sha12>.txt); absent while the source has no text layer"
+        },
+        "capture": {
+          "enum": [
+            "fetched",
+            "transcribed"
+          ],
+          "description": "fetched = the core is extracted from the archived bytes; transcribed = an agent typed the source's content into a text file, so a quote verifies only against that transcription. Absent = not recorded."
+        },
+        "capture_corroborated": {
+          "type": "string",
+          "description": "a dated note that a transcribed core was checked against the live page"
         },
         "origin": {
           "enum": [
             "primary",
-            "secondary",
-            "internal"
-          ]
+            "derivative"
+          ],
+          "description": "primary = an external source; derivative = composed from other corpus entries by make-derivative. Absent = an external source not yet classified."
         },
-        "trust_score": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 100
-        },
-        "capture": {
+        "derivation_kind": {
           "enum": [
-            "full_text",
-            "image_only",
-            "js_shell",
-            "partial",
-            "failed"
-          ]
+            "computed",
+            "reasoning"
+          ],
+          "description": "derivative only: computed (a reproducible statistic) or reasoning (a judgement over the sources)"
         },
-        "core": {
-          "type": "string",
-          "description": "lean, image-OCR'd text a reader opens instead of the raw file"
+        "derived_from": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "derivative only: the doc_<sha>, doc_<sha>/<obs id>, gk_ or spec_ ids it is derived from; every one resolves (I13)"
         },
         "derivation": {
           "type": "object",
-          "description": "present only if this document was computed from others (I13); every `from` id resolves",
+          "description": "derivative only: the record its sha256 hashes (I13)",
           "required": [
+            "kind",
             "method",
-            "from"
+            "derived_from"
           ],
           "properties": {
-            "method": {
-              "type": "string"
+            "kind": {
+              "enum": [
+                "computed",
+                "reasoning"
+              ]
             },
-            "from": {
+            "method": {
+              "type": "string",
+              "description": "the statistic (mean, median, p90, cagr, …), or \"reasoning\""
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "computed: the records the statistic is computed over"
+            },
+            "reasoning": {
+              "type": "string",
+              "description": "reasoning: the reasoning, in words"
+            },
+            "result": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "the computed result or the reasoned conclusion (null for a summary without one)"
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "derived_from": {
               "type": "array",
               "items": {
                 "type": "string"
               }
             },
-            "how": {
-              "type": "string"
-            },
-            "script": {
+            "description": {
               "type": "string"
             }
           }
         },
-        "observations": {
-          "type": "object",
-          "propertyNames": {
-            "pattern": "^obs_"
-          },
-          "additionalProperties": {
-            "$ref": "#/$defs/observation"
-          }
+        "verification": {
+          "enum": [
+            "unchecked",
+            "unverified"
+          ],
+          "description": "derivative only: written `unchecked` by make-derivative (`unverified` on older records)"
+        },
+        "audit": {
+          "enum": [
+            "verified",
+            "flagged"
+          ],
+          "description": "absent = not audited; verified = passed the audit (mark-audited); flagged = a known defect, not to be used until resolved (with an audit_note)"
+        },
+        "audit_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "the date the audit field was set (YYYY-MM-DD)"
+        },
+        "audit_note": {
+          "type": "string",
+          "description": "what the audit found or corrected"
         }
       }
     },
     "observation": {
       "type": "object",
-      "description": "One fact drawn from a document. Which nodes use it is derived on demand from projects/*.json (agentic-fetcher/citations.mjs), not stored — the stored cited_by cache drifted stale and was dropped (I11).",
+      "description": "One fact drawn from a document, in the data project's flat observations map. Which nodes use it is derived on demand from projects/*.json (agentic-fetcher/citations.mjs), never stored (I11).",
       "required": [
+        "doc",
         "statement",
         "verification"
       ],
       "properties": {
+        "doc": {
+          "type": "string",
+          "pattern": "^doc_",
+          "description": "the document (a documents.json key) the fact is drawn from"
+        },
         "statement": {
           "type": "string"
         },
@@ -160,14 +229,15 @@
             "string",
             "null"
           ],
-          "description": "verbatim sentence; may be null when read from a non-textual capture — then a capture_note says so and verification is not `verified` (I6)"
+          "description": "verbatim text from the document's core; null only with a capture_note, and then verification is not `verified` (I6)"
         },
         "capture_note": {
           "type": "string",
           "description": "present only when quote is null: why there is no verbatim quote"
         },
         "locator": {
-          "type": "string"
+          "type": "string",
+          "description": "where in the document; may be \"\""
         },
         "verification": {
           "enum": [
@@ -176,11 +246,46 @@
             "not_in_doc",
             "unverifiable"
           ],
-          "description": "verified = non-empty quote present in core; unchecked = not yet swept; not_in_doc = swept, figure absent; unverifiable = real but not yet parseable (carries blocked_on)"
+          "description": "verified = non-empty quote present in the core; unchecked = not yet swept (or too short to prove anything); not_in_doc = swept, quote absent; unverifiable = the document has no core yet (should carry blocked_on)"
         },
         "blocked_on": {
           "type": "string",
-          "description": "present iff verification = unverifiable — what unblocks it (e.g. an OCR sidecar)"
+          "description": "with verification = unverifiable: what unblocks it (e.g. an OCR sidecar)"
+        },
+        "audit": {
+          "enum": [
+            "unaudited",
+            "verified",
+            "flagged"
+          ],
+          "description": "the legitimacy audit (audit-evidence): written `unaudited` by add-observation and make-derivative; verified = passed (mark-audited); flagged = a known defect, with an audit_note. check-sources S8 fails while any observation is neither verified nor flagged."
+        },
+        "audit_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "the date the audit field was set (YYYY-MM-DD)"
+        },
+        "audit_note": {
+          "type": "string",
+          "description": "what the audit found or corrected"
+        },
+        "source_capture": {
+          "enum": [
+            "fetched",
+            "transcribed"
+          ],
+          "description": "the document's capture, recorded on the observation when it matters: add-observation writes `transcribed` when the document is a transcription; an audit that re-grounds it on fetched bytes may set `fetched`"
+        },
+        "derived": {
+          "const": true,
+          "description": "on the result observation of a derivative document"
+        },
+        "derivation_kind": {
+          "enum": [
+            "computed",
+            "reasoning"
+          ],
+          "description": "with derived: the derivative's kind"
         }
       }
     },
@@ -316,7 +421,7 @@
     },
     "value": {
       "type": "object",
-      "description": "The recurring trail behind a grounded number (a param, an atom's/anchor's `at`, an input, a cross_check, a splice threshold).",
+      "description": "The recurring trail behind a grounded number (a param, an atom's or anchor's position, an input, a cross_check, a splice point's `at` threshold).",
       "properties": {
         "value_type": {
           "type": "string",

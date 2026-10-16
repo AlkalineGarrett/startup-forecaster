@@ -1,15 +1,17 @@
 // Example plan data for the exec-plan generator — entirely fictional ("Habit Tracker launch").
 // A new plan = a copy of this file with your own meta / scale / columns / rows / details.
-// Run:  node build.mjs data-example.mjs   ->   execution-plan-example.html
+// Run:  npx forecaster exec-plan data-example.mjs   ->   execution-plan-example.html
 //
 // Shape:
 //   meta:    [label, text][]                      — masthead key/value spans
-//   scale:   { lv, label }[]                      — the effort/priority legend (lv drives the glyph)
-//   columns: { key, head, sub }[]                 — the phase columns of the calendar
+//   scale:   { lv, label }[]                      — the priority legend (lv "1"–"5" drives the colored glyph; "0" = ·)
+//   columns: { key, head, sub }[]                 — the calendar's columns (at most 3; keys are free-form,
+//                                                   tinted by position: 1st, 2nd, 3rd palette color)
 //   rows:    { label, dates, cells: { <key>: task[] } }  — a week row (cells keyed by column key)
 //            | { type:'gate', id, label }         — a decision gate spanning the row
 //     task:  { id, label, lv, deps?: id[] }       — a cell task; deps draw dependency lines
-//   details: { id, cls, meta, title, body: block[] }  — the detail pane content for a task/gate id
+//   details: { id, column | gate:true, meta, title, body: block[] }  — the detail pane for a task/gate id;
+//            column = the task's column key (colors its edge), gate:true for a decision gate
 //     block: { p } | { term, text } | { ul:[] } | { ol:[] }
 
 export default {
@@ -18,7 +20,7 @@ export default {
   h1: "Launch plan — 4 weeks to paid",
   meta: [
     ["Window", "Wk 1 → Wk 4"],
-    ["Team", "solo"],
+    ["Goal", "first paying users"],
     ["Hover", "a task for its dependencies · <b>click</b> for detail →"],
   ],
   footer: "Fictional example data for the <code>exec-plan-generator</code> tool. Not a real plan.",
@@ -59,26 +61,26 @@ export default {
     },
   ],
   details: [
-    { id: "b1", cls: "det edge-b", meta: "Wk 1 · Build", title: "Daily check-off + streaks", body: [
+    { id: "b1", column: "build", meta: "Wk 1 · Build", title: "Daily check-off + streaks", body: [
       { term: "The core loop", text: "one-tap complete, streak counter, longest-streak." },
       { ul: ["Local storage first", "Streak resets at local midnight"] },
     ] },
-    { id: "b2", cls: "det edge-b", meta: "Wk 2 · Build", title: "Account sync", body: [
+    { id: "b2", column: "build", meta: "Wk 2 · Build", title: "Account sync", body: [
       { p: "Cross-device sync — the first thing worth paying for." },
     ] },
-    { id: "o1", cls: "det edge-o", meta: "Wk 1 · Distribution", title: "Landing page", body: [
+    { id: "o1", column: "ops", meta: "Wk 1 · Distribution", title: "Landing page", body: [
       { p: "One page: promise, screenshot, email capture." },
     ] },
-    { id: "o2", cls: "det edge-o", meta: "Wk 2 · Distribution", title: "Waitlist emails", body: [
+    { id: "o2", column: "ops", meta: "Wk 2 · Distribution", title: "Waitlist emails", body: [
       { p: "Two emails: welcome + launch-day nudge." },
     ] },
-    { id: "b3", cls: "det edge-b", meta: "Wks 3–4 · Build", title: "Paywall + billing", body: [
+    { id: "b3", column: "build", meta: "Wks 3–4 · Build", title: "Paywall + billing", body: [
       { p: "Gate sync behind a subscription; wire the store billing." },
     ] },
-    { id: "o3", cls: "det edge-o", meta: "Wks 3–4 · Distribution", title: "Launch post", body: [
+    { id: "o3", column: "ops", meta: "Wks 3–4 · Distribution", title: "Launch post", body: [
       { p: "Ship the launch post once billing works end-to-end." },
     ] },
-    { id: "g1", cls: "det gate", meta: "Gate", title: "Alpha works end-to-end?", body: [
+    { id: "g1", gate: true, meta: "Gate", title: "Alpha works end-to-end?", body: [
       { p: "If the core loop + sync are solid, proceed to paid. If not, fix before the paywall." },
     ] },
   ],

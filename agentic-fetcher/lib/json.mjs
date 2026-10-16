@@ -6,6 +6,7 @@
 // (KEY_MARK), which keeps insertion order; dumps() strips it again. Code that looks up a key that may
 // be integer-like goes through markKey(); printing goes through unmarkKey() / dumps().
 import { readFileSync } from "node:fs";
+import { sortKeys as sortDeep } from "../../distribution-compiler/compiler/json.mjs";   // the one key sort (own-key semantics)
 
 export const KEY_MARK = "\u0000\u0001";
 export const unmarkKey = (k) => (k.startsWith(KEY_MARK) ? k.slice(KEY_MARK.length) : k);
@@ -76,9 +77,6 @@ export function loads(s) {
 
 /** loads() of a utf-8 file. */
 export const load = (path) => loads(readFileSync(path, "utf8"));
-
-const sortDeep = (v) => (Array.isArray(v) ? v.map(sortDeep)
-  : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortDeep(v[k])])) : v);
 
 /** JSON text: `indent` spaces per level (none: compact), keys sorted when `sortKeys`; markers stripped.
  * Compact output uses ", " and ": " separators (the format derivative ids have always hashed). */

@@ -127,12 +127,15 @@ test("fetch_request check flags already-archived domains", async () => {
   assert.ok(out.includes("not in archive") && out.includes("notarchived.example"));
 });
 
-test("fetch_request add refuses an already-archived domain", async () => {
-  // add must refuse a domain already in the archive (no --force) — never queue a redundant fetch.
+test("fetch_request add refuses an archived page but queues another page of the same site", async () => {
+  // The archived page itself is a redundant fetch; another page on the same domain is a different source.
   const { gs, env } = roots();
-  writeFileSync(join(gs, "MANIFEST.csv"), MANIFEST_ACME);
-  const r = await runTool("fetch_request.mjs", ["add", "--url", "https://acme.com/pricing", "--for", "a::b"], env);
-  assert.ok(r.stdout.includes("NOT queued"));
-  const qp = join(gs, "fetch-queue.jsonl");
-  assert.ok(!existsSync(qp) || !readFileSync(qp, "utf8").includes("acme.com"));
+  writeFileSync(join(gs, "MANIFEST.csv"), MANIFEST_ACME + "y,manual,forum.example,Thread,https://forum.example/item?id=1,html,1,1,feedface,manual/t.html,x,cited\n");
+  const same = await runTool("fetch_request.mjs", ["add", "--url", "https://www.acme.com/p/?utm_source=x", "--for", "a::b"], env);
+  assert.ok(same.stdout.includes("NOT queued"));
+  const other = await runTool("fetch_request.mjs", ["add", "--url", "https://acme.com/pricing", "--for", "a::b"], env);
+  assert.ok(other.stdout.includes("queued") && other.stdout.includes("note: other acme.com pages"));
+  const thread = await runTool("fetch_request.mjs", ["add", "--url", "https://forum.example/item?id=2", "--for", "a::b"], env);
+  assert.ok(!thread.stdout.includes("NOT queued"));
+  assert.deepEqual(queue(gs).map((r) => r.url).sort(), ["https://acme.com/pricing", "https://forum.example/item?id=2"]);
 });

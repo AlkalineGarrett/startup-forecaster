@@ -4,15 +4,12 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, test } from "node:test";
+import { test } from "node:test";
 import { ROOTS } from "../paths.mjs";
 import * as AO from "../add_observation.mjs";
 import * as AK from "../add_knowledge.mjs";
 import { Exit } from "../lib/util.mjs";
 import { tmpPath } from "./helpers.mjs";
-
-const saved = { ...ROOTS };
-afterEach(() => Object.assign(ROOTS, saved));
 
 /** Point the tools' roots at one tmp dir (it holds both cores/ and corpus/). */
 function at(tmp) {

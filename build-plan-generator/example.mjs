@@ -15,10 +15,10 @@ export const META = {
 export const STEPS = [
   {
     n: 1,
-    variant: "found",
+    variant: "foundation",
     title: "Core tracker (web · mobile; alpha)",
     size: "L",
-    unlockersHtml: "+U1",
+    tagHtml: "+2 capabilities",
     definition: {
       type: "Habit tracker",
       summary: "a daily check-off app where each habit is a streak you keep alive.",
@@ -39,7 +39,7 @@ export const STEPS = [
   },
   {
     n: 2,
-    variant: null,
+    variant: "featured",
     title: "Paid cross-device sync",
     size: "M",
     definition: {
@@ -50,10 +50,17 @@ export const STEPS = [
     },
     featureGroups: [
       { label: "New · sync", items: [{ chip: "new", code: "U3", name: "Account sync", bullets: ["End-to-end device sync", "Unlimited history"], size: "M" }] },
+      {
+        label: "Extend · core loop",
+        mod: "extend",
+        items: [
+          { chip: "extend", code: "U1", name: "Streaks across devices", bullets: ["Merge check-offs from every device"], size: "S", row: "extend" },
+        ],
+      },
     ],
     competitive: {
       verdict: "Defensible on simplicity",
-      ratingClass: "ok",
+      ratingClass: "m",
       competitors: ["StreakPro", "DoneList", "MegaSuite"],
       edge: "fastest daily check-off; no setup tax",
       read: "win on speed + price, not feature breadth",

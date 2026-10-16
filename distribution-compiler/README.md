@@ -4,6 +4,9 @@ The **distribution-modeling toolchain**: the compiler, the distribution kernel, 
 for the *grounded · constructed · derived* node format. It holds tools only; the data it operates on
 lives in a distribution-data project (`projects/`, `corpus/`, `build/`).
 
+> **Doing this as a step?** Read its step docs first: [`build-distributions.md`](build-distributions.md) (step `build-distributions`), [`audit-distributions.md`](audit-distributions.md) (step `audit-distributions`).
+> A step doc holds the step's binding principles and procedure; this README describes the tool.
+
 ## What it does
 
 A node states a **distribution** *constructed* from grounded evidence; percentiles are a *derived*
@@ -24,8 +27,10 @@ consumes) with `debug_computed_percentiles` filled.
 ## Data it reads
 
 The compiler reads the workspace's **data project** — the `distributionData` folder named in its
-`portfolio.config.mjs` (found by walking up from the current directory; `FORECASTER_DATA` overrides, and
-outside a workspace it is the current directory). `compiler/workspace.mjs` resolves it.
+`portfolio.config.mjs` (found by walking up from the current directory, or named by `MC_CONFIG`;
+`FORECASTER_DATA` / `MC_DISTRIBUTION_DATA` override). Outside a workspace the data tools stop with an error
+rather than read the current directory; `compile` alone still runs on an explicit file there, using the data
+project that holds it (`<data>/projects/<id>.json`) or `--corpus DIR`. `compiler/workspace.mjs` resolves it.
 
 - `corpus/observations.json` — the flat evidence map (`obs_<id>` → measure + `doc` backref)
 - `corpus/general-knowledge.json`, `corpus/speculations.json` — priors / speculations
@@ -36,7 +41,7 @@ registry. The schema it validates against lives in this folder.
 
 ```sh
 # from the workspace root:
-node ../startup-forecaster/distribution-compiler/compiler/compile.mjs distributions/projects/<project>.json --write
+npx forecaster compile distributions/projects/<project>.json --write
 ```
 
 ## Tests
@@ -44,4 +49,5 @@ node ../startup-forecaster/distribution-compiler/compiler/compile.mjs distributi
 ```sh
 npm test
 ```
-The end-to-end proof is byte-identical recompilation of the 11 projects against the split corpus.
+Beyond the unit tests, the end-to-end check is that recompiling a project whose sources have not changed
+(`npx forecaster compile <project.json> --write`) reproduces its `build/<project>.compiled.json` byte for byte.

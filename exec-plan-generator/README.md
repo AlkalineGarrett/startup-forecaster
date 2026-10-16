@@ -1,39 +1,47 @@
-# Execution-plan artifact generator
+# Execution-plan generator
 
-Interactive execution-plan artifacts are **generated from structured data**, not hand-edited: a
+Interactive execution-plan pages are **generated from structured data**, not hand-edited: a
 dependency-aware calendar of tasks by phase with a linked detail pane, rendered to a self-contained
-HTML page. One template renders any plan; edit the data, run the build. A fictional example ships in
+HTML document. One template renders any plan; edit the data, run the build. A fictional example ships in
 `data-example.mjs`.
+
+> **Doing this as a step?** Read its step doc first: [`plan-execution.md`](plan-execution.md) (step `plan-execution`).
+> A step doc holds the step's binding principles and procedure; this README describes the tool.
 
 ## Files
 
 | File | Role | Edit it? |
 |---|---|---|
 | `data-<plan>.mjs` | A plan's content — meta, scale, calendar rows (weeks + gates), tasks, and detail panels. Optional `themeCSS` for a per-plan palette. | **Yes — this is the source of truth.** |
-| `render.mjs` | Template. Turns a data object into the full HTML page (exports `render(data)`). | Only to change structure/markup. |
+| `render.mjs` | Template. Turns a data object into the HTML page (exports `render(data, { fragment })`). | Only to change structure/markup. |
 | `assets.mjs` | The static template: the CSS and the interactive JS (dependency overlay, downward relayout, click-to-detail). | Rarely — for styling or interaction changes. |
-| `build.mjs` | CLI. Renders a data module to HTML. | Rarely. |
+| `build.mjs` | CLI (`npx forecaster exec-plan`). Renders a data module to HTML. | Rarely. |
+| `test/` | Render tests (`npm test`). | When the template changes. |
 
-## Rebuild
+## Render
 
 ```
-node build.mjs                          # render the example -> execution-plan-example.html
-node build.mjs data-example.mjs         # explicit data file
-node build.mjs data-myplan.mjs out.html # explicit output path
-node build.mjs data-myplan.mjs --check  # dry run: prints size, writes nothing
+npx forecaster exec-plan data-myplan.mjs              # -> execution-plan-myplan.html next to the data
+npx forecaster exec-plan data-myplan.mjs out.html     # explicit output path
+npx forecaster exec-plan data-myplan.mjs --fragment   # bare fragment instead of a full document
+npx forecaster exec-plan data-myplan.mjs --check      # dry run: prints size, writes nothing
 ```
 
-Consuming it from another repo (your real plans stay private): add `exec-plan-generator` as a
-dependency and `import { render } from 'exec-plan-generator/render.mjs'`, then write the HTML for each
-of your own `data-*.mjs` modules.
+The output is a full HTML document (doctype, charset, inline CSS and JS), ready to open in a browser,
+publish or share. `--fragment` (or `render(data, { fragment: true })`) emits only `<title>` + `<style>`
++ the page content, for a host that supplies its own `<html>/<head>/<body>`.
+
+To render from your own code (e.g. plans kept in a different data format), import the template from the
+package — `import { render } from 'startup-forecaster/exec-plan-generator/render.mjs'` — and write
+`render(data)` for each plan.
 
 ## Add a new plan
 
 1. Copy `data-example.mjs` to `data-<name>.mjs`; keep the data shape below.
-2. `node build.mjs data-<name>.mjs`.
+2. `npx forecaster exec-plan data-<name>.mjs`.
 
 Set `themeCSS` in the data to a `:root{ --build/--ops/--pole (+ their -soft) }` override to give the
-plan its own accent triad (the tinted columns); omit it to inherit the default teal.
+plan its own accent triad (the tinted columns, in that order); omit it to inherit the default teal.
 
 ## Data shape
 
@@ -41,13 +49,15 @@ plan its own accent triad (the tinted columns); omit it to inherit the default t
 {
   titleTag, eyebrow, h1, footer, tailHtml, defaultHint,   // page chrome (raw HTML allowed)
   meta:    [ [label, text], ... ],                        // masthead key/value line
-  scale:   [ { lv:"5", label }, ... ],                    // 1–5 work-desirability legend ("0" = the · glyph)
-  columns: [ { key:"b", head:"Product", sub }, ... ],     // b / o / g -> the c-b / c-o / c-g tinted columns
+  scale:   [ { lv:"5", label }, ... ],                    // 1–5 priority legend ("0" = the · glyph)
+  columns: [ { key:"build", head:"Build", sub }, ... ],   // at most 3; keys are free-form, tinted by
+                                                          // position (1st --build, 2nd --ops, 3rd --pole)
   rows: [
-    { type:"week", label:"Wk 1", dates, cells: { b:[task], o:[task], g:[task] } },
+    { type:"week", label:"Wk 1", dates, cells: { build:[task], ops:[task] } },  // cells keyed by column key
     { type:"gate", id:"g0", label:"Gate 0 — ..." },       // full-width decision bar
   ],
-  details: [ { id, cls:"det edge-o", meta, title, body:[block] }, ... ],  // one per task + gate
+  details: [ { id, column:"ops", meta, title, body:[block] }, ... ],  // one per task + gate;
+                                                          // a gate's detail has gate:true instead of column
 }
 
 // task  = { id, lv:"5", label, deps:["w1p1", ...], status? }   deps = 1-level-deep prerequisite ids
@@ -55,7 +65,7 @@ plan its own accent triad (the tinted columns); omit it to inherit the default t
 //
 // Optional progress (e.g. from a task store): task.status in_progress | done | blocked | dropped,
 // gate row status "decided", and detail.status (a one-line status shown under the meta line).
-// todo / open / absent render exactly as before; the status CSS is appended only when used.
+// todo / open / absent render with no status styling; the status CSS is appended only when used.
 ```
 
 ## Rules baked into the template / JS (not the data)

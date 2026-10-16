@@ -8,8 +8,10 @@
 // to run — every number here is invented to exercise the machinery, not to model anything real.
 //
 // It uses AUTHORED percentiles (no compiled distribution data), so the sampler takes its metalog
-// fallback path. Fraction nodes carry an explicit `bound: "bounded"` so they stay in [0,1] without
-// the portfolio-side init pass (initProjects/markFrac live with the data, not the engine).
+// fallback path. Fraction nodes carry an explicit `bound: "bounded"` so they stay in [0,1].
+//
+// It runs on the engine's neutral defaults: USD reporting, no tax, costs from month 0, one shared factor
+// ("macro"), no pairwise attention haircut. A real workspace sets its own in configurePortfolio.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 import type { Project, ProjectNode, Correlations } from "../src/types.ts";
 import { configurePortfolio } from "../src/portfolio-context.ts";
@@ -25,7 +27,7 @@ const gate = (id: string, label: string, pctiles: Record<string, number>): Proje
 
 // ── Project 1: a consumer freemium subscription (habit-tracking app) ────────────────────────────
 export const habit_tracker: Project = {
-  id: "habit-tracker", name: "Habit Tracker", cur: "$", fx: 1, type: "Consumer subscription (example)",
+  id: "habit-tracker", name: "Habit Tracker", type: "Consumer subscription (example)",
   one: "Fictional freemium habit-tracking app: free tier funnels into a paid subscription. Example data only.",
   // The revenue model is DATA: the subscription-cohort template (src/templates.ts) reads these node ids.
   model: {
@@ -47,16 +49,16 @@ export const habit_tracker: Project = {
     val("arpu_usd_mo", "Revenue per payer ($/mo)", { p10: 3, p50: 5, p90: 9 }),
     val("annual_churn", "Paying subscribers lost per year", { p10: 0.4, p50: 0.6, p90: 0.8 }, true),
     val("annual_share", "Share of payers on annual plans", { p10: 0.2, p50: 0.45, p90: 0.75 }, true),
-    val("tv_multiple", "Terminal-value run-rate multiple", { p10: 1.5, p50: 2.5, p90: 4 }),
+    { ...val("tv_multiple", "Terminal-value run-rate multiple", { p10: 1.5, p50: 2.5, p90: 4 }), hidden: true },
   ],
   revNote: "Example: free sign-ups × paid-conversion become a monthly paying-acquisition rate spread over the "
-    + "60-month window, retained under a churn-derived survival curve, each payer earning the monthly ARPU net of "
+    + "model horizon, retained under a churn-derived survival curve, each payer earning the monthly ARPU net of "
     + "app-store realisation. Revenue is gated on the launch milestone. Fictional data.",
 };
 
 // ── Project 2: a B2B "teams" line (workplace-wellness seats) ─────────────────────────────────────
 export const habit_teams: Project = {
-  id: "habit-teams", name: "Habit Teams", cur: "$", fx: 1, type: "B2B seats (example)",
+  id: "habit-teams", name: "Habit Teams", type: "B2B seats (example)",
   one: "Fictional workplace-wellness version sold per seat to employers. Example data only.",
   model: {
     template: "subscription-cohort",
@@ -76,7 +78,7 @@ export const habit_teams: Project = {
     val("seats_per_team", "Paid seats per employer", { p10: 10, p50: 40, p90: 150 }),
     val("price_per_seat_mo", "Price per seat ($/mo)", { p10: 2, p50: 4, p90: 8 }),
     val("annual_churn", "Seats lost per year", { p10: 0.1, p50: 0.2, p90: 0.4 }, true),
-    val("tv_multiple", "Terminal-value run-rate multiple", { p10: 2, p50: 3.5, p90: 6 }),
+    { ...val("tv_multiple", "Terminal-value run-rate multiple", { p10: 2, p50: 3.5, p90: 6 }), hidden: true },
   ],
   revNote: "Example: employers × seats-per-employer become paid seats, acquired over the window and retained "
     + "under a churn-derived survival curve at the monthly seat price net of B2B realisation. Gated on the first "
@@ -86,7 +88,8 @@ export const habit_teams: Project = {
 // ── The example portfolio, attached to the engine ───────────────────────────────────────────────
 export const EXAMPLE_PROJECTS: Project[] = [habit_tracker, habit_teams];
 
-// Scalar execution-luck loadings (one-factor copula): a good/lucky run lifts reach and conversion.
+// Scalar execution-luck loadings (each on the project's own execution factor): a good/lucky run lifts reach
+// and conversion.
 export const EXAMPLE_RHO: Correlations = {
   "habit-tracker": { signups: 0.4, free_to_paid: 0.3, public_launch: 0.2 },
   "habit-teams": { teams_signed: 0.4, first_customer: 0.3 },

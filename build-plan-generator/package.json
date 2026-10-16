@@ -6,6 +6,7 @@
     "build-plan": "render.mjs"
   },
   "scripts": {
-    "build": "node render.mjs example.mjs"
+    "build": "node render.mjs example.mjs",
+    "test": "node --test test/render.test.mjs"
   }
 }

@@ -63,3 +63,24 @@ test("applyModel fills a data-only unit and never overwrites what the unit sets 
   const json = applyModel(JSON.parse(JSON.stringify({ id: "y", model: base })));
   assert.equal(typeof json.sim, "function", "a JSON-parsed project gets a sim from its model");
 });
+
+test("subscription-cohort: a per-year customer pace runs over the post-lag window and is capped", () => {
+  const paced: SubscriptionCohortModel = { ...base, lag: ["lag_m"], customers: { perYear: ["won_per_yr"], cap: "sam" } };
+  const withLag = (lag: number, perYr: number, sam = 400) => {
+    const s = state(); s.lag_m = lag; s.won_per_yr = perYr; s.sam = sam;
+    return run(paced, s).out.reduce((a, v) => a + v, 0);
+  };
+  const flat = (lag: number, n: number) => {
+    const s = state(); s.lag_m = lag; s.sam = n; s.penetration = 1;
+    return run({ ...base, lag: ["lag_m"] }, s).out.reduce((a, v) => a + v, 0);
+  };
+  const H = HORIZON_MONTHS;
+  // pace × window years equals the same count given directly.
+  assert.ok(Math.abs(withLag(12, 3) - flat(12, 3 * (H - 12) / 12)) < 1e-6);
+  // a longer lag shrinks the count, not just delays it.
+  assert.ok(Math.abs(withLag(36, 3) - flat(36, 3 * (H - 36) / 12)) < 1e-6);
+  // the market size caps the count.
+  assert.ok(Math.abs(withLag(0, 1000, 7) - flat(0, 7)) < 1e-6);
+  // a lag past the horizon wins nobody.
+  assert.equal(withLag(H + 6, 3), 0);
+});

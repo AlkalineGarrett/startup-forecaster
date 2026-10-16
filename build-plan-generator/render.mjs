@@ -1,16 +1,17 @@
 // Build-plan page renderer (project-neutral).
 //
-// Usage:  node render.mjs <spec.mjs> [out.html]
-//   <spec.mjs>  a data module exporting META, STEPS, SOURCES (see example.mjs)
-//   [out.html]  output path (default: <specName>-build-plan.html next to the spec)
+// Usage:  node render.mjs <spec.mjs> [out.html] [--fragment]
+//   <spec.mjs>   a data module exporting META, STEPS, SOURCES (see example.mjs)
+//   [out.html]   output path (default: <specName>-build-plan.html next to the spec)
+//   --fragment   emit only <title> + <style> + page content, for a host that supplies
+//                its own <html>/<head>/<body>
 //
-// Output is an Artifact-ready fragment: <title> + inline <style> + page content
-// (no <html>/<head>/<body> — the claude.ai Artifact wrapper adds those). It also
-// renders fine opened directly in a browser.
+// Output is a self-contained HTML document by default, ready to open, publish or share.
 
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, basename, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { isMain } from '../shared/is-main.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -20,7 +21,7 @@ const esc = (s) =>
 // Spec strings intentionally carry inline HTML (<b>, <code>, <i>, badges), so most
 // fields are emitted verbatim. esc() is used only for plain-text attribute values.
 
-// ---------- competitive-comparison engine (ported from the original pipeline) ----------
+// ---------- competitive-comparison engine ----------
 const GRPRANK = { edge: 0, shared: 1, temp: 2, gap: 3 };
 const IMPLBL = { 4: 'Definitional', 3: 'High', 2: 'Medium', 1: 'Low' };
 
@@ -41,7 +42,7 @@ function adjacentSet(features, self) {
 }
 
 function badge(name, cmap, adj, major, self) {
-  if (name === self) return `<span class="pb tb">${name}</span>`;
+  if (name === self) return `<span class="pb self">${name}</span>`;
   const cls = `pb ${cmap.get(name)}${adj.has(name) ? ' adj' : ''}${major.has(name) ? ' maj' : ''}`;
   const tips = [];
   if (major.has(name)) tips.push('dominant player in this market');
@@ -147,9 +148,9 @@ function renderFeatureTable(groups) {
 function renderStep(step, self) {
   const cls = step.variant ? `step ${step.variant}` : 'step';
   const size = step.size ? `<span class="ssize ${step.size}">${step.size}</span>` : '';
-  const unlk = step.unlockersHtml ? `<span class="unlk">${step.unlockersHtml}</span>` : '';
+  const tag = step.tagHtml ? `<span class="step-tag">${step.tagHtml}</span>` : '';
   let s = `      <article class="${cls}">\n`;
-  s += `        <div class="step-h"><span class="step-n">${step.n}</span><h3>${step.title}</h3>${unlk}${size}</div>\n`;
+  s += `        <div class="step-h"><span class="step-n">${step.n}</span><h3>${step.title}</h3>${tag}${size}</div>\n`;
   s += renderDefinition(step.definition);
   s += renderFeatureTable(step.featureGroups);
   if (step.noteHtml) s += `        <p class="step-note">${step.noteHtml}</p>\n`;
@@ -182,7 +183,7 @@ function renderSources(sources, intro) {
   );
 }
 
-export function renderPage({ META, STEPS, SOURCES }, css) {
+export function renderPage({ META, STEPS, SOURCES }, css, { fragment = false } = {}) {
   const self = META.productName;
   const steps = STEPS.map((st) => renderStep(st, self)).join('\n\n');
   const header =
@@ -200,31 +201,23 @@ export function renderPage({ META, STEPS, SOURCES }, css) {
     ? `<footer>\n  <div class="wrap">${META.footerHtml}</div>\n</footer>`
     : '';
 
+  const head = `<title>${META.docTitle}</title>\n<style>\n${css}</style>\n`;
+  const body = header + '\n\n' + sequence + '\n\n' + sources + '\n' + footer + '\n';
+  if (fragment) return head + '\n' + body;
   return (
-    `<title>${META.docTitle}</title>\n` +
-    `<style>\n${css}</style>\n\n` +
-    header +
-    '\n\n' +
-    sequence +
-    '\n\n' +
-    sources +
-    '\n' +
-    footer +
-    '\n'
+    '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+    head + '</head>\n<body>\n' + body + '</body>\n</html>\n'
   );
 }
 
 // ---------- CLI ----------
-/** Run directly (not imported)? Compared as real paths, so a symlinked path (macOS /var → /private/var)
- *  still counts. */
-const runDirectly = () => {
-  try { return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
-  catch { return false; }
-};
-if (runDirectly()) {
-  const specArg = process.argv[2];
+if (isMain(import.meta.url)) {
+  const args = process.argv.slice(2);
+  const fragment = args.includes('--fragment');
+  const [specArg, outArg] = args.filter((a) => !a.startsWith('--'));
   if (!specArg) {
-    console.error('usage: node render.mjs <spec.mjs> [out.html]');
+    console.error('usage: node render.mjs <spec.mjs> [out.html] [--fragment]');
     process.exit(1);
   }
   const specPath = resolve(process.cwd(), specArg);
@@ -234,9 +227,9 @@ if (runDirectly()) {
     process.exit(1);
   }
   const css = readFileSync(join(HERE, 'build-plan.css'), 'utf8');
-  const html = renderPage({ META: spec.META, STEPS: spec.STEPS, SOURCES: spec.SOURCES || [] }, css);
+  const html = renderPage({ META: spec.META, STEPS: spec.STEPS, SOURCES: spec.SOURCES || [] }, css, { fragment });
   const out =
-    process.argv[3] ||
+    (outArg && resolve(process.cwd(), outArg)) ||
     join(dirname(specPath), basename(specArg).replace(/\.mjs$/, '') + '-build-plan.html');
   writeFileSync(out, html);
   const withCompet = spec.STEPS.filter((s) => s.competitive).length;

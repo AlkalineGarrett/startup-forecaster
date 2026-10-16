@@ -2,14 +2,12 @@
 // freshness stamp. Text is written as UTF-8 as-is (no \u escapes).
 import { createHash } from "node:crypto";
 
-/** A deep copy of `v` with every object's keys sorted (code-unit order). */
+/** A deep copy of `v` with every object's keys sorted (code-unit order). Keys become own data properties
+ *  (Object.fromEntries), so a `__proto__` key stays a key instead of setting the copy's prototype — the same
+ *  as JSON.parse makes it. The one implementation: agentic-fetcher's json.mjs sorts with it too. */
 export function sortKeys(v) {
   if (Array.isArray(v)) return v.map(sortKeys);
-  if (v && typeof v === "object") {
-    const o = {};
-    for (const k of Object.keys(v).sort()) o[k] = sortKeys(v[k]);
-    return o;
-  }
+  if (v && typeof v === "object") return Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])]));
   return v;
 }
 

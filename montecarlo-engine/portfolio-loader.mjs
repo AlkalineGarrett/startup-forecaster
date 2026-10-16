@@ -1,5 +1,5 @@
-// Which portfolio the engine's entrypoints (server, precompute, build-artifact, build-full-artifact, coverage,
-// pipeline/) run: the config's `bootstrap` module (see config.mjs — MC_PORTFOLIO overrides it), the one whose
+// Which portfolio the engine's entrypoints (server, precompute, build-full-artifact, coverage,
+// simulation/) run: the config's `bootstrap` module (see config.mjs — MC_PORTFOLIO overrides it), the one whose
 // import attaches everything via configurePortfolio(). The entrypoints `await loadPortfolio()` before
 // touching appcore.
 //

@@ -25,7 +25,7 @@
 // `spec_reasoning` (startup-forecaster uses these to seed its labelled placeholder priors).
 //
 //   node --experimental-strip-types coverage.mjs --json > cov.json
-//   node compiler/scaffold.mjs cov.json <project-id> [--nodes a,b] [--write]
+//   npx forecaster scaffold cov.json <project-id> [--nodes a,b] [--write]
 //
 // Without --write it prints what it would add. The data project is the workspace's (see workspace.mjs).
 // Where the simulator's hand path cannot fit an exact metalog (a percentile on a bound, e.g. "p10 = 0
@@ -35,16 +35,15 @@
 //
 // While it read-modify-writes speculations.json it holds an exclusive `speculations.json.lock` file,
 // so concurrent scaffolds take turns.
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isMain } from "../../shared/is-main.mjs";
 import { parseArgs } from "node:util";
 import * as D from "./distributions.mjs";
 import { dataRoot } from "./workspace.mjs";
 import { dumps, loads } from "./json.mjs";
 import { sig } from "./format.mjs";
 
-export const ROOT = await dataRoot();
 export const PCT = [["p01", 0.01], ["p05", 0.05], ["p10", 0.10], ["p25", 0.25], ["p50", 0.50], ["p75", 0.75], ["p90", 0.90], ["p95", 0.95], ["p99", 0.99]];
 export const SUPPORT_CAP = 35;                                // stays in the "guess" band (< 40)
 
@@ -69,7 +68,12 @@ export function specId(key) {
 
 // A unit word stands alone: \b on Unicode word characters (JS's \b is ASCII-only).
 const W = "[\\p{L}\\p{N}_]";
-export const UNITISH = new RegExp(`[$€£%×/]|(?<!${W})(count|months?|years?|weeks?|days?|hours?|x)(?!${W})`, "iu");
+// ISO 4217 codes for the currencies most often priced in, matched in capitals only ("TRY" is a currency, "try" is not).
+const ISO = "USD|EUR|GBP|JPY|CNY|INR|KRW|RUB|CHF|CAD|AUD|NZD|SEK|NOK|DKK|PLN|CZK|HUF|RON|BGN|TRY|BRL|MXN|ARS|CLP|COP|PEN|ZAR|NGN|KES|EGP|AED|SAR|ILS|SGD|HKD|TWD|THB|MYR|IDR|PHP|VND|PKR|BDT|UAH";
+const UNIT_WORD = new RegExp(`[$€£¥₹₩₽%×/]|(?<!${W})(count|months?|years?|weeks?|days?|hours?|x)(?!${W})`, "iu");
+const ISO_CODE = new RegExp(`(?<!${W})(${ISO})(?!${W})`, "u");
+/** True when a label's parenthetical reads like a unit: a currency symbol or ISO code, %, ×, /, a count or a duration. */
+export const UNITISH = { test: (s) => UNIT_WORD.test(s) || ISO_CODE.test(s) };
 
 /** The node's unit: a fraction when bounded; a duration from a `…_months`/`…_years` id; otherwise the
  *  label's trailing parenthetical ONLY when it reads like a unit (currency, %, ×, count, time) — labels
@@ -181,7 +185,8 @@ function lockFile(path) {
   }
 }
 
-function main(argv) {
+/** scaffold — returns the exit code. Writes into the workspace's data project (workspace.mjs dataRoot). */
+async function main(argv) {
   let a;
   try { a = cli(argv); } catch (e) {
     process.stderr.write(`${USAGE}\n${e.message}\n`);
@@ -193,8 +198,9 @@ function main(argv) {
   const want = truthy(a.nodes) ? new Set(a.nodes.split(",")) : null;
   const hand = proj.nodes.filter((n) => n.source === "hand" && (want === null || want.has(n.node)));
 
-  const ppath = join(ROOT, "projects", `${a.project}.json`);
-  const spath = join(ROOT, "corpus", "speculations.json");
+  const root = await dataRoot();   // throws outside a workspace (FORECASTER_DATA overrides)
+  const ppath = join(root, "projects", `${a.project}.json`);
+  const spath = join(root, "corpus", "speculations.json");
   mkdirSync(dirname(spath), { recursive: true });
   const release = lockFile(spath);             // hold an exclusive lock on the corpus file while we read-modify-write
   const out = [];
@@ -229,12 +235,4 @@ function main(argv) {
   return 0;
 }
 
-/** Run directly (not imported)? Compared as real paths, so a symlinked path (macOS /var → /private/var)
- *  still counts. */
-const runDirectly = () => {
-  try { return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
-  catch { return false; }
-};
-if (runDirectly()) {
-  process.exitCode = main(process.argv.slice(2));
-}
+if (isMain(import.meta.url)) process.exitCode = await main(process.argv.slice(2));

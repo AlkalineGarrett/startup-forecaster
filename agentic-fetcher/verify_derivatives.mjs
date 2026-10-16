@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Algorithmic re-verification of every `computed` derivative document (AUDIT.md, Audit 3).
+// Algorithmic re-verification of every `computed` derivative document (audit-evidence.md, Audit 3).
 //
 // A computed derivative records `derivation = { method, inputs, result, derived_from }`. Because the
 // method is deterministic, the derivative is *reproducible*: recomputing `method(inputs)` must reproduce
@@ -16,8 +16,8 @@
 // own `compute()` so the check matches how the value was produced. Two-root model: derivative identity
 // + derivation live in GROUNDING/documents.json; observations in PROJECT/corpus/observations.json.
 //
-//     node verify_derivatives.mjs            # human-readable report
-//     node verify_derivatives.mjs --json      # machine verdicts
+//     npx forecaster verify-derivatives            # human-readable report
+//     npx forecaster verify-derivatives --json      # machine verdicts
 import { existsSync } from "node:fs";
 import { ROOTS } from "./paths.mjs";
 import { compute } from "./make_derivative.mjs";

@@ -1,17 +1,20 @@
 // `forecaster new` — scaffold a venture into a portfolio, ready to research:
-//   1. <dataRoot>/projects/<id>.ts      the model's STRUCTURE (node ids, labels, loadings) + its template `model`
+//   1. <dataRoot>/projects/<id>.ts      the model's STRUCTURE (node ids, labels, loadings) + its template `model`;
+//                                      labels name the venture's currency (its profile entry, or --currency)
 //   2. registration                    at the portfolio's `// forecaster:` markers (bootstrap + manifest)
 //   3. <distributionData>/projects/<id>.json + corpus speculations
 //                                      a PLACEHOLDER distribution per node (wide preset prior, support 5,
 //                                      referencing a `…_placeholder` speculation) so the model runs end to end —
 //                                      written by distribution-compiler/compiler/scaffold.mjs
 //   4. <dossiers>/<id>/research-brief.md  what would ground each node, in the order to research them
+//   5. profile.json                    the venture's entry (currency, channel): the one record of its currency
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { identOf, placeholderSpec } from "./portfolio.mjs";
-
+import { emptyVenture, isSet, rateBetween, readProfile, reportingCode, writeProfile } from "./profile.mjs";
+import { BUILTIN_CHANNEL_NAMES, symbolOf } from "../../montecarlo-engine/src/settings.mjs";
 
 function insertAtMarker(file, marker, makeLine) {
   const src = readFileSync(file, "utf8");
@@ -23,7 +26,7 @@ function insertAtMarker(file, marker, makeLine) {
   writeFileSync(file, lines.join("\n"));
 }
 
-function projectSource({ id, name, cur, fx, preset, built, date }) {
+function projectSource({ pf, id, name, cur, currency, preset, built, date }) {
   const ident = identOf(id);
   const node = (n) => {
     const parts = [`id: ${JSON.stringify(n.id)}`, `label: ${JSON.stringify(n.label)}`, `kind: "${n.kind}"`, `conf: "low"`];
@@ -31,15 +34,16 @@ function projectSource({ id, name, cur, fx, preset, built, date }) {
     if (n.loading) parts.push(`loadings: { [F_EXEC]: ${n.loading} }`);
     return `    { ${parts.join(", ")} },`;
   };
-  return `import type { Project } from "montecarlo-engine/src/types.ts";
-import { F_EXEC } from "montecarlo-engine/src/factors.ts";
+  return `import type { Project } from "startup-forecaster/montecarlo-engine/src/types.ts";
+import { F_EXEC } from "startup-forecaster/montecarlo-engine/src/factors.ts";
 
 // ${name} — scaffolded by startup-forecaster (preset ${preset}) on ${date}.
-// STRUCTURE ONLY: every node's distribution lives in the distribution-data project (projects/${id}.json),
-// starting as a labelled PLACEHOLDER prior. Research each node (dossiers/${id}/research-brief.md), replace its
-// placeholder with a grounded distribution, then \`npm run pipeline\` and \`forecaster status ${id}\`.
+// STRUCTURE ONLY: every node's distribution lives in ${relative(pf.root, join(pf.distributionData, "projects", id + ".json"))},
+// starting as a labelled PLACEHOLDER prior. Research each node (${pf.dossiers ? relative(pf.root, join(pf.dossiers, id, "research-brief.md")) : "the research brief"}), replace its
+// placeholder with a grounded distribution, then \`npx forecaster simulate\` and \`npx forecaster status ${id}\`.
+// Money is in ${currency} (${cur}): the currency profile.json records for it (ventures.${id}.currency).
 export const ${ident}: Project = {
-  id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, cur: ${JSON.stringify(cur)}, fx: ${fx}, type: ${JSON.stringify(built.type)},
+  id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, type: ${JSON.stringify(built.type)},
   one: "TODO: one line — what it is, who pays, why now.",
   revNote: ${JSON.stringify(built.revNote)},
   nodes: [
@@ -50,29 +54,105 @@ ${built.nodes.map(node).join("\n")}
 `;
 }
 
-function brief({ id, name, preset, built }) {
+function brief({ pf, id, name, preset, built, settings }) {
   const rows = built.nodes.map((n) =>
     `### \`${n.id}\` — ${n.label}\n\n- **Unit:** ${n.unit}${n.bound ? " (a fraction in [0,1])" : ""}\n- **Placeholder (not a finding):** p10 ${n.placeholder.p10} · p50 ${n.placeholder.p50} · p90 ${n.placeholder.p90}\n- **What would ground it:** ${n.research}\n- **Status:** placeholder\n`);
+  const data = relative(pf.root, join(pf.distributionData, "projects", `${id}.json`));
   return `# ${name} — research brief
 
 Scaffolded by startup-forecaster (preset \`${preset}\`). Every node below starts as a labelled **placeholder**
-prior. Replace each with a distribution **constructed from evidence** in the distribution-data project
-(\`projects/${id}.json\`), following the sourcing ladder (search the archive first; fetch with an agent;
-queue genuinely browser-gated pages for a human; never invent a figure or call a proxy grounded).
+prior. Replace each with a distribution **constructed from evidence** in \`${data}\`, following the sourcing
+ladder (search the archive first; fetch with an agent; queue genuinely browser-gated pages for a human; never
+invent a figure or call a proxy grounded). Aim for at least three independent sources per node unless the
+person has set another target; when fewer turn up, try harder within reason, then state the shortfall.
 
-Research in order of influence: run \`npm run pipeline\` then \`forecaster status ${id}\` — it ranks the nodes
+Research in order of influence: run \`npx forecaster simulate\` then \`npx forecaster status ${id}\` — it ranks the nodes
 by how strongly each drives the outcome. The cruxes (volume and conversion/penetration) usually lead.
 
 ## Model
 
 ${built.revNote}
 
+Money is in ${settings.currency} (${settings.cur}); payment channel \`${settings.channel}\`. ${settings.moneyNote}
+
+## Judgement settings
+
+Not nodes, so not researched like one: fixed values in the model, each a judgement until evidence replaces it.
+
+${(built.judgements || []).map((j) => `- ${j}`).join("\n") || "- none"}
+
 ## Nodes
 
 ${rows.join("\n")}`;
 }
 
-export function scaffoldVenture(pf, { id, name, preset, presetModule, cur, fx, channel, date }) {
+/** What `new` scaffolds with, from the flags, else the venture's profile entry, else the person's answers,
+ *  else the preset: currency, symbol, channel, the placeholder money scale and the team cost. `notes` say
+ *  what was guessed and needs confirming. */
+export function ventureSettings(pf, { id, presetModule, flags = {} }) {
+  const profile = readProfile(pf.root);
+  const person = profile?.person || {};
+  const entry = profile?.ventures?.[id] || {};
+  const notes = [];
+  const reporting = reportingCode(profile);
+  for (const k of ["fx", "cur"]) if (flags[k] != null)
+    throw new Error(`--${k} is gone: a venture's symbol and price conversion derive from its currencies in profile.json (ventures.${id}.currency, and .priceCurrency when its prices are quoted in another currency)`);
+
+  const currency = (flags.currency || (isSet(entry.currency) ? entry.currency : null) || reporting).toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currency)) throw new Error(`currency "${currency}" is not an ISO 4217 code (e.g. USD, EUR, GBP)`);
+  if (!flags.currency && !isSet(entry.currency)) notes.push(`currency ${currency}: not in profile.json ventures.${id}.currency; guessed from ${profile && isSet(person.reportingCurrency) ? "the reporting currency" : "the default (USD)"}. Confirm it from the market it sells into.`);
+  if (!profile && currency !== reporting)
+    throw new Error(`currency ${currency}: this workspace has no profile.json to record it in (the reporting currency is ${reporting}); create one with \`forecaster init\` or the onboarding in add-venture.md`);
+  const cur = symbolOf(currency);
+
+  const valid = [...new Set([...BUILTIN_CHANNEL_NAMES, ...Object.keys(profile?.channels || {})])];
+  const fromEntry = typeof entry.channel === "string" && entry.channel !== "declined" ? entry.channel : null;
+  const channel = flags.channel || fromEntry || presetModule.defaults.channel;
+  if (!valid.includes(channel)) throw new Error(`unknown payment channel "${channel}" — one of: ${valid.join(", ")} (add another under "channels" in profile.json)`);
+  if (!flags.channel && !fromEntry) notes.push(`channel ${channel}: not in profile.json ventures.${id}.channel; the ${presetModule.name} preset's default. Confirm it from the business model and market.`);
+
+  if (currency !== reporting && !rateBetween(profile, currency, reporting))
+    notes.push(`no ${currency} → ${reporting} exchange rate: add person.exchangeRates.${currency} to profile.json ({ rate, source, asOf }, researched) before simulating.`);
+
+  // Placeholder money is sized in US dollars: convert it when a rate is known, else say it isn't converted.
+  const usd = rateBetween(profile, "USD", currency);
+  const moneyScale = usd ?? 1;
+  const moneyNote = currency === "USD" ? "" : usd
+    ? `Placeholder money was converted from US-dollar-sized priors at 1 USD = ${Number(usd.toPrecision(4))} ${currency}.`
+    : `Placeholder money is sized in US dollars and NOT converted (no USD rate in the profile); read it as ${currency} only as a rough start.`;
+
+  // A paid team: the venture's own payroll (its currency), else the person's (reporting currency, converted).
+  const team = isSet(entry.team) ? entry.team : person.team;
+  let teamCost = null;
+  if (team === "team") {
+    if (typeof entry.paidTeamCostPerYear === "number") teamCost = entry.paidTeamCostPerYear;
+    else if (typeof person.paidTeamCostPerYear === "number") {
+      const r = rateBetween(profile, reporting, currency);
+      if (r) teamCost = person.paidTeamCostPerYear * r;
+      else notes.push(`team cost not added: the payroll is in ${reporting} and there is no ${currency} rate to convert it.`);
+    } else notes.push("the team is paid but profile.json has no paidTeamCostPerYear: no team cost line was added.");
+  }
+  return { profile, currency, cur, channel, moneyScale, moneyNote, teamCost, notes };
+}
+
+/** A preset's nodes in the venture's currency, in one pass: every node whose unit starts with "currency" has its
+ *  US-dollar placeholder converted (two significant figures) — a payroll node's placeholder, in multiples of the
+ *  payroll, becomes the payroll itself (three) — and the {cur} / {payroll} tokens in labels and research text
+ *  are filled in. */
+export function inVentureCurrency(nodes, { cur, moneyScale = 1, teamCost = null }) {
+  const payroll = teamCost != null ? `${cur}${teamCost.toLocaleString("en-US")}` : "{payroll}";
+  const fill = (t) => t.replaceAll("{cur}", cur).replaceAll("{payroll}", payroll);
+  return nodes.map(({ payroll: isPayroll, ...n }) => {
+    const out = { ...n, label: fill(n.label), research: fill(n.research) };
+    if (n.unit.startsWith("currency")) {
+      const conv = isPayroll ? (m) => Number((teamCost * m).toPrecision(3)) : (v) => Number((v * moneyScale).toPrecision(2));
+      out.placeholder = Object.fromEntries(Object.entries(n.placeholder).map(([k, v]) => [k, conv(v)]));
+    }
+    return out;
+  });
+}
+
+export function scaffoldVenture(pf, { id, name, preset, presetModule, flags = {}, date }) {
   if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`venture id "${id}" must be kebab-case (a-z, 0-9, -)`);
   const tsFile = join(pf.dataRoot, "projects", `${id}.ts`);
   if (existsSync(tsFile)) throw new Error(`${relative(pf.root, tsFile)} already exists`);
@@ -80,12 +160,15 @@ export function scaffoldVenture(pf, { id, name, preset, presetModule, cur, fx, c
   const dataFile = join(pf.distributionData, "projects", `${id}.json`);
   if (existsSync(dataFile)) throw new Error(`${dataFile} already exists`);
 
-  const built = presetModule.build({ channel });
+  const settings = ventureSettings(pf, { id, presetModule, flags });
+  const { profile, currency, cur, channel, moneyScale, teamCost } = settings;
+  const preBuilt = presetModule.build({ channel, paidTeam: teamCost > 0 });
+  const built = { ...preBuilt, nodes: inVentureCurrency(preBuilt.nodes, { cur, moneyScale, teamCost }) };
   const written = [];
 
   // 1. structure + model
   mkdirSync(join(pf.dataRoot, "projects"), { recursive: true });
-  writeFileSync(tsFile, projectSource({ id, name, cur, fx, preset, built, date }));
+  writeFileSync(tsFile, projectSource({ pf, id, name, cur, currency, preset, built, date }));
   written.push(tsFile);
 
   // 2. registration
@@ -123,7 +206,22 @@ export function scaffoldVenture(pf, { id, name, preset, presetModule, cur, fx, c
     const dir = join(pf.dossiers, id);
     mkdirSync(dir, { recursive: true });
     const f = join(dir, "research-brief.md");
-    if (!existsSync(f)) { writeFileSync(f, brief({ id, name, preset, built })); written.push(f); }
+    if (!existsSync(f)) { writeFileSync(f, brief({ pf, id, name, preset, built, settings })); written.push(f); }
   }
-  return { written, nodes: built.nodes.length };
+
+  // 5. the venture's profile entry: what it was scaffolded with, so the profile stays the record. A value that
+  //    was guessed here (not given by flag or profile) is dated as needing confirmation.
+  if (profile) {
+    const v = { ...emptyVenture(), ...(profile.ventures?.[id] || {}) };
+    const at = (profile.answeredAt ||= {});
+    for (const [k, val, given] of [["currency", currency, flags.currency || v.currency], ["channel", channel, flags.channel || v.channel]]) {
+      if (v[k] === val) continue;
+      v[k] = val;
+      at[`ventures.${id}.${k}`] = given ? date : `${date} (forecaster new default; confirm)`;
+    }
+    (profile.ventures ||= {})[id] = v;
+    writeProfile(pf.root, profile);
+    written.push(join(pf.root, "profile.json"));
+  }
+  return { written, nodes: built.nodes.length, notes: settings.notes };
 }

@@ -4,24 +4,24 @@
 // each node's distribution, derive its percentiles, and diagnose mismatches/invariants. Emits a
 // filled build artifact + a source-vs-compiled diff.
 //
-//   node compiler/compile.mjs projects/<project>.json [--write] [--quiet] [--corpus DIR]
+//   npx forecaster compile projects/<project>.json [--write] [--quiet] [--corpus DIR]
 //
 // --write persists build/<project>.compiled.json (with the source freshness stamp). Exit 1 on any error.
 // See compiler/DESIGN.md.
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dataRoot } from "./workspace.mjs";
+import { isMain } from "../../shared/is-main.mjs";
+import { WorkspaceError, dataRoot } from "./workspace.mjs";
 import * as D from "./distributions.mjs";
 import * as F from "./formula.mjs";
-import { REF_RE } from "./refs.mjs";
+import { corpusIndex, idsIn, readCorpus } from "./refs.mjs";
 import { canonHash, dumps, loads } from "./json.mjs";
 import { validator } from "./jsonschema.mjs";
 import { round, sig } from "./format.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PKG = dirname(HERE);                                     // this package
-export const ROOT = await dataRoot();                          // the data project (corpus/, build/, projects/)
 /** Where the schema this validates against lives: this package. */
 export const SCHEMA_PKG = PKG;
 
@@ -116,14 +116,8 @@ export function groundingMix(src) {
 
 export { canonHash };   // the freshness hash over the canonical JSON (see json.mjs)
 
-export function loadCorpus(cdir = null) {
-  const base = cdir || `${ROOT}/corpus`;
-  const L = (name) => {
-    const p = join(base, name);
-    return existsSync(p) ? loads(readFileSync(p, "utf8")) : {};
-  };
-  return [L("observations.json"), L("general-knowledge.json"), L("speculations.json")];
-}
+/** The corpus of a corpus/ folder as the shared index (refs.mjs corpusIndex: id → { kind, entry, placeholder }). */
+export const loadCorpus = (cdir) => corpusIndex(readCorpus(cdir, loads));
 
 /** One node's diagnostics: ["error"|"warning", node, path, message] entries. */
 export class Diag extends Array {
@@ -150,21 +144,14 @@ function handle(m) {
   return { value: measureScalar(m), series: get(m, "series"), low: lo, high: hi, quantiles: get(m, "quantiles") };
 }
 
-/** obs_ via a doc_/obs_ path or a bare obs_ id (both look up the flat observations map);
- *  gk_; spec_ -> {value, series} or null. */
-export function resolveRef(ref, obs, gk, spec) {
+/** A corpus reference — a bare id, or a doc_<sha>/<obs id> path to an observation — as its id-handle, or
+ *  null when the corpus index (loadCorpus) has no such id (an observation must also have content). */
+export function resolveRef(ref, corpus) {
   if (ref === null || ref === undefined) return null;
-  if (ref.includes("/")) {                            // doc_<sha>/obs_<id> — the obs id is the key
-    const ok = ref.slice(ref.indexOf("/") + 1), o = get(obs, ok);
-    if (truthy(o)) return handle(get(o, "measure"));
-  }
-  if (ref.startsWith("obs_")) {                       // bare obs id
-    const o = get(obs, ref);
-    if (truthy(o)) return handle(get(o, "measure"));
-  }
-  if (ref.startsWith("gk_") && Object.hasOwn(gk, ref)) return handle(get(gk[ref], "measure"));
-  if (ref.startsWith("spec_") && Object.hasOwn(spec, ref)) return handle(get(spec[ref], "measure"));
-  return null;
+  const path = ref.includes("/"), e = corpus.get(path ? ref.slice(ref.indexOf("/") + 1) : ref);
+  if (!e || (path && e.kind !== "obs")) return null;
+  if (e.kind === "obs" && !truthy(e.entry)) return null;
+  return handle(get(e.entry, "measure"));
 }
 
 /** ctx.ids: obs/gk/spec referenced anywhere + the node's inputs (in_), with input formulae
@@ -174,16 +161,14 @@ function buildIds(node, ctxCorpus, diag) {
   const text = dumps(node);
   for (const ref of new Set([...text.matchAll(/"reference":\s*"([^"]+)"/g)].map((m) => m[1]))) {
     const base = ref.includes("/") ? ref.split("/").pop() : ref;
-    const r = resolveRef(ref, ...ctxCorpus);
+    const r = resolveRef(ref, ctxCorpus);
     if (r) ids[base] = r;
   }
-  // obs/gk/spec ids referenced directly inside a formula (e.g. extrapolate_cagr(obs_x.series, 2026))
-  const [obsById, gk, spec] = ctxCorpus;
+  // corpus ids referenced directly inside a formula (e.g. extrapolate_cagr(obs_x.series, 2026))
+  const corpusSrc = (tok) => { const e = ctxCorpus.get(tok); return e && truthy(e.entry) ? e.entry : undefined; };
   for (const [, fla] of text.matchAll(/"formula":\s*"([^"]+)"/g)) {
-    for (const tok of new Set(fla.match(REF_RE) || [])) {
-      if (Object.hasOwn(ids, tok)) continue;
-      const src = [get(obsById, tok), get(gk, tok), get(spec, tok)].find(truthy);
-      if (src) ids[tok] = handle(get(src, "measure"));
+    for (const tok of idsIn(fla, corpusSrc)) {
+      if (!Object.hasOwn(ids, tok)) ids[tok] = handle(get(corpusSrc(tok), "measure"));
     }
   }
   const formulaInputs = {};
@@ -196,7 +181,7 @@ function buildIds(node, ctxCorpus, diag) {
       const h = handle(m);
       let val = h.value;
       if (val === null && truthy(get(vobj, "reference"))) {   // a bare reference to a corpus obs
-        const r = resolveRef(vobj.reference, ...ctxCorpus); val = r ? r.value : null;
+        const r = resolveRef(vobj.reference, ctxCorpus); val = r ? r.value : null;
       }
       h.value = val; ids[iid] = h;
     }
@@ -239,17 +224,20 @@ export function resolveValue(vobj, ctx, diag, path) {
     return val;
   }
   const ref = get(vobj, "reference");
-  let found = false, rv = null, rmeasure = null;      // resolve the reference: in_ from inputs, else corpus
+  let rv = null, rmeasure = null;      // resolve the reference: in_ from inputs, else corpus
   if (truthy(ref)) {
     if (ref.startsWith("in_")) {
-      if (Object.hasOwn(ctx.ids, ref)) { rmeasure = ctx.ids[ref]; found = true; rv = get(rmeasure, "value"); }
+      if (Object.hasOwn(ctx.ids, ref)) { rmeasure = ctx.ids[ref]; rv = get(rmeasure, "value"); }
     } else {
-      const r = resolveRef(ref, ...ctx._corpus);
-      if (r !== null) { rmeasure = r; found = true; rv = r.value; }
+      const r = resolveRef(ref, ctx._corpus);
+      if (r !== null) { rmeasure = r; rv = r.value; }
     }
+  }
+  const found = rmeasure !== null;
+  if (truthy(ref)) {
     const q = get(vobj, "quantile");                  // select one point of a stated distribution
     if (truthy(q) && found) {
-      const qs0 = get(rmeasure || {}, "quantiles");
+      const qs0 = get(rmeasure, "quantiles");
       const qs = truthy(qs0) ? qs0 : {};
       if (Object.hasOwn(qs, q)) rv = qs[q];
       else {
@@ -268,7 +256,7 @@ export function resolveValue(vobj, ctx, diag, path) {
       // scalar, or (when the source is an interval) within [low, high]. An inferred_value's
       // reference is provenance for a JUDGEMENT/TRANSFORM (unit conversion, ÷price, discount),
       // not an equality — checking its inline value against the raw source is noise, so we don't.
-      const lo = get(rmeasure || {}, "low"), hi = get(rmeasure || {}, "high");
+      const lo = get(rmeasure, "low"), hi = get(rmeasure, "high");
       if (rv !== null) {
         if (Math.abs(toNum(rv) - toNum(s)) > TOL * Math.max(1.0, Math.abs(toNum(s)))) {
           diag.warn(path, `direct_value inline ${sig6(s)} ≠ referenced ${sig6(rv)}`);
@@ -298,7 +286,7 @@ export function resolveValue(vobj, ctx, diag, path) {
 }
 
 /** I3: weights are non-negative masses summing to 1. */
-function checkWeights(weights, dist, diag, path) {
+function checkWeights(weights, diag, path) {
   let total = 0;
   for (const w of weights) total += w;
   if (weights.some((w) => w < 0)) diag.err(`${path}.allocation`, "weights must be non-negative — they are masses (I3)");
@@ -323,6 +311,18 @@ function infeasible(kind, p) {
 
 const valueOf = (a) => (Object.hasOwn(a, "value") ? a.value : a);   // a.get("value", a)
 
+/** D.construct, with a construction its params cannot support (DistError) reported at `path` (its message
+ *  plus `hint`) and null returned. */
+function tryConstruct(kind, params, diag, path, hint = "") {
+  try {
+    return D.construct(kind, params);
+  } catch (e) {
+    if (!(e instanceof D.DistError)) throw e;
+    diag.err(path, e.message + hint);
+    return null;
+  }
+}
+
 export function buildDist(dist, ctx, diag, path) {
   const kind = get(dist, "kind");
   if (Object.hasOwn(PARAMS, kind)) {
@@ -340,13 +340,8 @@ export function buildDist(dist, ctx, diag, path) {
       atoms.push([v, toNum(Object.hasOwn(a, "weight") ? a.weight : Object.hasOwn(a, "allocation") ? a.allocation : 1.0)]);
     });
     if (atoms.some(([v]) => v === null)) return null;
-    checkWeights(atoms.map(([, w]) => w), dist, diag, path);
-    try {
-      return D.construct("point_mass", { _atoms: atoms });
-    } catch (e) {
-      if (!(e instanceof D.DistError)) throw e;
-      diag.err(path, e.message); return null;
-    }
+    checkWeights(atoms.map(([, w]) => w), diag, path);
+    return tryConstruct("point_mass", { _atoms: atoms }, diag, path);
   }
   if (kind === "weighted_combination") {
     const comps = [];
@@ -355,13 +350,8 @@ export function buildDist(dist, ctx, diag, path) {
       comps.push([sub, toNum(Object.hasOwn(c, "weight") ? c.weight : Object.hasOwn(c, "allocation") ? c.allocation : 1.0)]);
     });
     if (comps.some(([d]) => d === null)) return null;
-    checkWeights(comps.map(([, w]) => w), dist, diag, path);
-    try {
-      return D.construct("weighted_combination", { _components: comps });
-    } catch (e) {
-      if (!(e instanceof D.DistError)) throw e;
-      diag.err(path, e.message); return null;
-    }
+    checkWeights(comps.map(([, w]) => w), diag, path);
+    return tryConstruct("weighted_combination", { _components: comps }, diag, path);
   }
   if (kind === "splice") {
     const segs = get(dist, "segments") || [];
@@ -390,12 +380,7 @@ export function buildDist(dist, ctx, diag, path) {
       }
       anchors.push([toNum(a.prob), resolveValue(valueOf(a), ctx, diag, `${path}.anchors[${i}]`)]);
     }
-    try {
-      return D.construct("piecewise", { _anchors: anchors });
-    } catch (e) {
-      if (!(e instanceof D.DistError)) throw e;
-      diag.err(path, e.message); return null;
-    }
+    return tryConstruct("piecewise", { _anchors: anchors }, diag, path);
   }
   if (kind === "metalog") {
     const arr = get(dist, "anchors") || [];
@@ -415,17 +400,11 @@ export function buildDist(dist, ctx, diag, path) {
       diag.err(path, `metalog anchor(s) ${JSON.stringify(bad)} on/outside the bounds [${show(lb)}, ${show(ub)}] — put boundary mass in zero_mass (lower) or a point_mass component`);
       return null;
     }
-    let d;
-    try {
-      d = D.construct("metalog", {
-        _anchors: anchors, k, lower_bound: lbN, upper_bound: ubN,
-        zero_mass: Object.hasOwn(dist, "zero_mass") ? dist.zero_mass : 0.0,
-      });
-    } catch (e) {
-      if (!(e instanceof D.DistError)) throw e;
-      diag.err(path, `${e.message} — reduce k (now ${show(k)}) or zero_mass, or widen the anchor spacing`);
-      return null;
-    }
+    const d = tryConstruct("metalog", {
+      _anchors: anchors, k, lower_bound: lbN, upper_bound: ubN,
+      zero_mass: Object.hasOwn(dist, "zero_mass") ? dist.zero_mass : 0.0,
+    }, diag, path, ` — reduce k (now ${show(k)}) or zero_mass, or widen the anchor spacing`);
+    if (d === null) return null;
     const xs = anchors.map(([, x]) => x).filter((x) => x !== null);   // over-fit lint: k≈n runs the tail past the data
     if (xs.length) {
       try {
@@ -443,6 +422,10 @@ export function buildDist(dist, ctx, diag, path) {
   return null;
 }
 
+/** A unit that declares the quantity a fraction bounded to [0, 1]: "fraction 0-1", "fraction (0–1)", any
+ *  case, hyphen or en dash, anywhere in the unit (SCHEMA.md §3). Its derived percentiles must lie in [0, 1]. */
+export const FRACTION_UNIT = /\bfraction\s*\(?\s*0\s*[-\u2013]\s*1(?![\d.])/i;
+
 /** derive percentiles; check authored debug_computed_percentiles; fill them. */
 function checkPercentiles(node, dist, diag) {
   let comp;
@@ -457,8 +440,8 @@ function checkPercentiles(node, dist, diag) {
   if (vals.some((v, i) => i < vals.length - 1 && v > vals[i + 1] + 1e-9)) {
     diag.err("debug_computed_percentiles", `percentiles not non-decreasing: ${JSON.stringify(comp)}`);
   }
-  const unit = String(get(node, "unit") ?? "").toLowerCase();   // a non-string unit is a schema error already
-  if (unit.includes("fraction 0-1") && (vals[0] < -1e-9 || vals[vals.length - 1] > 1 + 1e-9)) {
+  const unit = String(get(node, "unit") ?? "");                 // a non-string unit is a schema error already
+  if (FRACTION_UNIT.test(unit) && (vals[0] < -1e-9 || vals[vals.length - 1] > 1 + 1e-9)) {
     diag.err("distribution", `fraction-unit percentiles out of [0,1]: ${JSON.stringify(comp)}`);
   }
   const authored = get(node, "debug_computed_percentiles");
@@ -473,7 +456,7 @@ function checkPercentiles(node, dist, diag) {
   return comp;
 }
 
-export function compileNode(ref, node, corpus, diag) {
+export function compileNode(node, corpus, diag) {
   validateNode(node, diag);                           // full #/$defs/node schema validation
   const cnode = structuredClone(node);
   const ctx = { ids: buildIds(cnode, corpus, diag), _corpus: corpus, segments: [], splices: [] };
@@ -527,16 +510,37 @@ function diffLines(src, comp) {
   return out;
 }
 
-function main(argv) {
+/** Outside a workspace compile still runs on an explicit file: its data project is the one holding the file
+ *  (<data>/projects/<id>.json), or null when the file isn't in a projects/ folder. */
+function fileProject(given) {
+  const dir = dirname(resolve(given));
+  return existsSync(given) && basename(dir) === "projects" ? dirname(dir) : null;
+}
+
+/** compile <project file> — returns the exit code. The data project (corpus/ read, build/ written) is the
+ *  workspace's (workspace.mjs dataRoot, overrides included), else fileProject(). */
+export async function main(argv) {
   const ci = argv.indexOf("--corpus");
   const cdir = ci >= 0 ? argv[ci + 1] : null;
   const args = argv.filter((a) => !a.startsWith("-") && a !== cdir);
-  if (!args.length) {
-    process.stderr.write("usage: compile.mjs projects/<project>.json [--write] [--quiet] [--corpus DIR]\n");
-    return 1;
+  const usage = "usage: compile.mjs <project file> [--write] [--quiet] [--corpus DIR]\n" +
+    "  <project file>: e.g. distributions/projects/<id>.json from the workspace root, or projects/<id>.json\n" +
+    "  (a path is tried from the current directory, then from the data project).\n";
+  if (argv.includes("-h") || argv.includes("--help")) { process.stdout.write(usage); return 0; }
+  if (!args.length) { process.stderr.write(usage); return 1; }
+  const given = args[0], write = argv.includes("--write"), quiet = argv.includes("--quiet");
+  let root;
+  try { root = await dataRoot(); } catch (e) {
+    if (!(e instanceof WorkspaceError)) throw e;
+    root = fileProject(given);
+    if (!root && (write || !cdir)) {
+      process.stderr.write(`compile: ${e.message}\n  Outside a workspace, compile needs the file in a data project's projects/ folder ` +
+        "(or --corpus DIR, without --write).\n");
+      return 2;
+    }
   }
-  const path = args[0], write = argv.includes("--write"), quiet = argv.includes("--quiet");
-  const corpus = loadCorpus(cdir);
+  const path = !root || existsSync(given) || !existsSync(join(root, given)) ? given : join(root, given);
+  const corpus = loadCorpus(cdir || `${root}/corpus`);
   const srcText = readFileSync(path, "utf8");
   const all = loads(srcText);
   const src = {};
@@ -546,7 +550,7 @@ function main(argv) {
   for (const [ref, node] of Object.entries(src)) {
     if (isSkeleton(node)) { compiled[ref] = node; todo += 1; continue; }   // not yet authored — skip
     const diag = new Diag(ref);
-    compiled[ref] = compileNode(ref, node, corpus, diag);
+    compiled[ref] = compileNode(node, corpus, diag);
     allDiag = allDiag.concat([...diag]);
   }
   const errors = allDiag.filter((d) => d[0] === "error");
@@ -561,8 +565,8 @@ function main(argv) {
     nodes: compiled,
   };
   if (write) {
-    mkdirSync(`${ROOT}/build`, { recursive: true });
-    writeFileSync(`${ROOT}/build/${project}.compiled.json`, dumps(artifact, { indent: 1 }));
+    mkdirSync(`${root}/build`, { recursive: true });
+    writeFileSync(`${root}/build/${project}.compiled.json`, dumps(artifact, { indent: 1 }));
   }
 
   const debt = srcText.split('"missing_document"').length - 1;
@@ -602,12 +606,4 @@ function main(argv) {
   return errors.length ? 1 : 0;
 }
 
-/** Run directly (not imported)? Compared as real paths, so a symlinked path (macOS /var → /private/var)
- *  still counts. */
-const runDirectly = () => {
-  try { return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
-  catch { return false; }
-};
-if (runDirectly()) {
-  process.exitCode = main(process.argv.slice(2));
-}
+if (isMain(import.meta.url)) process.exitCode = await main(process.argv.slice(2));

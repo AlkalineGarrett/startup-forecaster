@@ -6,6 +6,7 @@
     "exec-plan": "build.mjs"
   },
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs data-example.mjs",
+    "test": "node --test test/render.test.mjs"
   }
 }

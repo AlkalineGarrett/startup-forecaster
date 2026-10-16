@@ -1,0 +1,12 @@
+{
+  "name": "forecast-renderer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-reporter=spec test/*.test.ts",
+    "build": "MC_CONFIG=../montecarlo-engine/examples/portfolio.config.mjs node build.mjs",
+    "precompute": "MC_CONFIG=../montecarlo-engine/examples/portfolio.config.mjs node --experimental-strip-types precompute.mjs",
+    "serve": "MC_CONFIG=../montecarlo-engine/examples/portfolio.config.mjs node --experimental-strip-types server.mjs",
+    "artifact:full": "MC_CONFIG=../montecarlo-engine/examples/portfolio.config.mjs node --experimental-strip-types build-full-artifact.mjs"
+  }
+}

@@ -1,15 +1,19 @@
 // Push the compiled distributions onto the model nodes for DISPLAY: percentiles (for the
 // bars), a provenance colour (from support_score), and the basis text (the node's reasoning). The
-// SAMPLING itself reads the compiled distribution directly in simulate.ts — this only feeds the UI,
-// so it runs after initProjects.
+// SAMPLING itself reads the compiled distribution directly in simulate.ts — this only feeds the UI.
+// A workspace calls it once its projects' node lists are final.
 import type { Project, ProjectNode, Prov, ProvMap } from "./types.ts";
 import { DISTRIBUTIONS, type NodeDist } from "./portfolio-context.ts";
 
-/** support_score (grounding strength, 0–100) → the bar's provenance colour band. */
+/** support_score (grounding strength, 0–100) bands: ≥ SUPPORT_HIGH sourced · ≥ SUPPORT_MID inferred · else guess. */
+export const SUPPORT_HIGH = 60;
+export const SUPPORT_MID = 40;
+
+/** support_score → the bar's provenance colour band. */
 function provOf(support: number | undefined): Prov {
   if (support == null) return "guess";
-  if (support >= 60) return "sourced";
-  if (support >= 40) return "inferred";
+  if (support >= SUPPORT_HIGH) return "sourced";
+  if (support >= SUPPORT_MID) return "inferred";
   return "guess";
 }
 

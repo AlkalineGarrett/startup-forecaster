@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { survival, integrateSubscription, flatAfterLag, logistic, timeToEvent, applyEventFrom, demandMultiplier } from "../src/cohort.ts";
-import { realise, npvOf, runRate60, expansionFor } from "../src/accounting.ts";
+import { realise, npvOf, runRateAtHorizon, expansionFor } from "../src/accounting.ts";
 import { PERSONAL_AFTER_TAX, BUSINESS_TAX, configurePortfolio } from "../src/portfolio-context.ts";
 import { mulberry32 } from "../src/rng.ts";
 
@@ -72,7 +72,7 @@ test("accounting: realisation, NPV < undiscounted, expansion gating", () => {
   assert.ok(realise("usStripe", 5) < realise("usStripe", 50), "fixed fees hurt small tickets more");
   const flat = new Float64Array(60).fill(1000);
   assert.ok(npvOf(flat) < 60000 && npvOf(flat) > 0, "discounting reduces the sum");
-  assert.ok(Math.abs(runRate60(flat) - 12000) < 1e-6, "run-rate = 12 × steady monthly");
+  assert.ok(Math.abs(runRateAtHorizon(flat) - 12000) < 1e-6, "run-rate = 12 × steady monthly");
   assert.strictEqual(expansionFor(10), 1.0);
   assert.ok(expansionFor(200) > 1);
 });

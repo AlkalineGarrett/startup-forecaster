@@ -1,8 +1,9 @@
 // Small shared helpers: text reads, synchronous console output, CLI exits, process runs, URLs.
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, realpathSync, writeSync } from "node:fs";
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync, writeSync } from "node:fs";
+import { delimiter, join } from "node:path";
+
+export { isMain } from "../../shared/is-main.mjs";   // side-effect-free; import it from there where nothing else here is needed
 
 const DEC_REPLACE = new TextDecoder("utf-8", { ignoreBOM: true });
 const DEC_STRICT = new TextDecoder("utf-8", { ignoreBOM: true, fatal: true });
@@ -65,6 +66,7 @@ function writeAll(fd, s) {
     try {
       off += writeSync(fd, buf, off, buf.length - off);
     } catch (e) {
+      if (e.code === "EPIPE") process.exit(0);   // the reader went away (e.g. `| head`): stop quietly, like any CLI
       if (e.code !== "EAGAIN") throw e;
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2);   // pipe full: wait, retry
     }
@@ -92,15 +94,6 @@ export async function runMain(main) {
   }
 }
 
-/** True when this module file is the script node was asked to run. */
-export function isMain(metaUrl) {
-  try {
-    return realpathSync(fileURLToPath(metaUrl)) === realpathSync(resolve(process.argv[1]));
-  } catch {
-    return false;
-  }
-}
-
 /** Today's local date, YYYY-MM-DD. */
 export function today() {
   const d = new Date();
@@ -113,6 +106,19 @@ export function run(cmd, args, { timeout = null } = {}) {
   const r = spawnSync(cmd, args, { maxBuffer: 2 ** 31 - 1, timeout: timeout ? timeout * 1000 : undefined });
   if (r.error) throw new Error(r.error.code === "ETIMEDOUT" ? `${cmd} timed out after ${timeout}s` : `${cmd}: ${r.error.message}`);
   return { code: r.status ?? r.signal, stdout: r.stdout, stderr: r.stderr };
+}
+
+/** The path of an executable named `name` on PATH, or null when there is none. */
+export function which(name, path = process.env.PATH || "") {
+  for (const dir of path.split(delimiter)) {
+    if (!dir) continue;
+    const p = join(dir, name);
+    try {
+      accessSync(p, constants.X_OK);
+      if (statSync(p).isFile()) return p;
+    } catch { /* not here */ }
+  }
+  return null;
 }
 
 /** Files matching a pattern whose last segment may hold * and ? (the directory part is literal);

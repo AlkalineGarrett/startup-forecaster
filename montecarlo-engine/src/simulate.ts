@@ -1,9 +1,9 @@
 // The Monte-Carlo engine. Per iteration it draws one correlated parameter vector (a multi-factor
-// Gaussian copula over metalog marginals) and runs each unit's deterministic 60-month trajectory,
-// then summarises the distribution of average-yearly revenue plus the decision-relevant outputs
-// (terminal value, NPV, after-tax cash, P(< floor), lag split). Shared "macro"/"ai_demand" factors
-// are QMC-driven and reused across projects (common random numbers), so the ranking isn't noise.
-import type { Project, ProjectNode, RunResult, RunUnit, ScenarioState, Rng, Horizon, YearStat, MonthTraj, Loadings, TornadoBar, PricePoint } from "./types.ts";
+// Gaussian copula over the nodes' marginals) and runs each unit's deterministic monthly trajectory over the
+// horizon, then summarises the distribution of average-yearly revenue plus the decision-relevant outputs
+// (terminal value, NPV, after-tax cash, P(< floor), lag split). The portfolio's shared factors are
+// QMC-driven and reused across projects (common random numbers), so the ranking isn't noise.
+import type { Project, ProjectNode, RunResult, RunUnit, ScenarioState, Rng, Horizon, YearStat, MonthTraj, Loadings, TornadoBar, PricePoint, CostLine } from "./types.ts";
 import { HORIZON_MONTHS, HORIZON_YEARS, HEADLINE_FROM_YEAR } from "./types.ts";
 import { mulberry32, rnorm } from "./rng.ts";
 import { frac, nodeAxis, OVERRIDE_SD, ptsOf, type NodeAxis } from "./quantile.ts";
@@ -12,8 +12,9 @@ import { construct, truncate } from "./distributions.ts";
 import { DISTRIBUTIONS } from "./portfolio-context.ts";
 import { idioCoef, latentU, localFactorNames, rhoToLoadings } from "./factors.ts";
 import { globalFactors } from "./qmc.ts";
-import { RHO, LOADINGS, PERSONAL_AFTER_TAX, BUSINESS_TAX } from "./portfolio-context.ts";
-import { npvOf, runRate60 } from "./accounting.ts";
+import { RHO, LOADINGS, PERSONAL_AFTER_TAX, BUSINESS_TAX, BUSINESS_AFTER_TAX, COSTS_START, UNIT_DEFAULTS, SUCCESS_THRESHOLD, DECISION_FLOOR, REPORTING_CURRENCY, currencyOf, toReporting, type CostStart } from "./portfolio-context.ts";
+import { npvOf, runRateAtHorizon } from "./accounting.ts";
+import { SUPPORT_MID } from "./apply-distributions.ts";
 
 /** Draws per project. 20k in production. Tests override it to run ~50× faster: MC_N env for the
  *  direct-import suites, globalThis.__MC_N for the built-bundle DOM stub (which has no `process`). They
@@ -24,18 +25,22 @@ const _nOverride =
   (typeof globalThis !== "undefined" && (globalThis as { __MC_N?: number }).__MC_N) ||
   0;
 export const N: number = _nOverride ? Number(_nOverride) : 20000;
+/** mulberry32 (bit-identical to rng.ts's stream for the same seed) that also exposes its state, so a
+ *  stream can be resumed later with mulberry32(state). */
+function statefulMulberry(seed: number): Rng & { state(): number } {
+  let a = seed | 0;
+  const f = (): number => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return Object.assign(f, { state: () => a });
+}
 /** Fixed seed so every run is reproducible. */
 export const SEED = 987654321;
-/** "Meaningful" revenue threshold, EUR/yr, for pSucc / conditional median. */
-export const THR = 5000;
-/** Decision floor, EUR/yr, for the P(revenue < floor) go/no-go diagnostic. */
-export const FLOOR = 12000;
-/** Reference-class p90 (EUR/yr) for solo-software outcomes (~p90 of the brutally-Pareto base
- * rate: 17.3% of new subscription apps reach $1k MRR, 4.6% reach $10k MRR). A product project
- * whose p50 exceeds this is flagged: the inputs are likely optimistic no matter how reasonable
- * each node looked. */
-export const REFERENCE_P90 = 45000;
-
+// The thresholds (successThreshold, decisionFloor, referenceP90) are portfolio settings in the reporting
+// currency: portfolio-context.ts. finalize() applies them in each result's currency.
 
 // --- Progress heartbeat (opt-in) -------------------------------------------------------------------
 // Every N-draw pass (runUnit / runCombined) is tens of thousands of draws; a full regen, the pairwise
@@ -61,9 +66,6 @@ function progressTick(label: string): void {
   const err = process.stderr;
   err.write(err.isTTY ? `\r\x1b[K${line}` : line + "\n");
 }
-/** Reset the heartbeat's counters/clock (call at the start of a batch job so its rate is measured
- *  from that job, not process start). No-op when MC_PROGRESS is unset. */
-export function resetProgress(): void { simPasses = 0; progStart = 0; progLastBeat = 0; }
 
 function clampRate(x: number): number {
   return Math.max(0.001, Math.min(0.999, x));
@@ -113,7 +115,7 @@ function nodeSampler(unitId: string, node: ProjectNode, gate: boolean): (u: numb
     if (node._support != null) throw new Error(`node ${key}: has a compiled distribution but none under this key — run variants as "<project>::<variant>" units (see variantUnit)`);
     const pts = ptsOf(node);
     // A node either has a compiled distribution or authors ≥2 percentiles; a structure-only node
-    // (distribution kept in the data project) whose compiled entry is missing is a pipeline gap.
+    // (distribution kept in the data project) whose compiled entry is missing is a simulation-build gap.
     if (pts.length < 2) throw new Error(`node ${key}: no compiled distribution and no authored percentiles — regenerate the portfolio's distributions (or author pctiles)`);
     const marginal = buildMarginal(pts.map(([y, x]) => ({ y, x })), boundOf(node, gate), 0, 1);
     fn = gate ? (u) => qAt(marginal, clampU(u)) : (u) => frac(node, qAt(marginal, clampU(u)));
@@ -155,11 +157,13 @@ function planUnit(unit: RunUnit): UnitPlan {
  * unit's local factors are drawn into it here, then each node's uniform is u = Φ(Σλz + ic·ε) and
  * its value is the metalog quantile at u. Gates Bernoulli against a sampled pass-rate.
  */
-function drawScenario(plan: UnitPlan, r: Rng, z: Record<string, number>): ScenarioState {
+function drawScenario(plan: UnitPlan, r: Rng, z: Record<string, number>, only?: Set<string>): ScenarioState {
   for (const name of plan.localNames) z[name] = rnorm(r);
   const s: ScenarioState = {};
   for (const pl of plan.order) {
     const eps = rnorm(r);
+    // `only`: evaluate just these nodes, but consume the RNG exactly as a full draw does (same stream after).
+    if (only && !only.has(pl.node.id)) { if (pl.gate) r(); continue; }
     if (pl.gate) {
       const rate = pl.override != null ? pl.axis.toValue(pl.override) : clampRate(pl.sample(latentU(pl.loadings, pl.ic, z, eps)));
       s[pl.node.id] = r() < rate ? 1 : 0;
@@ -172,14 +176,13 @@ function drawScenario(plan: UnitPlan, r: Rng, z: Record<string, number>): Scenar
   return s;
 }
 
-/** P20/P50/P80 of a horizon array (sorts a copy). */
+const qOf = (sorted: Float64Array, f: number): number => sorted[Math.min(sorted.length - 1, Math.floor(f * sorted.length))];
+/** P20/P50/P80 + mean of a horizon array (sorts a copy). */
 function hz(arr: Float64Array): Horizon {
   const a = Float64Array.prototype.slice.call(arr).sort();
-  const q = (f: number): number => a[Math.min(a.length - 1, Math.floor(f * a.length))];
   let s = 0; for (let k = 0; k < a.length; k++) s += a[k];
-  return { p20: q(0.2), p50: q(0.5), p80: q(0.8), mean: a.length ? s / a.length : 0 };
+  return { p20: qOf(a, 0.2), p50: qOf(a, 0.5), p80: qOf(a, 0.8), mean: a.length ? s / a.length : 0 };
 }
-const qOf = (sorted: Float64Array, f: number): number => sorted[Math.min(sorted.length - 1, Math.floor(f * sorted.length))];
 function median(a: Float64Array): number {
   const c = Float64Array.prototype.slice.call(a).sort();
   return qOf(c, 0.5);
@@ -217,10 +220,10 @@ function spearmanTo(x: Float64Array, ry: Float64Array): number {
 }
 
 /** A driver is "unidentified" when nothing published grounds it: for a compiled node, a support score in the
- *  guess band (< 40); for a hand-authored one, no cited source. (Compiled nodes always clear `urls`, so
- *  reading urls alone flagged every compiled node.) */
+ *  guess band (< SUPPORT_MID); for a hand-authored one, no cited source. (Compiled nodes always clear `urls`,
+ *  so reading urls alone flagged every compiled node.) */
 function isUnidentified(n: ProjectNode): boolean {
-  return n._support != null ? n._support < 40 : !(n.urls && n.urls.length);
+  return n._support != null ? n._support < SUPPORT_MID : !(n.urls && n.urls.length);
 }
 
 /** Variance decomposition: rank correlation of each node's draw with the outcome, |corr| desc.
@@ -234,24 +237,25 @@ function computeTornado(order: NodePlan[], nodeVals: Float64Array[], out: Float6
     .slice(0, 8);
 }
 
-/** Per-draw scratch + accumulators for one unit's simulation. */
+/** Per-draw scratch + accumulators for one unit's simulation. Amounts are in the result's currency. */
 interface Draws {
-  out: Float64Array; // average-yearly gross revenue, EUR
+  out: Float64Array; // average-yearly gross revenue over the headline window
   h3: Float64Array;
   h12: Float64Array;
-  h25: Float64Array;
-  aft: Float64Array; // after-tax average-yearly, EUR
-  tv: Float64Array; // terminal value, EUR
-  npv: Float64Array; // NPV of the 60-month stream, EUR
+  /** The headline-window samples in draw order. Only supermix sets it (pooled from its inputs); otherwise it
+   *  is `out` itself, copied by finalize before `out` is sorted. */
+  h25?: Float64Array;
+  aft: Float64Array; // after-tax average-yearly
+  tv: Float64Array; // terminal value
+  npv: Float64Array; // NPV of the horizon's stream
   margin: Float64Array;
   lagB: number; // Σ build-lag months
   lagI: number; // Σ institutional-lag months
-  yearRevAll: Float64Array[]; // per-year revenue, EUR — 5 buckets, one value per draw (for quantiles)
-  yearNetAll: Float64Array[]; // per-year net income, EUR — 5 buckets, one value per draw
-  yearCogsAll: Float64Array[]; // per-year cost-of-revenue (gross-margin haircut), EUR
-  yearTaxAll: Float64Array[]; // per-year tax, EUR (residual so rev − cogs − tax − cost = net)
-  yearCostAll: Float64Array[]; // per-year operating cost, EUR — gated by the readiness-phase start
-  cost: Float64Array; // steady-state annual operating cost, EUR — one value per draw (used by the after-tax avg)
+  yearRevAll: Float64Array[]; // per-year revenue — one bucket per model year, one value per draw (for quantiles)
+  yearNetAll: Float64Array[]; // per-year net income
+  yearCogsAll: Float64Array[]; // per-year cost of revenue
+  yearTaxAll: Float64Array[]; // per-year tax (residual so rev − cogs − tax − cost = net)
+  yearCostAll: Float64Array[]; // per-year operating cost, from its start (costsStart / a line's `from`)
   // Itemized income-statement sub-lines (only allocated when the unit declares them). Each is an
   // INDEPENDENT per-draw quantity, all per-year [lineIdx][year][draw]. lineMeta carries the labels so
   // finalize can build statementLines.
@@ -261,144 +265,172 @@ interface Draws {
   lineMeta?: { rev: string[]; cogs: string[]; opcost: string[] };
 }
 
-/** Turn one draw's trajectory + scenario into the per-iteration outputs. */
-function recordDraw(d: Draws, i: number, traj: MonthTraj, fx: number, unit: RunUnit, s: ScenarioState, parts?: Record<string, MonthTraj>): void {
-  let first3 = 0, first12 = 0, rest = 0;
-  const fromMonth = 12 * (HEADLINE_FROM_YEAR - 1), headlineYears = HORIZON_YEARS - HEADLINE_FROM_YEAR + 1;
-  for (let t = 0; t < HORIZON_MONTHS; t++) {
-    const v = traj[t];
-    if (t < 3) first3 += v;
-    if (t < 12) first12 += v;
-    if (t >= fromMonth) rest += v;
-  }
-  // HEADLINE = the SUSTAINED annual average over the headline window (default years 2–5, months 13–60),
-  // excluding the year-1 ramp, so P20/P50/Mean/P80 reflect a steady-state level rather than the build-up.
-  const avgYearly = (rest / headlineYears) * fx;
-  d.out[i] = avgYearly;
-  d.h3[i] = first3 * fx;
-  d.h12[i] = first12 * fx;
-  d.h25[i] = (rest / headlineYears) * fx;
-  const margin = unit.margin ? unit.margin(s) : 0.8;
-  d.margin[i] = margin;
-  // Cost of revenue as a FRACTION of (gross, billed) revenue. When the unit itemizes cost-of-revenue
-  // lines, sum their rates so the bridge reconciles to the parts (each line = rate × revenue); otherwise
-  // derive it from the gross-margin node. Personal tracks with no cost-of-revenue lines (salary) carry
-  // zero — their revenue is already taxable income. NOTE: revenue is BILLED gross; platform/payment take
-  // (Stripe/App-Store) is now an explicit cost-of-revenue line (a rate the sim stashes), not netted into
-  // revenue, so gross profit = revenue × (1 − cogsRate) matches the itemized statement.
+/** A business unit needs a gross margin: its own, cost-of-revenue lines, or the portfolio default. */
+function checkMoney(unit: RunUnit): void {
+  if (!unit.personal && !unit.margin && !unit.cogsLines && UNIT_DEFAULTS.margin == null)
+    throw new Error(`unit "${unit.id}": no gross margin — give it \`margin\` or \`cogsLines\` (a template model: \`cogs\`), or set configurePortfolio({ defaults: { margin } })`);
+}
+
+/** The month a cost that begins at `start` starts in this draw (lag-node convention: code_months, readiness_months). */
+function costStartMonth(start: CostStart, s: ScenarioState): number {
+  return start === "start" ? 0 : start === "readiness" ? s.code_months || 0 : (s.code_months || 0) + (s.readiness_months || 0);
+}
+/** The share of model year `y` (0-based) at or after month `from` (1 once past it, 0 before it). */
+function yearShareFrom(from: number, y: number): number {
+  const start = 12 * y, end = start + 12;
+  if (from <= start) return 1;
+  if (from >= end) return 0;
+  return (end - from) / 12;
+}
+
+/** One draw's money policy for a unit, in the unit's own currency (fx applied). */
+interface UnitMoney {
+  margin: number;
+  cogsRate: number; // cost of revenue as a fraction of billed gross revenue
+  costAnnual: number; // steady-state annual operating cost
+  costIn: (y: number) => number; // operating cost in model year y, from its start
+  lineCostIn: (k: number, y: number) => number; // cost line k in model year y
+  net: (gross: number, opcost: number) => number; // after-tax cash, net of operating cost
+  tv: number; // terminal-value multiple
+}
+
+/** Resolve a unit's money policy for one draw. `rate` = toReporting(unit), for the portfolio's tax functions. */
+function moneyOf(unit: RunUnit, s: ScenarioState, fx: number, rate: number): UnitMoney {
+  // Cost of revenue as a FRACTION of (gross, billed) revenue. When the unit itemizes cost-of-revenue lines, sum
+  // their rates so the bridge reconciles to the parts (each line = rate × revenue); otherwise derive it from the
+  // margin. An income track with neither carries zero — its revenue is already taxable income. Revenue is BILLED
+  // gross; the platform/payment take is a cost-of-revenue line (a rate the sim stashes), not netted into revenue.
   const cogsRate = unit.cogsLines
     ? unit.cogsLines.reduce((acc, c) => acc + c.rate(s), 0)
-    : unit.personal ? 0 : 1 - margin;
-  // Operating cost-to-serve reduces the contribution line, NOT reported revenue (gross stays ≥ 0).
-  // A negative contribution draw is a viability event — the correct object for it.
+    : unit.margin ? 1 - unit.margin(s) : unit.personal ? 0 : 1 - (UNIT_DEFAULTS.margin as number);
+  const margin = unit.margin ? unit.margin(s) : unit.cogsLines ? 1 - cogsRate : unit.personal ? UNIT_DEFAULTS.margin ?? 1 : (UNIT_DEFAULTS.margin as number);
+  // Operating cost reduces the contribution line, NOT reported revenue (gross stays ≥ 0). It begins at the
+  // portfolio's `costsStart` (or a cost line's own `from`).
   const costAnnual = unit.cost ? unit.cost(s) * fx : 0;
-  d.cost[i] = costAnnual;
-  // Operating cost (compliance: audits, certifications, security, HIPAA) is incurred during the READINESS
-  // phase and after — NOT during the pure code build, when there is no product to certify, no PHI and no
-  // customers. So it begins when readiness starts, at month = code_months. `costFrac(y)` is the share of
-  // year y at/after that start (1 once fully in the readiness/live era, 0 in the pre-readiness build).
-  const readyStart = s.code_months || 0;
-  const costFrac = (y: number): number => {
-    const start = 12 * y, end = start + 12;
-    if (readyStart <= start) return 1;
-    if (readyStart >= end) return 0;
-    return (end - readyStart) / 12;
-  };
-  // Net-of-tax transform for a gross-revenue figure at a given operating cost, shared by the average-yearly
-  // after-tax line and the per-year net series so they stay consistent. Personal → the personal-tax schedule / sampled net
-  // multiplier, less operating cost. Business → operating cost is a DEDUCTIBLE expense: pre-tax profit is
-  // (gross profit − operating cost), business tax hits only positive pre-tax profit, and a pre-tax loss is
-  // untaxed. (Previously tax hit gross profit and opcost was subtracted post-tax, which overstated tax
-  // whenever operating cost was material — e.g. tax exceeding net income.)
-  const netFrom = (grossEur: number, opcost: number): number => {
-    const grossProfit = Math.max(0, grossEur) * (1 - cogsRate); // billed revenue − cost of revenue
-    if (unit.personal) {
-      if (s.net_tax_multiplier != null) return grossProfit * s.net_tax_multiplier - opcost;
-      // A unit-specific schedule (e.g. self-employed vs salaried, or a company route) wins over the portfolio-wide one;
-      // it receives the operating cost (it may be tax-deductible there) and returns the final net.
-      return unit.afterTax ? unit.afterTax(Math.max(0, grossEur), grossProfit, s, opcost) : PERSONAL_AFTER_TAX(grossProfit) - opcost;
-    }
-    const pretax = grossProfit - opcost; // less deductible operating cost
+  const lines = unit.costLines;
+  const lineFrom = lines ? lines.map((l) => costStartMonth(l.from ?? COSTS_START, s)) : [];
+  const from = costStartMonth(COSTS_START, s);
+  const lineCostIn = (k: number, y: number): number => (lines as CostLine[])[k].amount(s) * fx * yearShareFrom(lineFrom[k], y);
+  const costIn = lines && lines.some((l) => l.from)
+    ? (y: number): number => { let c = 0; for (let k = 0; k < lines.length; k++) c += lineCostIn(k, y); return c; }
+    : (y: number): number => costAnnual * yearShareFrom(from, y);
+  // Net of tax for a gross-revenue figure at a given operating cost, shared by the average-yearly after-tax line
+  // and the per-year net series so they stay consistent. Operating cost is DEDUCTIBLE: business tax hits only
+  // positive pre-tax profit (gross profit − operating cost); a pre-tax loss is untaxed. The portfolio's tax
+  // functions take reporting-currency amounts; a unit's own afterTax takes its own currency.
+  const net = (gross: number, opcost: number): number => {
+    const grossProfit = Math.max(0, gross) * (1 - cogsRate);
+    if (unit.personal && s.net_tax_multiplier != null) return grossProfit * s.net_tax_multiplier - opcost;
+    if (unit.afterTax) return unit.afterTax(Math.max(0, gross), grossProfit, s, opcost);
+    if (unit.personal) return (rate === 1 ? PERSONAL_AFTER_TAX(grossProfit) : PERSONAL_AFTER_TAX(grossProfit * rate) / rate) - opcost;
+    const pretax = grossProfit - opcost;
+    if (BUSINESS_AFTER_TAX) return rate === 1 ? BUSINESS_AFTER_TAX(pretax, s) : BUSINESS_AFTER_TAX(pretax * rate, s) / rate;
     return pretax > 0 ? pretax * (1 - BUSINESS_TAX) : pretax;
   };
-  // Headline after-tax average is a STEADY-STATE (years 2–5, live) figure → full annual operating cost.
-  d.aft[i] = netFrom(avgYearly, costAnnual);
-  // Per-year revenue + net income (EUR): bucket the 60-month trajectory into 5 twelve-month years,
-  // storing each draw so finalize can take per-year p20/p50/mean/p80 (not just the mean).
+  const tv = unit.tvMultiple ? unit.tvMultiple(s) : unit.personal ? 0 : UNIT_DEFAULTS.tvMultiple ?? 0;
+  return { margin, cogsRate, costAnnual, costIn, lineCostIn, net, tv };
+}
+
+/** Σ arr[t]·scale over months [from, to), in month order. (scale 1 is exact: x·1 === x.) */
+function sumMonths(arr: MonthTraj, from: number, to: number, scale = 1): number {
+  let s = 0;
+  for (let t = from; t < to; t++) s += arr[t] * scale;
+  return s;
+}
+/** Σ arr·scale over model year `y` (0-based). */
+const yearSum = (arr: MonthTraj, y: number, scale = 1): number => sumMonths(arr, 12 * y, Math.min(12 * y + 12, HORIZON_MONTHS), scale);
+/** HEADLINE = the SUSTAINED annual average of arr·scale over the headline window (default years 2–5), excluding
+ *  the year-1 ramp, so P20/P50/Mean/P80 reflect a steady-state level rather than the build-up. */
+const headlineAvg = (arr: MonthTraj, scale = 1): number =>
+  sumMonths(arr, 12 * (HEADLINE_FROM_YEAR - 1), HORIZON_MONTHS, scale) / (HORIZON_YEARS - HEADLINE_FROM_YEAR + 1);
+
+/** The revenue-side outputs of one draw from its trajectory (pre-fx; `fx` applied here). */
+function recordRevenue(d: Draws, i: number, traj: MonthTraj, fx: number): void {
+  d.out[i] = headlineAvg(traj) * fx;
+  d.h3[i] = sumMonths(traj, 0, Math.min(3, HORIZON_MONTHS)) * fx;
+  d.h12[i] = sumMonths(traj, 0, Math.min(12, HORIZON_MONTHS)) * fx;
+  for (let y = 0; y < HORIZON_YEARS; y++) d.yearRevAll[y][i] = yearSum(traj, y) * fx;
+  d.npv[i] = npvOf(traj) * fx;
+}
+
+/** Turn one draw's trajectory + scenario into the per-iteration outputs. */
+function recordDraw(d: Draws, i: number, traj: MonthTraj, fx: number, unit: RunUnit, s: ScenarioState, rate: number, parts?: Record<string, MonthTraj>): void {
+  recordRevenue(d, i, traj, fx);
+  const m = moneyOf(unit, s, fx, rate);
+  d.margin[i] = m.margin;
+  // Headline after-tax average is a STEADY-STATE (headline-window, live) figure → full annual operating cost.
+  d.aft[i] = m.net(d.out[i], m.costAnnual);
   for (let y = 0; y < HORIZON_YEARS; y++) {
-    let yr = 0;
-    for (let t = 12 * y; t < 12 * y + 12 && t < HORIZON_MONTHS; t++) yr += traj[t];
-    const yrEur = yr * fx;
-    d.yearRevAll[y][i] = yrEur;
-    const opcostY = costAnnual * costFrac(y); // compliance gated to the readiness phase onward
+    const yrRev = d.yearRevAll[y][i];
+    const opcostY = m.costIn(y);
     d.yearCostAll[y][i] = opcostY;
-    const netY = netFrom(yrEur, opcostY);
+    const netY = m.net(yrRev, opcostY);
     d.yearNetAll[y][i] = netY;
-    // Revenue→net bridge components. Cost of revenue = rev × cogsRate (the summed itemized rates, or the
-    // 1−margin fallback; zero for a personal salary track). Tax is the residual so rev − cogs − opcost −
-    // tax = net exactly (business tax on pre-tax profit, or the portfolio's personal-tax schedule for personal tracks).
-    const cogsY = yrEur * cogsRate;
+    // Revenue→net bridge: cost of revenue = rev × cogsRate; tax is the residual so rev − cogs − opcost − tax = net.
+    const cogsY = yrRev * m.cogsRate;
     d.yearCogsAll[y][i] = cogsY;
-    d.yearTaxAll[y][i] = yrEur - netY - cogsY - opcostY;
+    d.yearTaxAll[y][i] = yrRev - netY - cogsY - opcostY;
     // Itemized sub-lines (independent quantities), all per-year. Revenue: this year's slice of each parts
-    // buffer. Cost-of-revenue: each component's rate × this year's gross revenue. Operating cost: each
-    // fixed component × this year's readiness-gated cost fraction (so pre-readiness build years show 0).
+    // buffer. Cost of revenue: each component's rate × this year's gross revenue. Operating cost: each fixed
+    // component × the share of the year after its start.
     if (d.revLineAll && parts) {
       for (let k = 0; k < d.lineMeta!.rev.length; k++) {
         const buf = parts[d.lineMeta!.rev[k]];
-        let yr2 = 0;
-        if (buf) for (let t = 12 * y; t < 12 * y + 12 && t < HORIZON_MONTHS; t++) yr2 += buf[t];
-        d.revLineAll[k][y][i] = yr2 * fx;
+        d.revLineAll[k][y][i] = (buf ? yearSum(buf, y) : 0) * fx;
       }
     }
     if (d.cogsLineAll && unit.cogsLines) {
-      for (let k = 0; k < unit.cogsLines.length; k++) d.cogsLineAll[k][y][i] = yrEur * unit.cogsLines[k].rate(s);
+      for (let k = 0; k < unit.cogsLines.length; k++) d.cogsLineAll[k][y][i] = yrRev * unit.cogsLines[k].rate(s);
     }
     if (d.opcostLineAll && unit.costLines) {
-      for (let k = 0; k < unit.costLines.length; k++) d.opcostLineAll[k][y][i] = unit.costLines[k].amount(s) * fx * costFrac(y);
+      for (let k = 0; k < unit.costLines.length; k++) d.opcostLineAll[k][y][i] = m.lineCostIn(k, y);
     }
   }
-  const mult = unit.tvMultiple ? unit.tvMultiple(s) : unit.personal ? 0 : 3;
-  d.tv[i] = runRate60(traj) * fx * mult;
-  d.npv[i] = npvOf(traj) * fx;
+  d.tv[i] = runRateAtHorizon(traj) * fx * m.tv;
   d.lagB += s.code_months || 0;
   d.lagI += s.readiness_months || 0;
 }
 
-function finalize(d: Draws, nDraws: number): RunResult {
+/** Over a SORTED sample: Σ values, the count at or above `thr`, and the median of that success tail. The tail
+ *  is contiguous in the sorted array, so it is already sorted → its median is its midpoint. */
+function tailOf(sorted: Float64Array, thr: number): { sum: number; succ: number; condP50: number } {
+  let sum = 0;
+  const succArr: number[] = [];
+  for (let k = 0; k < sorted.length; k++) {
+    sum += sorted[k];
+    if (sorted[k] >= thr) succArr.push(sorted[k]);
+  }
+  return { sum, succ: succArr.length, condP50: succArr.length ? succArr[Math.floor(succArr.length * 0.5)] : 0 };
+}
+
+function finalize(d: Draws, currency: string): RunResult {
+  // The thresholds are portfolio settings in the reporting currency; apply them in this result's currency.
+  const rate = toReporting(currency);
+  const THR = SUCCESS_THRESHOLD / rate, FLOOR = DECISION_FLOOR / rate;
+  const nDraws = d.out.length;
+  const h25 = d.h25 ?? Float64Array.prototype.slice.call(d.out); // draw order, before `out` is sorted
   d.out.sort();
   const aftSorted = Float64Array.prototype.slice.call(d.aft).sort();
-  let succ = 0, floor = 0, mean = 0;
-  const succArr: number[] = [];
-  for (let k = 0; k < d.out.length; k++) {
-    mean += d.out[k];
-    if (d.out[k] >= THR) { succ++; succArr.push(d.out[k]); }
-    if (d.out[k] < FLOOR) floor++;
-  }
-  mean /= d.out.length;
+  const rev = tailOf(d.out, THR);
+  let floor = 0;
+  for (let k = 0; k < d.out.length; k++) if (d.out[k] < FLOOR) floor++;
   // Net-income ("after-tax") summary, parallel to the revenue one, for the Overview net view.
-  let aftSucc = 0, aftMean = 0;
-  const aftSuccArr: number[] = [];
-  for (let k = 0; k < aftSorted.length; k++) {
-    aftMean += aftSorted[k];
-    if (aftSorted[k] >= THR) { aftSucc++; aftSuccArr.push(aftSorted[k]); }
-  }
-  aftMean /= aftSorted.length || 1;
-  // aftSuccArr is a contiguous tail of the sorted array, so it is already sorted → median is its midpoint.
+  const aft = tailOf(aftSorted, THR);
   return {
+    currency,
     samples: d.out,
     p20: qOf(d.out, 0.2), p50: qOf(d.out, 0.5), p80: qOf(d.out, 0.8), p95: qOf(d.out, 0.95),
-    mean,
-    pSucc: succ / d.out.length,
-    condP50: succArr.length ? succArr[Math.floor(succArr.length * 0.5)] : 0,
+    mean: rev.sum / d.out.length,
+    pSucc: rev.succ / d.out.length,
+    condP50: rev.condP50,
     thr: THR,
-    h3: hz(d.h3), h12: hz(d.h12), h25: hz(d.h25),
-    sH3: d.h3, sH12: d.h12, sH25: d.h25,
+    h3: hz(d.h3), h12: hz(d.h12), h25: hz(h25),
+    sH3: d.h3, sH12: d.h12, sH25: h25,
     terminalValue: median(d.tv),
     npv: median(d.npv),
     afterTax20: qOf(aftSorted, 0.2), afterTax50: qOf(aftSorted, 0.5), afterTax80: qOf(aftSorted, 0.8),
-    afterTaxMean: aftMean, afterTaxPSucc: aftSucc / (aftSorted.length || 1),
-    afterTaxCondP50: aftSuccArr.length ? aftSuccArr[Math.floor(aftSuccArr.length * 0.5)] : 0,
+    afterTaxMean: aft.sum / (aftSorted.length || 1), afterTaxPSucc: aft.succ / (aftSorted.length || 1),
+    afterTaxCondP50: aft.condP50,
     grossMargin: median(d.margin),
     pFloor: floor / d.out.length,
     floor: FLOOR,
@@ -423,19 +455,17 @@ function finalize(d: Draws, nDraws: number): RunResult {
   };
 }
 
-/** Reduce 5 per-year sample columns to the four switcher metrics (p20/p50/mean/p80) each. */
+/** Reduce the per-year sample columns to the four switcher metrics (p20/p50/mean/p80) each. */
 function yearStats(cols: Float64Array[]): YearStat[] {
   return cols.map((col) => {
-    const a = Float64Array.prototype.slice.call(col).sort();
-    const q = (f: number): number => a[Math.min(a.length - 1, Math.floor(f * a.length))];
-    let s = 0; for (let k = 0; k < a.length; k++) s += a[k];
-    return { p20: q(0.2), p50: q(0.5), mean: a.length ? s / a.length : 0, p80: q(0.8) };
+    const h = hz(col);
+    return { p20: h.p20, p50: h.p50, mean: h.mean, p80: h.p80 }; // this key order is the serialized one
   });
 }
 
 function newDraws(): Draws {
   return {
-    out: new Float64Array(N), h3: new Float64Array(N), h12: new Float64Array(N), h25: new Float64Array(N),
+    out: new Float64Array(N), h3: new Float64Array(N), h12: new Float64Array(N),
     aft: new Float64Array(N), tv: new Float64Array(N), npv: new Float64Array(N), margin: new Float64Array(N),
     lagB: 0, lagI: 0,
     yearRevAll: Array.from({ length: HORIZON_YEARS }, () => new Float64Array(N)),
@@ -443,7 +473,6 @@ function newDraws(): Draws {
     yearCogsAll: Array.from({ length: HORIZON_YEARS }, () => new Float64Array(N)),
     yearTaxAll: Array.from({ length: HORIZON_YEARS }, () => new Float64Array(N)),
     yearCostAll: Array.from({ length: HORIZON_YEARS }, () => new Float64Array(N)),
-    cost: new Float64Array(N),
   };
 }
 
@@ -459,9 +488,8 @@ function qmcShift(seed: number = SEED): number[] {
 // The headline, runCombined (pairwise / additive-variant sums), and the price card all price at this
 // optimum, so it must be computed once per unit rather than swept inside every pairwise cell. Populated
 // by sweepOptimalPrice; re-populated whenever a unit is re-run after an override (which changes its
-// optimum). clearOptima() drops the cache wholesale (belt-and-braces for a full reset).
+// optimum).
 const OPTIMA = new Map<object, number>();
-export function clearOptima(): void { OPTIMA.clear(); }
 /** The memoized optimal price for a unit (computing+caching it via one sweep if not seen yet). */
 function optimalFor(unit: RunUnit): number | undefined {
   if (!unit.priceSweep) return undefined;
@@ -469,21 +497,24 @@ function optimalFor(unit: RunUnit): number | undefined {
   return hit != null ? hit : (sweepOptimalPrice(unit).optimalPrice as number | undefined);
 }
 
-export function runUnit(unit: RunUnit, seed: number = SEED, opts: { sweep?: boolean; headlineAtOptimal?: boolean } = {}): RunResult {
+/** A priced unit with its sweep-only nodes (priceSweep.extraNodes) spliced into its graph; others unchanged. */
+const withSweepNodes = (u: RunUnit): RunUnit =>
+  u.priceSweep ? { ...u, nodes: [...u.nodes, ...(u.priceSweep.extraNodes || [])] } : u;
+
+export function runUnit(unit: RunUnit, seed: number = SEED): RunResult {
+  checkMoney(unit);
+  const rate = toReporting(unit);
   // Price as OUTPUT: for a priced unit we (1) sweep to find the revenue-optimal price (bounded by the
   // substitution ceiling), then (2) run the HEADLINE draws at that price so the reported P20/P50/P80 is
   // "revenue when priced optimally", not at an arbitrary planned price. The demand nodes
   // (competitor/WTP/elasticity, and any capacity nodes) live in priceSweep.extraNodes, so they must
   // be spliced into the headline plan too — otherwise the overlay reads undefined refs and stays inert.
-  // Non-priced units, or callers passing {headlineAtOptimal:false}, keep the plain planned-price headline.
-  const doSweep = !!unit.priceSweep && opts.sweep !== false;
-  const sw = doSweep ? sweepOptimalPrice(unit, seed) : undefined;
-  const atOptimal = !!sw && opts.headlineAtOptimal !== false;
-  const decisionPrice = atOptimal ? sw!.optimalPrice : undefined;
-  const nodes = atOptimal ? [...unit.nodes, ...(unit.priceSweep!.extraNodes || [])] : unit.nodes;
+  // Non-priced units keep the plain planned-price headline.
+  const sw = unit.priceSweep ? sweepOptimalPrice(unit, seed) : undefined;
+  const decisionPrice = sw ? sw.optimalPrice : undefined;
   const r = mulberry32(seed);
   const shift = qmcShift(seed);
-  const plan = planUnit({ ...unit, nodes });
+  const plan = planUnit(withSweepNodes(unit));
   const d = newDraws();
   const traj = new Float64Array(HORIZON_MONTHS);
   const nodeVals = plan.order.map(() => new Float64Array(N));
@@ -506,11 +537,11 @@ export function runUnit(unit: RunUnit, seed: number = SEED, opts: { sweep?: bool
     traj.fill(0);
     if (parts) for (const l of revLabels) parts[l].fill(0);
     unit.sim(s, r, traj, parts);
-    recordDraw(d, i, traj, unit.fx, unit, s, parts);
+    recordDraw(d, i, traj, unit.fx ?? 1, unit, s, rate, parts);
     for (let j = 0; j < plan.order.length; j++) nodeVals[j][i] = s[plan.order[j].node.id];
   }
   const tornado = computeTornado(plan.order, nodeVals, d.out); // before finalize sorts d.out
-  const res = finalize(d, N);
+  const res = finalize(d, currencyOf(unit));
   res.tornado = tornado;
   if (sw) Object.assign(res, sw);
   progressTick(`runUnit ${unit.id}`);
@@ -529,8 +560,7 @@ export function sweepOptimalPrice(unit: RunUnit, seed: number = SEED): Partial<R
   // Draw the base nodes PLUS the sweep-only nodes (competitor/wtp/elasticity/capacity). For the
   // additive variants these are kept out of the headline graph so the headline RNG stream is
   // untouched; the sweep runs its own RNG, so augmenting here is free of the golden.
-  const extra = unit.priceSweep!.extraNodes || [];
-  const plan = planUnit({ ...unit, nodes: [...unit.nodes, ...extra] });
+  const plan = planUnit(withSweepNodes(unit));
   const shift = qmcShift(seed);
   // The sweep only needs enough resolution to LOCATE the revenue-optimal price on a log grid; the
   // headline then runs the full N draws at that price, so a coarse subsample here is fine and keeps the
@@ -539,13 +569,15 @@ export function sweepOptimalPrice(unit: RunUnit, seed: number = SEED): Partial<R
   const priceNode = unit.priceSweep!.priceNode;
   const wtpNode = unit.priceSweep!.wtpNode;
   // Pre-pass (no sim): median sampled price ("planned") + median WTP ceiling, to size the grid to
-  // this unit's price scale (consumer €2–20 vs seat $30–130) rather than a fixed range.
+  // this unit's price scale (a low consumer price vs a high per-seat one) rather than a fixed range.
+  // (An empirical median over this stream, not the node's ppf(0.5); only the two nodes are evaluated.)
   const p0s: number[] = [], wtps: number[] = [];
   {
     const r = mulberry32(seed);
+    const want = new Set([priceNode, wtpNode].filter(Boolean) as string[]);
     for (let i = 0; i < NS; i++) {
       const z = globalFactors(i, shift);
-      const s = drawScenario(plan, r, z);
+      const s = drawScenario(plan, r, z, want);
       p0s.push(s[priceNode]);
       if (wtpNode) wtps.push(s[wtpNode]);
     }
@@ -553,27 +585,42 @@ export function sweepOptimalPrice(unit: RunUnit, seed: number = SEED): Partial<R
   p0s.sort((a, b) => a - b); wtps.sort((a, b) => a - b);
   const plannedPrice = p0s[Math.floor(0.5 * NS)] || 1;
   const medWtp = wtps.length ? wtps[Math.floor(0.5 * wtps.length)] : plannedPrice * 2.5;
-  const GMIN = Math.max(0.5, plannedPrice * 0.3), GMAX = Math.max(plannedPrice * 2.5, medWtp * 1.35), K = 11;
+  const minPrice = unit.priceSweep!.minPrice;
+  const GMIN = minPrice != null ? Math.max(minPrice, plannedPrice * 0.3) : plannedPrice * 0.3, GMAX = Math.max(plannedPrice * 2.5, medWtp * 1.35), K = 11;
   const grid = Array.from({ length: K }, (_, i) => GMIN * Math.pow(GMAX / GMIN, i / (K - 1)));
   const curve: PricePoint[] = [];
   const traj = new Float64Array(HORIZON_MONTHS);
-  for (const price of grid) {
-    const r = mulberry32(seed);
+  // The scenarios don't depend on the price, so they are drawn ONCE (on the first grid price's stream) and
+  // reused across the grid: draw i keeps its scenario and the RNG state the sim starts from. Where a sim's own
+  // RNG use doesn't depend on the price (the usual case) this is bit-identical to redrawing the stream per price.
+  const scen: ScenarioState[] = new Array(NS);
+  const simState = new Int32Array(NS);
+  for (let g = 0; g < grid.length; g++) {
+    const price = grid[g];
+    const first = g === 0;
+    const r0 = first ? statefulMulberry(seed) : null;
     const rev = new Float64Array(NS);
     let utilSum = 0;
     for (let i = 0; i < NS; i++) {
-      const z = globalFactors(i, shift);
-      const s = drawScenario(plan, r, z);
+      let s: ScenarioState, r: Rng;
+      if (r0) {
+        s = drawScenario(plan, r0, globalFactors(i, shift));
+        scen[i] = { ...s };
+        simState[i] = r0.state();
+        r = r0;
+      } else {
+        s = { ...scen[i] };
+        r = mulberry32(simState[i]);
+      }
       (s as any).__decisionPrice = price;
       const rep = { util: 0 }; (s as any).__capReport = rep;
       traj.fill(0);
       unit.sim(s, r, traj);
-      let rest = 0; for (let t = 12 * (HEADLINE_FROM_YEAR - 1); t < HORIZON_MONTHS; t++) rest += traj[t]; // the headline window, matching the headline
-      rev[i] = (rest / (HORIZON_YEARS - HEADLINE_FROM_YEAR + 1)) * unit.fx;
+      rev[i] = headlineAvg(traj) * (unit.fx ?? 1); // the headline window, matching the headline
       utilSum += rep.util;
     }
     // EXPECTED (mean) revenue — the right objective for a price decision, and robust to zero-inflation
-    // (many products have a €0 median, which would make a p50 curve flat).
+    // (many products have a zero median, which would make a p50 curve flat).
     let sum = 0; for (let i = 0; i < NS; i++) sum += rev[i];
     curve.push({ price, revenue: sum / NS, hoursUtil: utilSum / NS });
   }
@@ -586,16 +633,29 @@ export function sweepOptimalPrice(unit: RunUnit, seed: number = SEED): Partial<R
 }
 
 /** Run a project's base graph (correlations from the global RHO table). */
-export function run(p: Project, seed: number = SEED, opts: { sweep?: boolean } = {}): RunResult {
-  return runUnit({ id: p.id, fx: p.fx, nodes: p.nodes, sim: p.sim, rho: RHO[p.id] || {}, margin: p.margin, tvMultiple: p.tvMultiple, cost: p.cost, personal: p.personal, afterTax: p.afterTax, priceSweep: p.priceSweep, revenueLines: p.revenueLines, cogsLines: p.cogsLines, costLines: p.costLines }, seed, opts);
+export function run(p: Project, seed: number = SEED): RunResult {
+  return runUnit(baseUnit(p), seed);
 }
 
+/** The project's own graph as a unit (correlations from the global RHO table). */
+export const baseUnit = (p: Project): RunUnit => ({ id: p.id, fx: p.fx, currency: p.currency, priceCurrency: p.priceCurrency, nodes: p.nodes, sim: p.sim!, rho: RHO[p.id] || {}, margin: p.margin, tvMultiple: p.tvMultiple, cost: p.cost, personal: p.personal, afterTax: p.afterTax, market: p.market, priceSweep: p.priceSweep, revenueLines: p.revenueLines, cogsLines: p.cogsLines, costLines: p.costLines });
+
 /**
- * Run several units as one simulation: each draw shares the global factors, so the units are
- * correlated; the outcome is the SUM of every unit's trajectory (each converted to EUR). Used for
- * a pair of projects and for "all-fronts" (all variants pursued at once).
+ * Run several units as one simulation: each draw shares the global factors, so the units are correlated; the
+ * outcome is the SUM of every unit's trajectory. Used for a pair of projects and for "all-fronts" (all variants
+ * pursued at once). The result is in `opts.currency`, else the units' common currency, else (mixed currencies)
+ * the reporting currency; each unit is converted into it. Each unit keeps its OWN money policy — margin,
+ * operating cost and its start, tax (its own afterTax, or the portfolio's schedule for its kind) and terminal
+ * multiple — and the combined net is the sum of the units' nets.
  */
-export function runCombined(units: RunUnit[], opts: { concurrency?: number; overheadFrac?: number } = {}): RunResult {
+export function runCombined(units: RunUnit[], opts: { overheadFrac?: number; currency?: string } = {}): RunResult {
+  for (const u of units) checkMoney(u);
+  const codes = units.map((u) => currencyOf(u));
+  const target = opts.currency ?? (codes.length && codes.every((c) => c === codes[0]) ? codes[0] : REPORTING_CURRENCY.code);
+  const tRate = toReporting(target);
+  const uRate = units.map((u) => toReporting(u));
+  const conv = uRate.map((r) => r / tRate); // a unit's currency → the result's (1 when the same)
+  const fxs = units.map((u) => u.fx ?? 1); // each unit's price currency → its own
   const r = mulberry32(SEED);
   const shift = qmcShift();
   // Price as OUTPUT here too: each priced unit is run at its (memoized) optimal price, and its demand
@@ -604,11 +664,12 @@ export function runCombined(units: RunUnit[], opts: { concurrency?: number; over
   // disagree with the per-project headlines. The optimum is memoized per priceSweep, so this adds no
   // per-cell sweep cost once the units have been run once.
   const unitOpt = units.map((u) => optimalFor(u));
-  const plans = units.map((u) => planUnit(u.priceSweep ? { ...u, nodes: [...u.nodes, ...(u.priceSweep.extraNodes || [])] } : u));
+  const plans = units.map((u) => planUnit(withSweepNodes(u)));
   const d = newDraws();
   const summed = new Float64Array(HORIZON_MONTHS);
-  const bufs = units.map(() => new Float64Array(HORIZON_MONTHS)); // per-unit fx-applied trajectory, reused
+  const bufs = units.map(() => new Float64Array(HORIZON_MONTHS)); // per-unit fx-applied trajectory (unit's currency), reused
   const cum = new Float64Array(units.length);
+  const yNet = new Float64Array(HORIZON_YEARS), yCost = new Float64Array(HORIZON_YEARS), yCogs = new Float64Array(HORIZON_YEARS);
   // Units sharing a non-empty market model the SAME buyer pool: within the group we add only the
   // largest member per draw, so the shared market (two units in the same market) is
   // not double-counted in a portfolio sum.
@@ -624,14 +685,15 @@ export function runCombined(units: RunUnit[], opts: { concurrency?: number; over
     for (let k = 0; k < units.length; k++) {
       const s = drawScenario(plans[k], r, { ...z });
       if (unitOpt[k] != null) (s as any).__decisionPrice = unitOpt[k];
-      sList[k] = s; // keep each unit's scenario so its own cost()/tvMultiple can be threaded below
+      sList[k] = s; // keep each unit's scenario so its own money policy can be applied below
       const b = bufs[k];
       b.fill(0);
       units[k].sim(s, r, b);
       let c = 0;
-      for (let t = 0; t < HORIZON_MONTHS; t++) { b[t] *= units[k].fx; c += b[t]; }
-      cum[k] = c;
-      marginW += units[k].margin ? (units[k].margin as (x: ScenarioState) => number)(s) : 0.8;
+      for (let t = 0; t < HORIZON_MONTHS; t++) { b[t] *= fxs[k]; c += b[t]; }
+      cum[k] = c * conv[k];
+      const u = units[k];
+      marginW += u.margin ? u.margin(s) : u.cogsLines ? 1 - u.cogsLines.reduce((acc, x) => acc + x.rate(s), 0) : UNIT_DEFAULTS.margin ?? 1;
       if ((s.code_months || 0) > (sMerged.code_months || 0)) sMerged.code_months = s.code_months;
       if ((s.readiness_months || 0) > (sMerged.readiness_months || 0)) sMerged.readiness_months = s.readiness_months;
     }
@@ -645,59 +707,56 @@ export function runCombined(units: RunUnit[], opts: { concurrency?: number; over
       active.push(best);
     }
     for (let k = 0; k < units.length; k++) if (!skip.has(k)) active.push(k);
-    // additive-variant allocation simplex: a hard concurrency cap — only the top-`concurrency` segments
-    // by revenue can be pursued at once (the rest queue out) — plus a fixed per-segment overhead that
-    // does not shrink with allocation. Absent → the plain sum (pairwise / non-additive projects).
-    // A `base` unit (the generic "no wedge" core each wedge is built on) is always-on and exempt from
-    // the cap; the cap governs only the incremental wedges.
-    let contributing = active;
-    if (opts.concurrency) {
-      const baseUnits = active.filter((k) => units[k].base);
-      const capped = active.filter((k) => !units[k].base);
-      const kept = opts.concurrency < capped.length
-        ? capped.slice().sort((a, b) => cum[b] - cum[a]).slice(0, opts.concurrency)
-        : capped;
-      contributing = baseUnits.concat(kept);
-    }
     const keep = 1 - (opts.overheadFrac || 0);
-    // Sum only the CONTRIBUTING units' trajectories AND their operating cost + terminal-value policy,
-    // each fx-applied and scaled by the same overhead `keep`. runUnit honours per-unit cost(s) via
-    // recordDraw's netOf, but the combined line used a synthetic cost-less unit — so the additive
-    // aggregate overstated net/after-tax/NPV by omitting each variant's free-tier cost.
-    // Thread it through here. tvMultiple is revenue-weighted across contributing units (default 3 for
-    // business, 0 for personal, matching recordDraw's per-unit default); personal is set only when
-    // EVERY contributing unit is personal, so a personal-only combo (e.g. two job/consulting tracks)
-    // is not re-taxed at the 25% business rate. (Pairwise cells keep gross-only fields, so this tax
-    // policy is invisible there and only bites the additive aggregate that consumes the full result.)
-    let combinedCost = 0, tvNumer = 0, tvDenom = 0, allPersonal = contributing.length > 0;
-    for (const k of contributing) {
-      for (let t = 0; t < HORIZON_MONTHS; t++) summed[t] += bufs[k][t] * keep;
-      const u = units[k], sk = sList[k];
-      if (u.cost) combinedCost += u.cost(sk) * u.fx * keep;
-      const mult = u.tvMultiple ? u.tvMultiple(sk) : u.personal ? 0 : 3;
-      tvNumer += mult * cum[k]; tvDenom += cum[k];
-      if (!u.personal) allPersonal = false;
+    // Sum the active units' trajectories (converted, scaled by the overhead `keep`) for the revenue
+    // outputs; apply each unit's own money policy to ITS revenue and sum the results for the net outputs.
+    let aft = 0, tvSum = 0;
+    yNet.fill(0); yCost.fill(0); yCogs.fill(0);
+    for (const k of active) {
+      const u = units[k], sk = sList[k], ck = conv[k], b = bufs[k];
+      for (let t = 0; t < HORIZON_MONTHS; t++) summed[t] += b[t] * ck * keep;
+      const m = moneyOf(u, sk, fxs[k], uRate[k]);
+      aft += m.net(headlineAvg(b, keep), m.costAnnual * keep) * ck;
+      for (let y = 0; y < HORIZON_YEARS; y++) {
+        const yr = yearSum(b, y, keep);
+        const oc = m.costIn(y) * keep;
+        yNet[y] += m.net(yr, oc) * ck;
+        yCost[y] += oc * ck;
+        yCogs[y] += yr * m.cogsRate * ck;
+      }
+      tvSum += runRateAtHorizon(b) * keep * m.tv * ck;
     }
-    const blendTv = tvDenom !== 0 ? tvNumer / tvDenom : (allPersonal ? 0 : 3);
-    const blendMargin = marginW / units.length;
-    recordDraw(d, i, summed, 1, {
-      id: "combined", fx: 1, nodes: [], sim: () => {}, rho: {},
-      margin: () => blendMargin, cost: () => combinedCost, tvMultiple: () => blendTv, personal: allPersonal,
-    }, sMerged);
+    recordRevenue(d, i, summed, 1);
+    d.margin[i] = marginW / units.length;
+    d.aft[i] = aft;
+    for (let y = 0; y < HORIZON_YEARS; y++) {
+      const rev = d.yearRevAll[y][i];
+      d.yearNetAll[y][i] = yNet[y];
+      d.yearCostAll[y][i] = yCost[y];
+      d.yearCogsAll[y][i] = yCogs[y];
+      d.yearTaxAll[y][i] = rev - yNet[y] - yCogs[y] - yCost[y];
+    }
+    d.tv[i] = tvSum;
+    d.lagB += sMerged.code_months || 0;
+    d.lagI += sMerged.readiness_months || 0;
   }
   progressTick(`runCombined ${units.map((u) => u.id).join("+")}`);
-  return finalize(d, N);
+  return finalize(d, target);
 }
 
-/** Equal-weight supermix: pool every unit's draws and summarise; scalar outputs count-weighted. */
+/** Equal-weight supermix: pool every unit's draws and summarise; scalar outputs count-weighted. Results in
+ *  different currencies are converted into the reporting currency first. */
 export function supermix(results: RunResult[]): RunResult {
+  const codes = results.map((r) => currencyOf(r));
+  const target = codes.length && codes.every((c) => c === codes[0]) ? codes[0] : REPORTING_CURRENCY.code;
+  const tRate = toReporting(target);
   let total = 0;
   for (const r of results) total += r.samples.length;
   const d = newDraws();
   d.out = new Float64Array(total); d.h3 = new Float64Array(total); d.h12 = new Float64Array(total);
-  d.h25 = new Float64Array(total); d.aft = new Float64Array(total);
-  d.tv = new Float64Array(total); d.npv = new Float64Array(total); d.margin = new Float64Array(total); d.cost = new Float64Array(total);
-  // Pool the per-year samples too (5 buckets each), so the supermix reports real pooled per-year stats.
+  const h25 = (d.h25 = new Float64Array(total)); d.aft = new Float64Array(total);
+  d.tv = new Float64Array(total); d.npv = new Float64Array(total); d.margin = new Float64Array(total);
+  // Pool the per-year samples too (one bucket per model year), so the supermix reports real pooled per-year stats.
   d.yearRevAll = Array.from({ length: HORIZON_YEARS }, () => new Float64Array(total));
   d.yearNetAll = Array.from({ length: HORIZON_YEARS }, () => new Float64Array(total));
   // Component bridge arrays aren't re-pooled (the income/cost table isn't shown on variant supermix
@@ -708,17 +767,22 @@ export function supermix(results: RunResult[]): RunResult {
   let off = 0, wLagB = 0, wLagI = 0;
   for (const r of results) {
     const n = r.samples.length;
-    d.out.set(r.samples, off); d.h3.set(r.sH3, off); d.h12.set(r.sH12, off); d.h25.set(r.sH25, off); d.aft.set(r.sAfter, off);
-    d.tv.fill(r.terminalValue, off, off + n); d.npv.fill(r.npv, off, off + n); d.margin.fill(r.grossMargin, off, off + n);
+    const f = toReporting(r) / tRate;
+    const put = (dst: Float64Array, src: Float64Array): void => {
+      if (f === 1) dst.set(src, off);
+      else for (let k = 0; k < src.length; k++) dst[off + k] = src[k] * f;
+    };
+    put(d.out, r.samples); put(d.h3, r.sH3); put(d.h12, r.sH12); put(h25, r.sH25); put(d.aft, r.sAfter);
+    d.tv.fill(r.terminalValue * f, off, off + n); d.npv.fill(r.npv * f, off, off + n); d.margin.fill(r.grossMargin, off, off + n);
     for (let y = 0; y < HORIZON_YEARS; y++) {
-      if (r.sYearRev) d.yearRevAll[y].set(r.sYearRev[y], off);
-      if (r.sYearNet) d.yearNetAll[y].set(r.sYearNet[y], off);
+      if (r.sYearRev) put(d.yearRevAll[y], r.sYearRev[y]);
+      if (r.sYearNet) put(d.yearNetAll[y], r.sYearNet[y]);
     }
     wLagB += r.lagBuild * n; wLagI += r.lagInstitutional * n;
     off += n;
   }
   d.lagB = wLagB; d.lagI = wLagI;
-  return finalize(d, total);
+  return finalize(d, target);
 }
 
 /** Run every project, keyed by id. */

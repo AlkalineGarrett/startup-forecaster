@@ -2,20 +2,57 @@
   "name": "startup-forecaster",
   "version": "0.1.0",
   "description": "Take a startup idea from a pitch to a researched, simulated revenue forecast: source evidence, build each assumption's distribution from it, simulate a portfolio, and plan the build.",
+  "keywords": [
+    "forecasting",
+    "monte-carlo",
+    "startup",
+    "revenue",
+    "simulation",
+    "agents",
+    "research"
+  ],
   "license": "MIT",
+  "author": "Garrett Jones",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlkalineGarrett/startup-forecaster.git"
+  },
+  "homepage": "https://github.com/AlkalineGarrett/startup-forecaster#readme",
   "type": "module",
-  "private": true,
   "engines": {
-    "node": ">=22.6"
+    "node": ">=22.13"
   },
   "bin": {
     "forecaster": "forecaster/bin/forecaster.mjs"
   },
+  "files": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "SKILL.md",
+    "forecaster/",
+    "montecarlo-engine/",
+    "forecast-renderer/",
+    "distribution-compiler/",
+    "agentic-fetcher/",
+    "build-plan-generator/",
+    "exec-plan-generator/",
+    "shared/",
+    "!**/test/",
+    "!**/tests/",
+    "!**/dist/",
+    "!**/.cache/",
+    "!agentic-fetcher/ocrtool",
+    "!distribution-compiler/compiler/testdata/",
+    "!distribution-compiler/compiler/_fixtures.mjs"
+  ],
   "scripts": {
-    "test": "npm run test:engine && npm run test:compiler && npm run test:fetcher && npm run test:forecaster",
+    "test": "npm run test:engine && npm run test:renderer && npm run test:compiler && npm run test:fetcher && npm run test:forecaster && npm run test:plans",
     "test:engine": "npm --prefix montecarlo-engine test",
+    "test:renderer": "npm --prefix forecast-renderer test",
     "test:compiler": "npm --prefix distribution-compiler test",
     "test:fetcher": "npm --prefix agentic-fetcher test",
-    "test:forecaster": "npm --prefix forecaster test"
+    "test:forecaster": "npm --prefix forecaster test",
+    "test:plans": "npm --prefix build-plan-generator test && npm --prefix exec-plan-generator test"
   }
 }

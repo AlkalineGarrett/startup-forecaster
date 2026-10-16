@@ -1,7 +1,7 @@
 # Operating principles
 
 How to work on the project-axis distributions in the grounded/constructed/derived format. Each principle
-states what to do and why; the failures behind them are real occurrences in this project. The
+states what to do and why; each guards against a failure that happens in practice. The
 compact source of truth is [`schema/SCHEMA.md`](schema/SCHEMA.md) §9 — this file is the expanded
 version with the rationale.
 
@@ -84,9 +84,11 @@ document's `core`; `unchecked`, `not_in_doc` (swept, figure absent), and `unveri
 yet parseable — carries `blocked_on`) are distinct, honest states. A number read off a chart image is
 `quote: null` + a `capture_note`, not a fabricated quote.
 
-**Retrieval before declaring a gap.** Blocked is not the same as unavailable. Normalise a URL,
-try a fetcher, then a browser, then the page's own API or a screenshot, before recording a
-`reference: null`. Archive what you retrieve when you retrieve it.
+**Retrieval before declaring a gap.** Blocked is not the same as unavailable. Search the archive
+(`npx forecaster search`), then fetch the page with `curl` or a web-fetch tool (normalise the URL; try the
+page's own API), and only then queue it `human_only` for a person to fetch in their own browser
+(`agentic-fetcher/ground-evidence.md`). Never drive an automated browser. Record a `reference: null` only
+once the request is queued, and archive what you retrieve when you retrieve it.
 
 **Scripts check structure; meaning is read.** A script verifies shape (an id resolves, a quote is
 present, a constraint evaluates, quantiles order). It never asserts support, aboutness, or sameness —

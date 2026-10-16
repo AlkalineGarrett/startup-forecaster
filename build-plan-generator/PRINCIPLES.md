@@ -1,10 +1,12 @@
 # Build-plan & competitive-analysis principles
 
-The working principles established while building and refining the build-plan artifact
-and its per-step competitive feature comparisons. The
+The principles behind a build plan and its per-step competitive feature comparisons. The
 [README](README.md) covers the template's mechanics; this covers the **judgment** behind
 the data it renders — how to decide what a feature is, how to classify it, and how the
-page should read. They are meant to carry to any project that reuses the template.
+page should read.
+
+Sections 1–4 are binding for the `plan-build` step. Section 5 is a recommended house style:
+follow it unless your workspace has its own. Section 6 is for whoever changes the generator.
 
 ## 1. What a "feature" is
 
@@ -60,15 +62,16 @@ page should read. They are meant to carry to any project that reuses the templat
 ## 4. Honesty and grounding
 
 - **Live-verify, then re-derive — even when it hurts.** One research pass per market, and
-  let the evidence move the verdict (FP&A dropped Strong → Medium; "inline compute" turned
-  out not to be unique). Treat any single competitor claim as ~90% confident and
+  let the evidence move the verdict, even when it downgrades a verdict or shows a supposed
+  edge isn't unique. Treat any single competitor claim as ~90% confident and
   pressure-test it before betting on it.
-- **Name the permanent ceiling.** For a solo dev it is almost always integration / connector
-  breadth. Say so plainly rather than hand-waving past it.
+- **Name the permanent ceiling.** Every plan has a gap it will never close for its team's
+  size; for a small team it is often integration and connector breadth. Say so plainly
+  rather than hand-waving past it.
 - **Critique the result; don't half-ass it.** Every pass ends by attacking its own output —
   that critique is the next pass's work-list.
 
-## 5. Editorial — how the page reads
+## 5. Editorial — how the page reads (recommended)
 
 - **Present tense, conclusion-first.** State what is true now. Strip every trace of prior
   versions and of the process that produced them ("reframed", "the live pass corrected the
@@ -89,12 +92,7 @@ page should read. They are meant to carry to any project that reuses the templat
 - **Separate template from data.** Structure, styles, and rendering logic are
   project-neutral; each project is a data spec. Parameterize anything product-specific
   (group labels derive from `productName`, not a hard-coded string).
-- **Match the codebase's language and organization.** The generator is Node ESM to match
-  the surrounding app, not a bolted-on second-language pipeline, and it lives under the
-  existing `templates/` convention.
-- **Verify refactors by fidelity, not faith.** When turning a hand-built page into a
-  generator, diff the regenerated output against the original until it is byte-identical
-  (modulo intended drops). Structural counts — badges, rows, class names — catch silent
-  losses that a glance would miss (the `ftev` evolve-row styling nearly vanished this way).
+- **Verify refactors by fidelity, not faith.** After changing the renderer, diff the
+  regenerated pages against the previous output; only the intended changes should differ.
 - **Prune what you no longer render.** Remove CSS and markup for cut sections; a template
   should not ship rules for things it never emits.

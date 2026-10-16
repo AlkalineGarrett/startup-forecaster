@@ -21,7 +21,7 @@ function saasUnit(): RunUnit {
     node("readiness_months", { p10: 6, p50: 12, p90: 24 }),
   ];
   return {
-    id: "saas", fx: 1, nodes, rho: {}, margin: () => 0.8,
+    id: "saas", fx: 1, nodes, rho: {}, margin: () => 0.8, tvMultiple: () => 3,
     sim(s: ScenarioState, _r: Rng, out: MonthTraj) {
       const lag = (s.code_months || 0) + (s.readiness_months || 0);
       const payingAcqPerMo = (s.signups * s.conv) / Math.max(1, 60 - lag);

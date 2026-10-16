@@ -1,25 +1,28 @@
 # montecarlo-engine
 
 A percentile-driven **Monte-Carlo portfolio simulator**. You describe each venture/project as a small
-graph of researched **nodes** (gates and quantities, each given by percentiles rather than an assumed
-shape); the engine draws correlated scenarios through a one-factor Gaussian copula, evaluates a
+graph of researched **nodes** (gates and quantities, each given by a compiled distribution or by
+percentiles); the engine draws correlated scenarios through a multi-factor Gaussian copula, evaluates a
 per-project revenue model, and reports outcome percentiles (P20/P50/P80…) instead of point estimates.
-It ships a render layer, a zero-dependency local server, and a self-contained-artifact bundler.
+Rendering and serving the results is [`forecast-renderer`](../forecast-renderer)'s job.
 
 **Bring your own portfolio.** The engine is generic; the data is yours. A fictional example portfolio
 lives in [`examples/`](examples/) and is what every script defaults to.
 
 No build toolchain: the source is idiomatic TypeScript run directly via Node's native type-stripping
-(Node ≥ 22.6).
+(Node ≥ 22.13).
+
+> **Doing this as a step?** Read its step docs first: [`build-simulation.md`](build-simulation.md) (step `build-simulation`), [`audit-simulation.md`](audit-simulation.md) (step `audit-simulation`).
+> A step doc holds the step's binding principles and procedure; this README describes the tool.
 
 ## Quick start
 
 ```sh
 npm test          # engine unit tests + the example portfolio's golden test
-npm run build     # bundle the example into a self-contained dist/montecarlo.html
-npm run serve     # run the example model at http://localhost:8137
-npm run pipeline  # the full data → model pipeline over the example (golden → build → precompute)
+npm run simulate  # the simulation build over the example (golden; it has no compiled data or pairwise)
 ```
+
+The tests run from a checkout of the repository: the published package leaves `test/` out.
 
 ## Authoring a portfolio
 
@@ -31,11 +34,11 @@ A venture is **data**: its nodes, plus a `model` naming a business-model templat
 its slots. No code is needed unless the venture's mechanics are genuinely bespoke.
 
 ```ts
-import type { Project } from "montecarlo-engine/src/types.ts";
-import { configurePortfolio } from "montecarlo-engine/src/portfolio-context.ts";
+import type { Project } from "startup-forecaster/montecarlo-engine/src/types.ts";
+import { configurePortfolio } from "startup-forecaster/montecarlo-engine/src/portfolio-context.ts";
 
 const myProject: Project = {
-  id: "my-app", name: "My App", cur: "$", fx: 1, type: "Consumer subscription",
+  id: "my-app", name: "My App", type: "Consumer subscription",
   one: "One-line description.",
   nodes: [
     { id: "launch", label: "Ships", kind: "gate", conf: "low", pctiles: { p10: 0.6, p50: 0.8, p90: 0.95 } },
@@ -76,24 +79,58 @@ A unit whose mechanics no template covers (a price-as-output demand overlay, del
 multi-stage funnel with bespoke rules) writes `sim(s, r, out, parts)` by hand with the cohort/accounting
 helpers — the fallback, not the default.
 
-`configurePortfolio` accepts: `projects`, `rho` (scalar execution loadings) / `loadings` (multi-factor),
-`pairwiseIds`; `title` (the results-UI page title); the **tax model** — `personalAfterTax(grossAnnual)`
-and `businessTax` (a rate) — which default to **no tax** (the engine assumes no jurisdiction; a
-portfolio supplies its own); and — for the fully-researched workflow — compiled `distributions`, an
-evidence `corpus` + `nodeRefs`, and a precomputed `pairwisePrecomputed` matrix. Every slice is
-optional; nodes with no compiled distribution fall back to a metalog fit through their authored
-`pctiles`. The page title also comes from the build manifest's `TITLE` (for the static `<title>`).
+`configurePortfolio` is the engine's one entry point. Data: `projects`, `rho` (scalar execution loadings) /
+`loadings` (multi-factor), `pairwiseIds`, `title`, and — for the fully-researched workflow — compiled
+`distributions`, an evidence `corpus` + `nodeRefs`, and a precomputed `pairwisePrecomputed` matrix. Nodes with
+no compiled distribution fall back to a metalog fit through their authored `pctiles`. The page title also
+comes from the build manifest's `TITLE` (for the static `<title>`).
+
+Settings — each has a **neutral default**; nothing about one person's situation is built in. A workspace
+sets them from its profile (`profile.json`):
+
+| Setting | Default | What it is |
+|---|---|---|
+| `reportingCurrency` | `{ code: "USD", symbol: "$" }` | the currency ventures are combined in; also `fmt`'s default symbol |
+| `exchangeRates` | `{}` | `rates[code]` = value of 1 `code` in the reporting currency; required for every venture `currency` other than reporting |
+| `successThreshold`, `decisionFloor` | 5000, 12000 (placeholders) | revenue per year that counts as meaningful (pSucc) / the go-no-go floor (pFloor), reporting currency |
+| `referenceP90`, `referenceNote` | unset | the reference-class p90 for the optimism flag (no flag when unset; a project's `refP90` wins) |
+| `discountRate` | 0.10 | NPV discount rate |
+| `channels` | — | payment channels merged over the built-ins (`{ realisation, fixedFee }`, fee in the venture's currency); an unknown channel is an error |
+| `personalAfterTax`, `businessTax`, `businessAfterTax`, `taxNote` | no tax | the jurisdiction's tax; a unit's own `afterTax` wins for any unit |
+| `costsStart` | `"start"` | when operating costs begin: `"start"`, `"readiness"` (after `code_months`), `"launch"`; a cost line may set `from` |
+| `pairAttentionOverhead` | 0 | the Pairwise split-attention haircut |
+| `globalFactors` | `["macro"]` | factors shared across projects (at most 11) |
+| `defaults` | none | `{ margin, tvMultiple }` for business units that set none (no margin and no default is an error) |
+| `horizonYears`, `headlineFromYear` | 5, 2 | the model horizon and the headline window |
+| `locale`, `moneyBands` | `"en-US"`, `[50000, 100000, 200000]` | number grouping; the money colour scale (reporting currency) |
+| `ventures` | — | per venture id, `{ currency, priceCurrency }` (ISO codes) from the profile's venture entries |
+
+**Money.** Each venture reports in its own currency, `currency` (ISO code; default the reporting currency), and
+may quote its input prices in another, `priceCurrency` (default its `currency`). A workspace sets both in its
+profile (`ventures.<id>.currency` / `.priceCurrency`), never in the project file. `configurePortfolio` derives
+the rest once: `cur`, the symbol (`curOf`, via Intl), and `fx`, the price conversion
+`toReporting(priceCurrency) / toReporting(currency)` from the exchange rates; a variant takes its project's
+currencies. `runCombined`, `supermix` of mixed currencies, and the Pairwise matrix convert into the reporting
+currency (`toReporting(project)`); every `RunResult` carries its `currency`, and its `thr` / `floor` are the
+thresholds converted into it (`thresholdsFor(project)`). A renderer opens one scope per venture with
+`withCur(project, fn)`: `fmt` uses its symbol, and `heatVars` / `inReporting` convert its amounts into the
+reporting currency, so colours and sort keys compare across ventures.
+
+**Nodes the UI hides.** A node with `hidden: true` is sampled but left out of the UI's driver lists (e.g. a
+terminal-value multiple). The lag nodes `code_months` / `readiness_months` are a convention the engine and the
+templates read when a unit has them; the engine never adds them.
 
 ## How the model works
 
-- **Nodes.** A **gate** samples a pass-rate then a Bernoulli; a **value** samples a quantity. Each
-  distribution is defined by researched percentiles; sampling interpolates between them, so tail
-  fatness comes from the data, not an assumed shape.
-- **Correlation.** Each run draws a shared "luck" factor; every node is pulled toward it by its `RHO`
-  loading (a one-factor Gaussian copula; multi-factor loadings supported per node).
-- **Revenue.** Each project's `sim` writes a 60-month net-collected trajectory; the engine summarises
-  the run into percentiles, applies the project `fx`, and reports a sustained yearly average. The PRNG
-  is a seeded `mulberry32`, so runs are reproducible.
+- **Nodes.** A **gate** samples a pass-rate then a Bernoulli; a **value** samples a quantity, from its
+  compiled distribution, else a metalog through its authored percentiles, so tail fatness comes from the
+  data, not an assumed shape.
+- **Correlation.** A multi-factor Gaussian copula: each node loads on named factors — the project's own
+  execution factor (its `RHO` loading), project-local factors, and the portfolio's `globalFactors`, which are
+  drawn once per iteration and shared across projects.
+- **Revenue.** Each project's `sim` writes a monthly trajectory over the horizon; the engine summarises
+  the run into percentiles, applies the project `fx`, and reports a sustained yearly average over the
+  headline window. The PRNG is a seeded `mulberry32`, so runs are reproducible.
 - **Cohort / accounting helpers** (`src/cohort.ts`, `src/accounting.ts`) — subscription survival,
   ramped acquisition, plan-mix, realisation (payment/tax drag), NPV — are the building blocks `sim`
   functions compose.
@@ -109,49 +146,46 @@ export default {
   dataRoot: "src", manifest: "portfolio.manifest.mjs", out: "dist/montecarlo.html",   // the bundle
   golden: "golden.json",               // frozen run() outputs
   generated: { distributions: "src/distributions-data.ts", evidence: "src/evidence-data.ts", pairwise: "src/pairwise-data.ts" },
-  distributionData: "../my-distribution-data",   // optional: a distribution-compiler data project
-  compiler: "../startup-forecaster/distribution-compiler",          // optional: lets the pipeline (re)compile it
-  groundingSources: "../my-sources",             // optional: source registry (documents.json)
+  distributionData: "distributions",             // optional: a distribution-compiler data project
+  groundingSources: "sources",                   // optional: the source archive (documents.json)
 };
 ```
 
-Every entrypoint reads it (from `MC_CONFIG`, else `./portfolio.config.mjs`, else the example), so a
-portfolio's npm scripts are just paths into the package:
+Every entrypoint reads it (from `MC_CONFIG`, else the nearest `portfolio.config.mjs` at or above the current
+directory, else an error; `MC_CONFIG=examples` opts into the bundled example). In a workspace, the engine runs through the package's `forecaster` command:
 
 ```sh
-node node_modules/montecarlo-engine/pipeline/run.mjs        # compile → gen → golden → pairwise → build → precompute
-node node_modules/montecarlo-engine/build.mjs               # the self-contained live page
-node --experimental-strip-types node_modules/montecarlo-engine/server.mjs          # serve it
-node --experimental-strip-types node_modules/montecarlo-engine/build-artifact.mjs  # static artifacts (also build-full-artifact)
-node --experimental-strip-types node_modules/montecarlo-engine/coverage.mjs        # grounding per node
+npx forecaster simulate        # compile → gen → golden → pairwise → precompute
+npx forecaster coverage        # grounding per node
 ```
 
-The **pipeline** (`pipeline/`) is the whole data → model chain: it compiles the distribution data project
+The **simulation build** (`simulation/`) is the whole data → model chain: it compiles the distribution data project
 (if configured), generates the distributions + evidence modules from its `build/` output (only for projects
-whose source still exists), re-freezes golden, re-bakes the Pairwise matrix with appcore's own computation,
-builds, and precomputes. Stages a portfolio has no data for are skipped; `--from/--to`, `--fast` (skip the
-pairwise bake), `--list`. A portfolio's golden test can call `checkGolden(PROJECTS, run)` from
-`pipeline/golden.mjs`.
+whose source still exists), re-freezes golden, re-bakes the Pairwise matrix (`src/pairwise.ts`, the same
+computation the results UI runs) and writes the renderer's precompute snapshot. golden, pairwise and precompute
+share one run of the portfolio (`simulation/results.mjs`), so the snapshot is the very results golden was frozen
+from. Stages a portfolio has no data for are skipped; `--from/--to`, `--fast` (skip the pairwise bake and the
+snapshot), `--list`. `simulation/golden.mjs` and `simulation/gen-pairwise.mjs` still run on their own, and a
+portfolio's golden test can call `checkGolden(PROJECTS, run)` from `simulation/golden.mjs`.
 
 `coverage.mjs` reports, per node, whether the sim samples a compiled distribution or hand-authored
-percentiles, and lists compiled keys that match no node (renamed projects/nodes).
-
-The precompute cache lives beside the config (`<portfolio>/.cache/`, or `MC_CACHE_DIR`); artifacts land
-next to the live build (`dirname(out)`). The cache key hashes the engine's sources **and** the portfolio's
-(every `.ts` under the bootstrap's directory), so a data change busts it just like an engine change.
+percentiles, and lists compiled keys that match no node (renamed projects/nodes). With `--drivers` it adds each
+project's headline and outcome drivers (the tornado), read from the precompute snapshot when it is current, else
+by running each project once.
 
 ## Layout
 
 ```
 src/            the engine — types, rng, quantile, metalog, distributions, factors, qmc, cohort,
                 accounting, ramp, simulate, apply-distributions, the portfolio-context seam,
-                appcore (DOM-free orchestration), app (browser entry), render/*
+                units (projects → run units), pairwise (the Pairwise matrix), format
 examples/       the fictional habit-tracker portfolio + its config, manifest and golden
 test/           node:test suites — engine math/machinery + the example golden
 config.mjs      reads a portfolio's portfolio.config.mjs (every entrypoint uses it)
-pipeline/       the data → model pipeline: run.mjs + gen-distributions, gen-evidence, golden, gen-pairwise
-build.mjs       zero-dependency bundler (engine src + data modules → one self-contained HTML)
-server.mjs      zero-dependency local server (renders HTML fragments to a thin client.mjs)
+simulation/     the simulation build (data → model): run.mjs + gen-distributions, gen-evidence, results (golden +
+                gen-pairwise + the precompute snapshot, from one portfolio run)
+coverage.mjs    per-node grounding report
+portfolio-loader.mjs  attaches a portfolio to the engine (the renderer's entrypoints use it too)
 ```
 
 ## The data seam

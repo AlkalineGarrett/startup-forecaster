@@ -7,16 +7,24 @@ test("the engine's default currency is neutral; a portfolio sets its own", () =>
   assert.strictEqual(fmt(1200), "$1k");
 });
 
-test("fmt rounds to the nearest whole thousand, always in k", () => {
+test("fmt scales the unit to the number: whole units, k, M", () => {
   setCurrency("€");
   assert.strictEqual(fmt(0), "€0");
-  assert.strictEqual(fmt(400), "€0"); // rounds below 500 → plain €0
-  assert.strictEqual(fmt(600), "€1k");
+  assert.strictEqual(fmt(0.3), "€0");
+  assert.strictEqual(fmt(-0.2), "€0", "rounds to zero → no sign");
+  assert.strictEqual(fmt(400), "€400", "small values are not shown as 0");
+  assert.strictEqual(fmt(999.4), "€999");
+  assert.strictEqual(fmt(999.6), "€1k");
+  assert.strictEqual(fmt(1200), "€1k");
   assert.strictEqual(fmt(120000), "€120k");
   assert.strictEqual(fmt(235400), "€235k");
-  assert.strictEqual(fmt(2500000), "€2,500k"); // everything in k (no M)
+  assert.strictEqual(fmt(999_700), "€1M");
+  assert.strictEqual(fmt(2500000), "€2.5M");
+  assert.strictEqual(fmt(12_340_000), "€12.3M");
+  assert.strictEqual(fmt(250_000_000), "€250M");
+  assert.strictEqual(fmt(1_250_000_000), "€1,250M", "Intl grouping");
   assert.strictEqual(fmt(-2627), "−€3k");
-  assert.strictEqual(fmt(50).indexOf("€"), 0);
+  assert.strictEqual(fmt(1200, "$"), "$1k", "an explicit symbol wins");
   setCurrency("$");
 });
 

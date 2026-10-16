@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 // Preview a distribution's percentiles without authoring a node or running the full compiler —
-// and fit params to target quantiles (the actual authoring task). No corpus, no file write, no hook.
+// and fit params to target quantiles (the actual authoring task). No corpus, no file write.
 //
 // The beta and gamma fits solve two quantile equations with a 2-D Newton iteration.
 const DOC = `Preview a distribution's percentiles without authoring a node or running the full compiler —
-and fit params to target quantiles (the actual authoring task). No corpus, no file write, no hook.
+and fit params to target quantiles (the actual authoring task). No corpus, no file write.
 
   # percentiles + support + mean for an inline construction (params: plain numbers or value objects)
-  node compiler/preview.mjs '{"kind":"lognormal","median":9,"sigma":0.64}'
-  node compiler/preview.mjs '{"kind":"splice","segments":[...],"splices":[...]}'
+  npx forecaster preview '{"kind":"lognormal","median":9,"sigma":0.64}'
+  npx forecaster preview '{"kind":"splice","segments":[...],"splices":[...]}'
 
   # fit params to hit target quantiles, then show the resulting percentiles
-  node compiler/preview.mjs fit beta p10=0.25 p90=0.70
-  node compiler/preview.mjs fit lognormal p50=9 p90=20
-  node compiler/preview.mjs fit normal p10=100 p90=140
-  node compiler/preview.mjs fit gamma p10=0.1 p50=0.47 p90=1.5
-  node compiler/preview.mjs fit metalog p10=50 p50=120 p90=400 [--lower=0]   # a source-stated LADDER
+  npx forecaster preview fit beta p10=0.25 p90=0.70
+  npx forecaster preview fit lognormal p50=9 p90=20
+  npx forecaster preview fit normal p10=100 p90=140
+  npx forecaster preview fit gamma p10=0.1 p50=0.47 p90=1.5
+  npx forecaster preview fit metalog p10=50 p50=120 p90=400 [--lower=0]   # a source-stated LADDER
 
 Reach for \`metalog\` when a source states a quantile LADDER (>=3 points) whose shape isn't a clean
 parametric family — asymmetric, or lower-bounded (a $0 floor). A lognormal fit to just p10/p90
@@ -31,8 +31,7 @@ CHOOSING THE ANCHOR PROBABILITIES (this is where ladders go wrong):
   - Values are a SUBJECTIVE low/median/high elicitation ("my plausible low/typical/high") -> that IS
     an 80% credible interval, so 0.10/0.50/0.90 is the correct convention; keep it.
 `;
-import { realpathSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { isMain } from "../../shared/is-main.mjs";
 import * as D from "./distributions.mjs";
 import * as C from "./compile.mjs";
 import * as N from "./numerics.mjs";
@@ -104,6 +103,7 @@ function groundedForm(kind, targets) {
 }
 
 function run(argv) {
+  if (argv[0] === "-h" || argv[0] === "--help") { console.log(DOC); return; }
   if (argv.length < 1) exit(DOC);
   if (argv[0] === "fit") {
     const kind = argv[1];
@@ -152,7 +152,7 @@ function run(argv) {
   } else {
     const distJson = JSON.parse(argv[0]);
     const diag = new C.Diag("preview");
-    const ctx = { ids: {}, _corpus: [{}, {}, {}], segments: [], splices: [] };
+    const ctx = { ids: {}, _corpus: new Map(), segments: [], splices: [] };   // no corpus: an empty index
     const dist = C.buildDist(distJson, ctx, diag, "preview");
     for (const [lvl, , p, m] of diag) console.log(`  ${lvl === "error" ? "✗" : "⚠"} ${p}: ${m}`);
     if (dist === null) exit("could not construct");
@@ -174,12 +174,4 @@ function main(argv) {
   return 0;
 }
 
-/** Run directly (not imported)? Compared as real paths, so a symlinked path (macOS /var → /private/var)
- *  still counts. */
-const runDirectly = () => {
-  try { return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); }
-  catch { return false; }
-};
-if (runDirectly()) {
-  process.exitCode = main(process.argv.slice(2));
-}
+if (isMain(import.meta.url)) process.exitCode = main(process.argv.slice(2));

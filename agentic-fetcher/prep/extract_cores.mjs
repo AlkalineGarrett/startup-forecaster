@@ -5,13 +5,14 @@
 // An existing core is never overwritten unless --force is given: observations quote-verify against the
 // stored cores, so silently re-extracting them (with a different extractor) could break verified quotes.
 //
-// Run: node prep/extract_cores.mjs [--force]
+// Run: npx forecaster extract-cores [--force]
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOTS } from "../paths.mjs";
 import { readCsvFile } from "../lib/csv.mjs";
 import { tokens } from "../lib/html.mjs";
-import { decode, isMain, print, readText, run, runMain } from "../lib/util.mjs";
+import { isAsset, kind } from "../lib/manifest.mjs";
+import { decode, die, isMain, print, readText, run, runMain, which } from "../lib/util.mjs";
 
 const SKIP = new Set(["script", "style", "head", "noscript", "svg", "form", "button", "iframe", "template", "select", "option"]);
 const VOID = new Set(["br", "img", "hr", "input", "meta", "link", "source", "area", "base", "col", "embed", "param", "track", "wbr"]);
@@ -91,7 +92,9 @@ export function htmlToText(path) {
   return [title, txt];
 }
 
+/** A PDF's text layer ("" when it has none, e.g. a scan). Stops when pdftotext is not installed. */
 export function pdfToText(path) {
+  if (!which("pdftotext")) die("extracting PDF cores needs `pdftotext` (poppler: brew install poppler, or apt install poppler-utils); not found on PATH");
   try { return decode(run("pdftotext", ["-layout", path, "-"], { timeout: 120 }).stdout, "replace"); } catch { return ""; }
 }
 
@@ -104,15 +107,15 @@ export async function main(argv = process.argv.slice(2)) {
   let done = 0, skipped = 0, kept = 0;
   const ocrPdfs = [], ocrImgs = [], errors = [];
   for (const m of man) {
-    const typ = (m.type ?? "").trim(), status = (m.status ?? "").trim();
+    const typ = kind(m.type);                                // older rows say txt/htm/png; kind() maps them
     const sha = (m.sha256 ?? "").trim(), stored = (m.stored ?? "").trim();
-    if (status === "asset" || !sha || !stored) { skipped++; continue; }
+    if (isAsset(m) || !sha || sha === "-" || !stored) { skipped++; continue; }
     const path = join(GROUNDING, stored);
     if (!existsSync(path)) { errors.push(["missing", stored]); continue; }
     const out = join(CORES, `doc_${sha.slice(0, 12)}.txt`);
     if (existsSync(out) && !FORCE) { kept++; continue; }     // never silently replace a stored core
     try {
-      if (typ === "html" || typ === "htm") {
+      if (typ === "html") {
         const [title, txt] = htmlToText(path);
         if (txt.length < 40) { errors.push(["empty_html", stored]); continue; }
         writeFileSync(out, `# core: ${m.title || title}\n# url: ${m.url ?? ""}\n# doc_${sha.slice(0, 12)}  (${typ}, from ${stored})\n\n` + txt + "\n", "utf8");
@@ -122,14 +125,14 @@ export async function main(argv = process.argv.slice(2)) {
         if (txt.trim().length < 200) { ocrPdfs.push([sha, stored]); continue; }
         writeFileSync(out, `# core: ${m.title ?? ""}\n# url: ${m.url ?? ""}\n# doc_${sha.slice(0, 12)}  (pdf, from ${stored})\n\n` + txt.trim() + "\n", "utf8");
         done++;
-      } else if (typ === "txt") {
+      } else if (typ === "text") {
         const txt = readText(path, "replace").trim();
         if (txt.length < 40) { skipped++; continue; }
-        writeFileSync(out, `# core: ${m.title ?? ""}\n# doc_${sha.slice(0, 12)} (txt)\n\n` + txt + "\n", "utf8");
+        writeFileSync(out, `# core: ${m.title ?? ""}\n# doc_${sha.slice(0, 12)} (${m.type})\n\n` + txt + "\n", "utf8");
         done++;
-      } else if (["png", "jpg", "jpeg", "webp", "gif"].includes(typ)) {
+      } else if (typ === "image") {
         ocrImgs.push([sha, stored]);
-      } else {
+      } else {                                               // json/xlsx/gz: extract-remaining reads them
         skipped++;
       }
     } catch (e) {

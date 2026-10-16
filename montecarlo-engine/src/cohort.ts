@@ -6,8 +6,11 @@ import type { MonthTraj } from "./types.ts";
 import { HORIZON_MONTHS } from "./types.ts";
 import type { Rng } from "./types.ts";
 
+/** A lag (months, possibly fractional) → the whole month revenue starts in, clamped to [0, HORIZON_MONTHS]. */
+const lagMonth = (lag: number): number => Math.max(0, Math.min(HORIZON_MONTHS, Math.round(lag)));
+
 /**
- * Monthly survival curve S[age] (age 0..59) from an ANNUAL renewal schedule that DECLINES with
+ * Monthly survival curve S[age] (age 0..HORIZON_MONTHS−1) from an ANNUAL renewal schedule that DECLINES with
  * tenure. `annualRenew[y]` is the fraction of a cohort surviving its (y+1)-th
  * year; the last entry is held for later years. Within a year the annual rate is spread
  * geometrically over its twelve months. S[0] = 1 (just acquired).
@@ -48,33 +51,42 @@ export function integrateSubscription(
   ceiling = Infinity,
   expansionAnnual = 1,
 ): void {
-  const lm = Math.max(0, Math.min(HORIZON_MONTHS, Math.round(lag)));
+  const lm = lagMonth(lag);
   const expMo = Math.pow(expansionAnnual, 1 / 12);
-  for (let t = 0; t < HORIZON_MONTHS; t++) {
-    if (t < lm) { out[t] = 0; continue; }
-    let active = 0;
-    for (let tau = lm; tau <= t; tau++) {
-      const a = typeof acq === "number" ? acq : acq[tau] || 0;
-      active += a * S[t - tau];
+  for (let t = 0; t < lm; t++) out[t] = 0;
+  // g = expMo^(t−lm) as a running product (exactly 1 throughout when there is no expansion).
+  let g = 1;
+  if (typeof acq === "number") {
+    // Constant rate: active(t) = acq·Σ_{k=0..t−lm} S[k] — a running sum instead of the O(M²) convolution.
+    let cumS = 0;
+    for (let t = lm; t < HORIZON_MONTHS; t++) {
+      cumS += S[t - lm];
+      out[t] = Math.min(acq * cumS, ceiling) * priceMo * g;
+      g *= expMo;
     }
-    active = Math.min(active, ceiling);
-    out[t] = active * priceMo * Math.pow(expMo, t - lm);
+    return;
+  }
+  for (let t = lm; t < HORIZON_MONTHS; t++) {
+    let active = 0;
+    for (let tau = lm; tau <= t; tau++) active += (acq[tau] || 0) * S[t - tau];
+    out[t] = Math.min(active, ceiling) * priceMo * g;
+    g *= expMo;
   }
 }
 
 /**
- * Ramped monthly acquisition (§ trust cold-start). Distributes `total` new adds over the post-lag
+ * Ramped monthly acquisition (a trust cold-start). Distributes `total` new adds over the post-lag
  * window as a LINEAR ramp instead of a flat rate: near-zero in the first months (no reference logos
  * yet, trust unearned, long demo-heavy sales cycles), accelerating as proof accumulates. `rampStart`
  * ∈ [0,1] is the first post-lag month's rate as a fraction of the flat average — 1 = flat (byte-
  * identical to passing the scalar acq), 0.25 = the first month runs at a quarter of the eventual
  * average. CRUCIALLY it preserves the window total (∑ = `total`): it reshapes WHEN adds land, not HOW
- * MANY, so it composes cleanly with a `penetration_5y`-style level (which stays a 5-yr cumulative
- * quantity). Returns a per-month array for integrateSubscription (which already accepts Float64Array).
- * Because the headline averages sustained yrs 2–5, a ramp shifts weight out of yr 1 into yrs 3–5.
+ * MANY, so it composes cleanly with a customers-over-the-horizon level (which stays a cumulative quantity).
+ * Returns a per-month array for integrateSubscription (which already accepts Float64Array). Because the
+ * headline averages the sustained years after the first, a ramp shifts weight out of year 1 into later years.
  */
 export function rampedAcq(total: number, lag: number, rampStart = 1): Float64Array {
-  const lm = Math.max(0, Math.min(HORIZON_MONTHS, Math.round(lag)));
+  const lm = lagMonth(lag);
   const acq = new Float64Array(HORIZON_MONTHS);
   const n = HORIZON_MONTHS - lm;
   if (n <= 0 || total <= 0) return acq;
@@ -115,15 +127,14 @@ export function dunningAdjust(annualRenew: number[], involFrac: number, dunning:
 }
 
 /**
- * Rigid-hours capacity feedback. Computes the REALISED monthly acquisition when acquisition
- * is throttled by the operator's remaining elastic hours: each month, rigid hours are consumed by the
- * current installed base (support/compliance/delivery — which may track the FREE population, not just
- * payers) and by externally-scheduled work; the elastic remainder drives that month's acquisition,
- * so the self-limiting behaviour emerges rather than being imposed. Inert by default
- * (rigidPerActive=rigidPerFree=0 and elasticBudget=∞ → returns `acqDesired` unchanged); the per-project
- * hour figures are calibration inputs left empty for now. `freePerPayer` scales the free population
- * that support tracks (freemium). One-directional ratchet: rigid hours fall slowly by carrying the
- * peak base for `ratchetMonths`.
+ * Rigid-hours capacity feedback, for a model whose acquisition is limited by the hours the people running it
+ * have. Computes the REALISED monthly acquisition when acquisition is throttled by the remaining elastic hours:
+ * each month, rigid hours are consumed by the current installed base (support/compliance/delivery — which may
+ * track the FREE population, not just payers) and by externally-scheduled work; the elastic remainder drives
+ * that month's acquisition, so the self-limiting behaviour emerges rather than being imposed. Inert by default
+ * (rigidPerActive=rigidPerFree=0 and elasticBudget=∞ → returns `acqDesired` unchanged), so it applies only
+ * when the model supplies the hour figures. `freePerPayer` scales the free population that support tracks
+ * (freemium). One-directional ratchet: rigid hours fall slowly by carrying the peak base for `ratchetMonths`.
  */
 export function capacityAcq(
   acqDesired: number | Float64Array,
@@ -132,7 +143,7 @@ export function capacityAcq(
   o: { rigidPerActive?: number; rigidPerFree?: number; freePerPayer?: number; externalHours?: number; elasticBudget?: number; acqPerHour?: number; ratchetMonths?: number } = {},
   report?: { util: number },   // optional: receives peak hours-utilisation (rigid/budget) ∈ [0, ∞)
 ): Float64Array {
-  const lm = Math.max(0, Math.min(HORIZON_MONTHS, Math.round(lag)));
+  const lm = lagMonth(lag);
   const rigidA = o.rigidPerActive || 0, rigidF = o.rigidPerFree || 0, freeMul = o.freePerPayer || 0;
   const ext = o.externalHours || 0, budget = o.elasticBudget ?? Infinity, perHour = o.acqPerHour ?? Infinity;
   const ratchet = o.ratchetMonths ?? 3;
@@ -157,9 +168,9 @@ export function capacityAcq(
   return acq;
 }
 
-/** Fill `out` with a flat monthly revenue that starts after `lag` months (jobs, retainers). */
+/** Fill `out` with a flat monthly revenue that starts after `lag` months (e.g. a salary or a retainer). */
 export function flatAfterLag(out: MonthTraj, lag: number, monthly: number): void {
-  const lm = Math.max(0, Math.min(HORIZON_MONTHS, Math.round(lag)));
+  const lm = lagMonth(lag);
   for (let t = 0; t < HORIZON_MONTHS; t++) out[t] = t < lm ? 0 : monthly;
 }
 
@@ -181,15 +192,15 @@ export function sampleLifetime(annualRenew: number[], r: Rng): number {
 /** Fill `out` with a flat monthly revenue for a discrete entity that STARTS at `start` and lives
  * `life` months, truncated at the window edge — contribution is min(life, M − start). */
 export function flatForLife(out: MonthTraj, start: number, monthly: number, life: number): void {
-  const s = Math.max(0, Math.min(HORIZON_MONTHS, Math.round(start)));
+  const s = lagMonth(start);
   const end = Math.min(HORIZON_MONTHS, s + Math.max(0, Math.round(life)));
   for (let t = 0; t < HORIZON_MONTHS; t++) out[t] = t >= s && t < end ? monthly : 0;
 }
 
-/** Fill `out` with a per-month flow revenue (per-dossier, per-audit, per-play) that ramps in
- * linearly over `rampMonths` after `lag`, toward `monthlySteady`. Non-subscription businesses. */
+/** Fill `out` with a per-month flow revenue (per-transaction or per-use, not a subscription) that ramps in
+ * linearly over `rampMonths` after `lag`, toward `monthlySteady`. */
 export function flowAfterLag(out: MonthTraj, lag: number, monthlySteady: number, rampMonths = 12): void {
-  const lm = Math.max(0, Math.min(HORIZON_MONTHS, Math.round(lag)));
+  const lm = lagMonth(lag);
   for (let t = 0; t < HORIZON_MONTHS; t++) {
     if (t < lm) { out[t] = 0; continue; }
     const ramp = rampMonths > 0 ? Math.min(1, (t - lm + 1) / rampMonths) : 1;
@@ -204,18 +215,19 @@ export function logistic(x: number, mid: number, steep: number): number {
 }
 
 /**
- * Price-as-output demand overlay (§ price-curve spike). Returns the CONVERSION multiplier at a
- * counterfactual price `p` relative to the draw's operating point `p0` (the sampled price). Two
- * effects compose: a constant-elasticity body `(p/p0)^(−eps)` and an upper logistic collapse as `p`
- * passes the willingness-to-pay ceiling `wtp` (steepness set by the competitor→wtp gap). Both are
- * renormalised so `demandMultiplier(p0, p0, …) === 1` EXACTLY — the overlay is identity at the
- * operating point, so applying it in a sweep leaves the headline (which runs at p0) unchanged.
+ * Price-as-output demand overlay. Returns the CONVERSION multiplier at a counterfactual price `price`
+ * relative to the reference price `ref`. Two effects compose: a constant-elasticity body
+ * `(price/ref)^(−eps)` and an upper logistic collapse as `price` passes the willingness-to-pay ceiling `wtp`
+ * (steepness set by the ref→wtp gap, floored at `minGap` — default 10% of `ref`, so the overlay behaves the
+ * same at any price scale or currency). Both are renormalised so `demandMultiplier(ref, ref, …) === 1`
+ * EXACTLY — the overlay is identity at the operating point, so applying it in a sweep leaves the headline
+ * (which runs at ref) unchanged.
  */
-export function demandMultiplier(price: number, ref: number, eps: number, wtp: number): number {
+export function demandMultiplier(price: number, ref: number, eps: number, wtp: number, minGap: number = 0.1 * ref): number {
   if (!(price > 0) || !(ref > 0)) return 1;
   let m = Math.pow(price / ref, -Math.max(0, eps || 0));
   if (wtp && wtp > 0) {
-    const gap = Math.max(1, wtp - ref);
+    const gap = Math.max(minGap, wtp - ref);
     const steep = 6 / gap;                                   // ~half of buyers gone at price = wtp
     const collapse = (x: number) => 1 / (1 + Math.exp(steep * (x - wtp)));
     const c0 = collapse(ref);                                // renormalise so the factor is 1 at ref
@@ -230,8 +242,8 @@ export function demandMultiplier(price: number, ref: number, eps: number, wtp: n
 /**
  * Ordered-categorical pick: `u`∈[0,1] selects one of several ORDERED states by cumulative `weights`
  * (normalised; need not sum to 1) and returns that state's `effects` entry. States are genuinely
- * distinct regimes, not midpoints (endorsement none/passive/active, a filing control regime, an
- * absorption level) — so an intermediate state has its OWN effect rather than an interpolated one.
+ * distinct regimes, not midpoints (e.g. a partner's endorsement none/passive/active, a regulatory
+ * regime) — so an intermediate state has its OWN effect rather than an interpolated one.
  */
 export function orderedEffect(u: number, weights: number[], effects: number[]): number {
   let tot = 0;
@@ -246,7 +258,7 @@ export function orderedEffect(u: number, weights: number[], effects: number[]): 
   return effects[effects.length - 1];
 }
 
-/** Month (0..59) an arriving risk lands, sampled from a constant annual hazard, or M (never in
+/** Month (0..HORIZON_MONTHS−1) an arriving risk lands, sampled from a constant annual hazard, or M (never in
  * window). Severity is applied from that month forward by the caller. */
 export function timeToEvent(annualHazard: number, r: Rng): number {
   const h = Math.max(0, Math.min(0.999, annualHazard));

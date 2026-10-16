@@ -1,8 +1,10 @@
 // Second-pass OCR: images inside saved HTML pages (their `_files/` assets), standalone images,
-// and inline data:image blobs embedded in HTML. macOS Vision via ocrtool (built from ocr.swift beside
-// this tool) — RUN OUTSIDE THE SANDBOX (dangerouslyDisableSandbox). Keeps only meaningful-text results.
+// and inline data:image blobs embedded in HTML. Uses the image OCR backend in lib/ocr.mjs
+// (FORECASTER_OCR when set, else macOS Vision via ocrtool); stops up front when none can run here.
+// Keeps only meaningful-text results.
 //
-// Usage: node prep/ocr_images.mjs [root ...] [--force]     (default root: sources)
+// Usage: npx forecaster ocr-images [root ...] [--force]
+//   each root is a folder of the archive (relative to it); default: the whole archive
 //
 // Output:
 //   - per owning page:  <page>.images.ocr.txt   (one section per image with text)
@@ -12,9 +14,10 @@
 // Idempotent: skips writing a sidecar that already exists unless --force.
 import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, extname, join, normalize, relative } from "node:path";
-import { ROOTS, ocrtool } from "../paths.mjs";
-import { decode, isMain, print, readText, run, runMain, today } from "../lib/util.mjs";
+import { dirname, extname, join, relative, resolve } from "node:path";
+import { ROOTS } from "../paths.mjs";
+import { ocrBackend } from "../lib/ocr.mjs";
+import { isMain, print, readText, runMain, today } from "../lib/util.mjs";
 
 /** Every file under root: [directory, file name] pairs (dot-directories included, as before). */
 const walkFiles = (root) => {
@@ -30,19 +33,19 @@ const RASTER = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".tif", ".tiff", ".bmp
 export async function main(argv = process.argv.slice(2)) {
   const { GROUNDING } = ROOTS;
   const TODAY = today();
-  const OCR = ocrtool();
+  const OCR = ocrBackend("image");                           // Exit (naming what is missing) when no backend runs here
   const FORCE = argv.includes("--force");
   const ROOT_ARGS = argv.filter((a) => !a.startsWith("--"));
   const ROOT_LIST = ROOT_ARGS.length ? ROOT_ARGS : ["."];
-  const HDR = `# Image-OCR sidecar (macOS Vision, generated ${TODAY})\n` +
+  const HDR = `# Image-OCR sidecar (${OCR.name}, generated ${TODAY})\n` +
     "# Text recognized from images embedded in this saved page. Durable, searchable copy.\n";
 
   const ocr = (path) => {
     let out;
     try {
-      out = decode(run(OCR, [path], { timeout: 120 }).stdout, "replace").replace(/\r\n?/g, "\n");
+      out = OCR.ocr(path, 120);
     } catch {
-      return "";
+      return "";                                               // a textless photo or an unreadable file
     }
     if (out.startsWith("FAILED-OCR") || out.slice(0, 80).includes("nilError")) return "";
     return out.trim();
@@ -61,16 +64,17 @@ export async function main(argv = process.argv.slice(2)) {
   };
 
   const AGG = { scanned: 0, kept: 0, short: 0, failed: 0, inline: 0, inline_pages: 0 };
-  const ALL_PAGES = new Map();   // "root/page" -> [[imgrel, text], …]
+  const ALL_PAGES = new Map();   // archive-relative page -> [[imgrel, text], …]
 
   const processRoot = (rootname) => {
-    const SRC = normalize(join(GROUNDING, rootname));
+    const SRC = resolve(GROUNDING, rootname);
+    // every path below is relative to the archive root (GROUNDING), whichever root is being walked
     const images = [];
     for (const [base, fn] of walkFiles(SRC)) {
       if (!RASTER.includes(extname(fn).toLowerCase())) continue;
       const full = join(base, fn);
       try { if (statSync(full).size < MIN_BYTES) continue; } catch { continue; }
-      images.push(relative(SRC, full));
+      images.push(relative(GROUNDING, full));
     }
     images.sort();
     const pageSections = new Map(), standalone = [];
@@ -89,7 +93,7 @@ export async function main(argv = process.argv.slice(2)) {
     // write per-page aggregated OCR
     for (const [page, secs] of [...pageSections].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
       const outp = join(GROUNDING, page + ".images.ocr.txt");
-      ALL_PAGES.set(`${rootname}/${page}`, secs);
+      ALL_PAGES.set(page, secs);
       if (existsSync(outp) && !FORCE) continue;
       const body = [HDR, `# Owning page: ${page}`, `# ${secs.length} image(s) with recognized text.`, ""];
       for (const [img, txt] of secs) {
@@ -100,7 +104,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
     for (const [img, txt] of standalone) {
       const outp = join(GROUNDING, img + ".ocr.txt");
-      ALL_PAGES.set(`${rootname}/${img} (standalone)`, [[img, txt]]);
+      ALL_PAGES.set(`${img} (standalone)`, [[img, txt]]);
       if (existsSync(outp) && !FORCE) continue;
       writeFileSync(outp, HDR + `# Source image: ${img}\n\n` + txt + "\n", "utf8");
     }
@@ -110,7 +114,7 @@ export async function main(argv = process.argv.slice(2)) {
       {
         const low = fn.toLowerCase();
         if (!low.endsWith(".html") && !low.endsWith(".htm")) continue;
-        const full = join(base, fn), rel = relative(SRC, full);
+        const full = join(base, fn), rel = relative(GROUNDING, full);
         let html;
         try { html = readText(full, "replace"); } catch { continue; }
         let hit = false, i = -1;
@@ -139,7 +143,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   // ---------- report ----------
   const rep = [`# Second-pass image OCR (${TODAY})`, "",
-    `Roots: ${ROOT_LIST.join(", ")}. macOS Vision on on-disk raster images >= ${MIN_BYTES} bytes and ` +
+    `Roots: ${ROOT_LIST.join(", ")}. ${OCR.name} OCR on on-disk raster images >= ${MIN_BYTES} bytes and ` +
     `inline data:image blobs; kept results with >= ${MIN_ALNUM} alphanumeric chars.`, "",
     `- images scanned: **${AGG.scanned}**`,
     `- kept (meaningful text): **${AGG.kept}**`,

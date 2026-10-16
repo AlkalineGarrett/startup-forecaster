@@ -15,24 +15,24 @@
 // `defer`s the request to `human_only`. Many parallel agents pool into one file-locked queue.
 //
 //     # an agent queues a source whose fetch failed; dedupes/merges by URL:
-//     node fetch_request.mjs add --url https://example.com/pricing \
+//     npx forecaster fetch-request add --url https://example.com/pricing \
 //         --why "holds the competitor's monthly plan price" --for habit-app::competitor_price --priority med
 //     #   ...or, if the page is clearly gated and no agent can reach it:
-//     node fetch_request.mjs add --url https://portal.example.com/report --lane human_only --why "..." --for ...
+//     npx forecaster fetch-request add --url https://portal.example.com/report --lane human_only --why "..." --for ...
 //
 //     # the MAIN session, between fan-out phases — fetch everything the agents couldn't:
-//     node fetch_request.mjs drain                # the agent_fetchable worklist to fetch + install
-//     node install_source.mjs <saved-file> --url <url> --title "..."   # auto-resolves the entry
+//     npx forecaster fetch-request drain                # the agent_fetchable worklist to fetch + install
+//     npx forecaster install-source <saved-file> --url <url> --title "..."   # auto-resolves the entry
 //     #   if the main session's own fetch fails too, hand it to the human:
-//     node fetch_request.mjs defer --url <url> --note "main WebFetch failed: <err>"
+//     npx forecaster fetch-request defer --url <url> --note "main WebFetch failed: <err>"
 //
 //     # the human, at end of run — only the sources no agent could reach:
-//     node fetch_request.mjs list                 # pending (add --all for resolved too)
-//     node fetch_request.mjs export --md           # a markdown worklist to work through
-//     node fetch_request.mjs export --csv > todo.csv
+//     npx forecaster fetch-request list                 # pending (add --all for resolved too)
+//     npx forecaster fetch-request export --md           # a markdown worklist to work through
+//     npx forecaster fetch-request export --csv > todo.csv
 //
 //     # mark done by hand if you fetched without install_source (install_source resolves automatically):
-//     node fetch_request.mjs resolve --url <url>
+//     npx forecaster fetch-request resolve --url <url>
 //
 // Always run `check` first — a source is often already archived under a redirected/canonical URL.
 // The queue is fetch-queue.jsonl in the source archive (one JSON object per line), file-locked
@@ -53,7 +53,7 @@ const get = (r, k, d = null) => (Object.hasOwn(r, k) ? r[k] : d);
 const prioIndex = (p) => (PRIORITIES.includes(p) ? PRIORITIES.indexOf(p) : PRIORITIES.indexOf("med"));
 const list = (xs) => JSON.stringify(xs);
 
-export const domain = (u) => urlHost(u || "").replaceAll("www.", "").toLowerCase();
+export const domain = (u) => urlHost(u || "").replace(/^www\./, "").toLowerCase();
 
 /** A request's lane. Rows without one default to human_only — never silently assume an
  * unlabeled row is agent-fetchable (that would drop it from the human worklist without a fetch). */
@@ -62,10 +62,14 @@ export function lane(r) {
   return LANES.includes(l) ? l : "human_only";
 }
 
-/** (manDomains -> [stored], docDomains -> [title], aliasesText) for domain-level dedupe. */
+/** The archive's index, from one pass over MANIFEST.csv, url-aliases.csv and documents.json:
+ *  manDomains -> [stored] and docDomains -> [title] and aliasesText for domain-level dedupe, plus `urls`, the
+ *  set of page keys (pageKey) already archived. An EXACT URL match is a definite 'already archived' (stronger
+ *  than the domain-level hint), and it catches a canonical/redirected URL recorded in url-aliases that a
+ *  domain check on a different host would miss. */
 function archiveIndex() {
   const G = ROOTS.GROUNDING;
-  const manDomains = new Map(), docDomains = new Map();
+  const manDomains = new Map(), docDomains = new Map(), urls = new Set();
   let aliases = "";
   const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
   const mp = `${G}/MANIFEST.csv`;
@@ -73,45 +77,37 @@ function archiveIndex() {
     for (const m of readCsvFile(mp)) {
       const d = domain(m.url);
       if (d) push(manDomains, d, m.stored);
+      if (m.url) urls.add(pageKey(m.url));
     }
   }
   const ap = `${G}/url-aliases.csv`;
-  if (existsSync(ap)) aliases = readText(ap).toLowerCase();
+  if (existsSync(ap)) {
+    const text = readText(ap);
+    aliases = text.toLowerCase();
+    for (const row of parseCsv(text)) {
+      for (const cell of row) if (cell.trim().startsWith("http")) urls.add(pageKey(cell.trim()));
+    }
+  }
   const dp = `${G}/documents.json`;
   if (existsSync(dp)) {
     for (const dv of Object.values(load(dp))) {
       const d = domain(dv.url);
       if (d) push(docDomains, d, String(dv.title || "").slice(0, 44));
+      if (dv.url) urls.add(pageKey(dv.url));
     }
   }
-  return [manDomains, docDomains, aliases];
+  return { manDomains, docDomains, aliases, urls };
 }
 
 /** Domain-level archive matches for a URL: [storedFiles, corpusTitles, inAliases]. */
-function archiveHits(url, idx = null) {
-  const [manDomains, docDomains, aliases] = idx || archiveIndex();
+function archiveHits(url, idx = archiveIndex()) {
+  const { manDomains, docDomains, aliases } = idx;
   const dom = domain(url);
   return [manDomains.get(dom) || [], docDomains.get(dom) || [], Boolean(dom && aliases.includes(dom))];
 }
 
-/** Set of NORMALIZED URLs already in the archive — MANIFEST + corpus + url-aliases rows. An EXACT
- * URL match is a definite 'already archived' (stronger than the domain-level hint), and it catches a
- * canonical/redirected URL recorded in url-aliases that a domain check on a different host would miss. */
-function archivedUrls() {
-  const G = ROOTS.GROUNDING;
-  const urls = new Set();
-  const mp = `${G}/MANIFEST.csv`;
-  if (existsSync(mp)) for (const m of readCsvFile(mp)) if (m.url) urls.add(normUrl(m.url));
-  const dp = `${G}/documents.json`;
-  if (existsSync(dp)) for (const dv of Object.values(load(dp))) if (dv.url) urls.add(normUrl(dv.url));
-  const ap = `${G}/url-aliases.csv`;
-  if (existsSync(ap)) {
-    for (const row of parseCsv(readText(ap))) {
-      for (const cell of row) if (cell.trim().startsWith("http")) urls.add(normUrl(cell.trim()));
-    }
-  }
-  return urls;
-}
+/** Set of page keys (pageKey) already in the archive — MANIFEST + corpus + url-aliases rows. */
+export const archivedUrls = () => archiveIndex().urls;
 
 /** For every PENDING request, flag whether its source may ALREADY be in the archive — by domain
  * against MANIFEST.csv, url-aliases.csv, and corpus/documents.json. A hit means: verify the specific
@@ -151,6 +147,20 @@ export function readQueue() {
 }
 
 const normUrl = (u) => (u || "").trim().replace(/\/+$/, "");
+
+// Query parameters that only track a visit; they never change which page it is.
+const TRACKING = /^(utm_.*|gclid|fbclid|msclkid|mc_cid|mc_eid|ref|ref_src|source|igshid|si)$/;
+
+/** The key two URLs share when they are the same page: no scheme, www., fragment, trailing slash or tracking
+ *  parameters, lowercased, the remaining query sorted. The rest of the query is kept, since it often names
+ *  the page (news.ycombinator.com/item?id=…). */
+export function pageKey(u) {
+  const low = (u || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("#")[0];
+  const q = low.indexOf("?");
+  const path = (q < 0 ? low : low.slice(0, q)).replace(/\/+$/, "");
+  const params = (q < 0 ? "" : low.slice(q + 1)).split("&").filter((p) => p && !TRACKING.test(p.split("=")[0])).sort();
+  return path + (params.length ? "?" + params.join("&") : "");
+}
 const jsonLines = (rows) => rows.map((r) => dumps(r) + "\n").join("");   // one {"k": v, …} per line
 const parseRows = (text) => lines(text.replace(/\r\n?/g, "\n")).filter((l) => l.trim()).map((l) => loads(l));
 
@@ -241,14 +251,14 @@ function drain() {
     if (get(r, "for")?.length) print(`      unblocks: ${r.for.join(", ")}`);
     if (mh.length) print(`      archived files: ${list(mh.slice(0, 4))}`);
     if (dh.length) print(`      corpus docs:    ${list(dh.slice(0, 4))}`);
-    print(`      fetch → node install_source.mjs <saved> --url ${r.url} --title "..."   (auto-resolves)`);
+    print(`      fetch → npx forecaster install-source <saved> --url ${r.url} --title "..."   (auto-resolves)`);
   }
   if (!pend.length) {
     print("  (nothing to fetch — no agent_fetchable requests pending)");
     return;
   }
   print("\n  If the main session's own WebFetch fails on one, hand it to the human:");
-  print('    node fetch_request.mjs defer --url <url> --note "main WebFetch failed: <err>"');
+  print('    npx forecaster fetch-request defer --url <url> --note "main WebFetch failed: <err>"');
 }
 
 const SPECS = {
@@ -258,7 +268,7 @@ const SPECS = {
     priority: { choices: PRIORITIES, default: "med" }, by: { default: "agent" },
     lane: { choices: LANES, default: "agent_fetchable", help: "agent_fetchable (a public page to retry) or human_only (no agent can reach it)" },
     filename: { help: "suggested save filename" },
-    force: { flag: true, help: "queue even if the domain is already archived" },
+    force: { flag: true, help: "queue even if this exact page is already archived (a fresh capture)" },
   } },
   list: { options: { all: { flag: true, help: "include resolved" } } },
   resolve: { options: { url: { required: true }, note: {} } },
@@ -282,19 +292,18 @@ export async function main(argv = process.argv.slice(2)) {
   if (cmd === "drain") { drain(); return; }
 
   if (cmd === "add") {
-    if (archivedUrls().has(normUrl(args.url)) && !args.force) {   // EXACT URL already archived — definite
-      print("⚠ NOT queued — this EXACT URL is already archived (MANIFEST/corpus/alias). " +
+    const idx = archiveIndex();
+    if (idx.urls.has(pageKey(args.url)) && !args.force) {   // this page is already archived — definite
+      print("⚠ NOT queued — this page is already archived (MANIFEST/corpus/alias). " +
         "Ground from its core; --force only to re-capture.");
       return;
     }
-    const [mh, dh, al] = archiveHits(args.url);                 // else domain-level hint (weaker; verify content)
-    if ((mh.length || dh.length || al) && !args.force) {
-      print(`⚠ NOT queued — ${domain(args.url)} is already in the archive; don't re-fetch it.`);
-      if (mh.length) print(`    archived files: ${list(mh.slice(0, 4))}`);
+    // Other pages of the same site in the archive are only a hint: they may hold the figure, so say so,
+    // but a different page (another filing, another thread) is a different source and is queued.
+    const [mh, dh] = archiveHits(args.url, idx);
+    if (mh.length || dh.length) {
+      print(`  note: other ${domain(args.url)} pages are archived; check their cores for the figure too.`);
       if (dh.length) print(`    corpus docs:    ${list(dh.slice(0, 4))}`);
-      print("    → find the needed figure in that core and ground from it. If you truly need a fresh");
-      print("      capture, re-queue with --force.");
-      return;
     }
     const rec = await add(args.url, args.why, args.for_nodes, args.priority, args.by, args.filename, args.lane);
     print(`queued [${rec.priority}/${get(rec, "lane")}] ${rec.url}  (unblocks ${rec.for.length} node(s))`);
@@ -323,11 +332,12 @@ export async function main(argv = process.argv.slice(2)) {
       }
     } else {
       print(`# Human fetch worklist — ${pend.length} source(s) no agent could reach\n`);
+      print("`npx forecaster firecrawl` fetches this whole list through Firecrawl in one go (needs FIRECRAWL_API_KEY);\nsave whatever it can't get by hand.\n");
       for (const r of pend) {
         print(`## [${get(r, "priority", "med")}] ${r.url}`);
         if (get(r, "why")) print(`- why: ${r.why}`);
         if (get(r, "for")?.length) print(`- unblocks: ${r.for.join(", ")}`);
-        print(`- after saving: \`node install_source.mjs <saved-file> --url ${r.url} --title "..."\`\n`);
+        print(`- after saving: \`npx forecaster install-source <saved-file> --url ${r.url} --title "..."\`\n`);
       }
     }
   }

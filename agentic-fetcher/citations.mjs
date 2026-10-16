@@ -10,18 +10,18 @@
 // An observation is *referenced* if its id appears in a `reference`/`references`/`records-from`/formula
 // in any project node, OR (indirectly) if it feeds a derivative document that a project references.
 //
-//     node citations.mjs                      # obs_id -> [project::node, ...] (+ orphan report)
-//     node citations.mjs --json               # machine-readable index
-//     node citations.mjs --orphans            # only observations no node uses (direct or indirect)
+//     npx forecaster citations                      # obs_id -> [project::node, ...] (+ orphan report)
+//     npx forecaster citations --json               # machine-readable index
+//     npx forecaster citations --orphans            # only observations no node uses (direct or indirect)
 //
 // Two-root: observations under PROJECT/corpus, projects under PROJECT/projects, derivative identity
 // under GROUNDING/documents.json.
 import { existsSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
 import { ROOTS } from "./paths.mjs";
-import { OBS_RE } from "../distribution-compiler/compiler/refs.mjs";   // the compiler's definition of an observation reference (single source)
+import { corpusIndex, idsIn, readCorpus } from "../distribution-compiler/compiler/refs.mjs";   // the shared definition of a reference and the corpus (single source)
 import { parse } from "./lib/args.mjs";
-import { dumps, load } from "./lib/json.mjs";
+import { dumps, load, loads } from "./lib/json.mjs";
 import { isMain, print, readText, runMain } from "./lib/util.mjs";
 
 // node keys are "project::node" or "project::variant::node"; project/variant ids may contain hyphens
@@ -36,12 +36,12 @@ function projectText() {
 
 /** Map each obs id mentioned in the file to the set of node keys whose block contains it.
  * Node blocks are delimited by top-level "project::node": { keys; good enough for attribution. */
-function nodeRefs(text) {
+function nodeRefs(text, isObs) {
   const spans = [...text.matchAll(NODE_RE)].map((m) => [m.index, m[1]]);
   const out = new Map();
   spans.forEach(([pos, node], i) => {
     const end = i + 1 < spans.length ? spans[i + 1][0] : text.length;
-    for (const oid of new Set(text.slice(pos, end).match(OBS_RE) || [])) {
+    for (const oid of idsIn(text.slice(pos, end), isObs)) {
       if (!out.has(oid)) out.set(oid, new Set());
       out.get(oid).add(node);
     }
@@ -51,25 +51,27 @@ function nodeRefs(text) {
 
 export function buildIndex() {
   const { PROJECT, GROUNDING } = ROOTS;
-  const obs = load(`${PROJECT}/corpus/observations.json`);
+  const corpus = corpusIndex(readCorpus(`${PROJECT}/corpus`, loads));
+  const obsIds = [...corpus].filter(([, e]) => e.kind === "obs").map(([id]) => id);
+  const isObs = (id) => corpus.get(id)?.kind === "obs";
   const docs = existsSync(`${GROUNDING}/documents.json`) ? load(`${GROUNDING}/documents.json`) : {};
   const ptext = projectText();
 
   // direct: obs id -> nodes (best-effort attribution)
-  const index = new Map(Object.keys(obs).map((oid) => [oid, new Set()]));
+  const index = new Map(obsIds.map((oid) => [oid, new Set()]));
   const allrefs = new Map();
   for (const text of ptext.values()) {
-    for (const [oid, nodes] of nodeRefs(text)) {
+    for (const [oid, nodes] of nodeRefs(text, isObs)) {
       if (!allrefs.has(oid)) allrefs.set(oid, new Set());
       for (const n of nodes) allrefs.get(oid).add(n);
     }
   }
-  for (const oid of Object.keys(obs)) for (const n of allrefs.get(oid) || []) index.get(oid).add(n);
+  for (const oid of obsIds) for (const n of allrefs.get(oid) || []) index.get(oid).add(n);
 
   // authoritative "referenced at all" test: the id appears literally in some project file. This is
   // robust to any attribution miss; if it matches but block-attribution didn't, record it unlocated.
   const joined = [...ptext.values()].join("\n");
-  for (const oid of Object.keys(obs)) {
+  for (const oid of obsIds) {
     if (!index.get(oid).size && joined.includes(oid)) index.get(oid).add("(referenced; node unlocated)");
   }
 

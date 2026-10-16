@@ -13,22 +13,22 @@
 // so it self-verifies. Prefer a computed derivative when the number can be computed; use a reasoning
 // derivative when the conclusion is a judgement the sources support but do not arithmetically yield.
 //
-//     # median seat price across five tools whose prices were read from their own source docs:
-//     node make_derivative.mjs \
-//         --title "Median seat price across vector tools (derived)" \
-//         --from doc_8de2/obs_recraft_12 --from doc_628f/obs_vectorizer_899 \
-//         --records "12,29,22.99,8.99,5.49" --compute median \
-//         --unit "USD/mo" --obs obs_median_seat_price \
-//         --statement "Median monthly seat price across 5 vector tools = derived"
+//     # median monthly price across habit apps whose prices were read from their own source docs:
+//     npx forecaster make-derivative \
+//         --title "Median monthly price across habit apps (derived)" \
+//         --from doc_<sha_a>/obs_app_a_price --from doc_<sha_b>/obs_app_b_price \
+//         --records "4.99,7.99,9.99,6.49,12.99" --compute median \
+//         --unit "USD/mo" --obs obs_habit_app_median_price \
+//         --statement "Median monthly price across 5 habit apps = derived"
 //
 //     # a statistic over a series already in the corpus (pulls the series values):
-//     node make_derivative.mjs --title "CAGR of UPAC stock (derived)" \
-//         --records-from doc_bb86/obs_upac_stock_series --compute cagr \
-//         --unit "fraction/yr" --obs obs_upac_cagr --statement "UPAC stock CAGR 2021-2024 = derived"
+//     npx forecaster make-derivative --title "CAGR of US field-service crews (derived)" \
+//         --records-from doc_<sha>/obs_field_crews_series --compute cagr \
+//         --unit "fraction/yr" --obs obs_field_crews_cagr --statement "Field-service crew count CAGR 2021-2024 = derived"
 //
 // Methods: mean median sum count min max stdev p05 p10 p25 p50 p75 p90 p95 range cagr.
 // Deterministic: the same inputs always give the same doc_<sha> (dedupe). Paths resolve through paths.mjs.
-// The audit (AUDIT.md) still applies: a reviewer checks the transcribed records against the
+// The audit (audit-evidence.md) still applies: a reviewer checks the transcribed records against the
 // originals in `derived_from` before the derivative doc is marked verified.
 //
 // The statistics are exact float64 kernels (pairwise summation, linear-interpolation percentiles between
@@ -36,6 +36,7 @@
 // exact on purpose: the doc id hashes the derivation, so the same inputs must always give the same bits.
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readCorpus } from "../distribution-compiler/compiler/refs.mjs";
 import { ROOTS } from "./paths.mjs";   // derivative doc + observation → PROJECT/corpus; derived core → GROUNDING/cores
 import { parse, usageError } from "./lib/args.mjs";
 import { dumps, load, loads, markKey } from "./lib/json.mjs";
@@ -173,11 +174,7 @@ export async function main() {
 
   const regPath = `${GROUNDING}/documents.json`;              // source-identity registry (shared cache)
   let reg = existsSync(regPath) ? load(regPath) : {};
-  const loadCorpus = (name) => {
-    const p = `${PROJECT}/corpus/${name}`;
-    return existsSync(p) ? load(p) : {};
-  };
-  const obs = loadCorpus("observations.json"), gk = loadCorpus("general-knowledge.json"), spec = loadCorpus("speculations.json");
+  const { obs, gk, spec } = readCorpus(`${PROJECT}/corpus`, loads);   // the compiler's corpus reader, key order kept
   for (const s of a.sources) {                                // provenance must resolve (doc, gk, or spec)
     const base = head(s);
     if (![reg, gk, spec].some((m) => Object.hasOwn(m, markKey(base)))) {

@@ -3,14 +3,13 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { crc32, deflateRawSync } from "node:zlib";
 import { parse } from "../lib/args.mjs";
 import { parseCsv, parseCsvRecords, writeRecord, writerow } from "../lib/csv.mjs";
 import { tokens, unescape } from "../lib/html.mjs";
 import { dumps, loads } from "../lib/json.mjs";
 import { Exit, roundHalfEven } from "../lib/util.mjs";
 import { NotAZip, xlsxText } from "../lib/xlsx.mjs";
-import { tmpPath } from "./helpers.mjs";
+import { tmpPath, zip } from "./helpers.mjs";
 
 test("csv: quoted fields, doubled quotes, embedded newlines, blank lines", () => {
   assert.deepEqual(parseCsv('a,"b,c","d""e"\r\n\r\n"x\ny",z\n'), [["a", "b,c", 'd"e'], ["x\ny", "z"]]);
@@ -50,27 +49,6 @@ test("html tokens: tags, attributes, raw script text, comments skipped", () => {
   ]);
   assert.deepEqual([...tokens("1 < 2 <b")], [{ type: "data", text: "1 " }, { type: "data", text: "<" }, { type: "data", text: " 2 " }]);
 });
-
-/** A zip of { name: text } with deflated members. */
-function zip(files) {
-  const locals = [], central = [];
-  let off = 0;
-  for (const [name, text] of Object.entries(files)) {
-    const raw = Buffer.from(text), data = deflateRawSync(raw), n = Buffer.from(name);
-    const h = Buffer.alloc(30);
-    h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(8, 8); h.writeUInt32LE(crc32(raw), 14);
-    h.writeUInt32LE(data.length, 18); h.writeUInt32LE(raw.length, 22); h.writeUInt16LE(n.length, 26);
-    const c = Buffer.alloc(46);
-    c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(8, 10); c.writeUInt32LE(crc32(raw), 16);
-    c.writeUInt32LE(data.length, 20); c.writeUInt32LE(raw.length, 24); c.writeUInt16LE(n.length, 28); c.writeUInt32LE(off, 42);
-    locals.push(h, n, data); central.push(c, n);
-    off += 30 + n.length + data.length;
-  }
-  const cd = Buffer.concat(central), e = Buffer.alloc(22);
-  e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(central.length / 2, 8); e.writeUInt16LE(central.length / 2, 10);
-  e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
-  return Buffer.concat([...locals, cd, e]);
-}
 
 test("xlsx text: shared strings, inline values, sheet order", () => {
   const ns = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';

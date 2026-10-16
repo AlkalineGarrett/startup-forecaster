@@ -1,4 +1,4 @@
-// GENERATED once from the hand-built artifact — the static template (CSS + interactive JS).
+// The static template: the CSS and the interactive JS. render.mjs fills it with the plan data.
 export const CSS = `
   * { box-sizing: border-box; }
   :root {

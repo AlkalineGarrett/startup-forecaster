@@ -20,75 +20,106 @@ Three laws:
 
 ---
 
-## 1. Top-level shape
+## 1. Where the data lives
+
+The model has five parts: **documents**, **observations**, **general knowledge**, **speculations** and
+**nodes**. They are stored across the workspace's two roots (the config's `groundingSources`, `sources/` by
+default, and `distributionData`, `distributions/` by default):
 
 ```jsonc
-{
-  "documents":        { "doc_<sha256[:12]>": { … } },   // shared corpus — referenced by id
-  "general_knowledge":{ "gk_<id>": { … } },
-  "speculations":     { "spec_<id>": { … } },
-  "nodes":            { "project::node": { … } }
-}
+// <groundingSources>/documents.json — the source-identity registry
+{ "doc_<sha256[:12]>": { … } }
+// <distributionData>/corpus/observations.json — every observation, flat, each naming its document
+{ "<obs id>": { "doc": "doc_<sha256[:12]>", … } }
+// <distributionData>/corpus/general-knowledge.json · corpus/speculations.json
+{ "gk_<id>": { … } }      { "spec_<id>": { … } }
+// <distributionData>/projects/<project>.json — the nodes, one file per project
+{ "project::node": { … } }
 ```
 
-Documents, observations, general knowledge, and speculations are a **shared corpus at the
-root**. A fact used by many nodes is *one* observation, referenced by id; that shared id is
-the correlation record. A node holds no evidence of its own — only references into the corpus.
+The registry lives with the archive, so one archive can serve several data projects; observations belong to
+the data project. Documents, observations, general knowledge and speculations form a **shared corpus**: a
+fact used by many nodes is *one* observation, referenced by id, and that shared id is the correlation record.
+A node holds no evidence of its own, only references into the corpus.
+
+A **reference** names a corpus entry: `doc_<sha12>/<obs id>` (the document, then the observation's key in
+`observations.json`), a bare `obs_<id>`, a `gk_<id>` or a `spec_<id>`. Observation ids are unique within a
+data project; `obs_` is the usual prefix, and a bare reference needs it.
+
+`project-distributions.schema.json` describes the same model as one object, `{ documents, observations,
+general_knowledge, speculations, nodes }`.
 
 ---
 
 ## 2. The shared corpus
 
-### document — `doc_<sha256[:12]>`
+The tools write these records (`agentic-fetcher`: `install-source`, `add-observation`, `make-derivative`,
+`mark-audited`); a field marked *by hand* is set during an audit.
+
+### document — `doc_<sha256[:12]>` (in `documents.json`)
 
 | field | type | rule |
 |---|---|---|
-| `sha256` | string | content hash = identity; identical bytes are one record |
-| `title` · `url` · `publisher` | string | provenance |
-| `origin` | enum | `primary \| secondary \| internal` |
-| `trust_score` | int 0–100 | source trust |
-| `capture` | enum | `full_text \| image_only \| js_shell \| partial \| failed` |
-| `core` | path | lean, image-OCR'd text a reader opens instead of the raw file |
-| `derivation` | object? | present only if computed from others: `{ method, from[], how, script? }`; every `from` id resolves |
-| `observations` | `{ obs_id: observation }` | facts drawn from this document |
+| `sha256` | string | the content hash, which is the identity: identical bytes are one record. A derivative's is the hash of its derivation. |
+| `title` | string \| null | provenance |
+| `url` | string \| null | where it came from; `""` or `null` when unknown, `""` for a derivative |
+| `publisher` | string | the source's host for an installed source; `"derived"` for a derivative; may be `""` |
+| `core` | path | the lean, searchable text a quote is checked against, relative to the archive: `cores/doc_<sha12>.txt`. Absent while the source has no text layer (its observations are then `unverifiable`). |
+| `capture` | enum | `fetched` (the core is extracted from the archived bytes) · `transcribed` (an agent typed the source's content into a text file, so a quote verifies only against that transcription: weaker evidence). Absent = not recorded. |
+| `capture_corroborated` | string | *by hand*: a dated note that a transcribed core was checked against the live page |
+| `origin` | enum | `primary` (an external source) · `derivative` (composed from other corpus entries by `make-derivative`). Absent = an external source not yet classified. |
+| `derivation_kind` | enum | derivative only: `computed` (a reproducible statistic, stronger) · `reasoning` (a judgement over the sources, weaker) |
+| `derived_from` | string[] | derivative only: the `doc_<sha>`, `doc_<sha>/<obs id>`, `gk_` or `spec_` ids it derives from; every one resolves |
+| `derivation` | object | derivative only: the record `sha256` hashes, `{ kind, method, inputs?, reasoning?, result, unit, derived_from, description }`. `inputs` (the records) for `computed`; `reasoning` (the text) for `reasoning`. |
+| `verification` | enum | derivative only: `unchecked`, as `make-derivative` writes it (`unverified` on older records) |
+| `audit` | enum | absent = not audited · `verified` (passed `audit-evidence`; `mark-audited` writes it) · `flagged` (*by hand*: a known defect, not used until resolved; says why in `audit_note`) |
+| `audit_date` | `YYYY-MM-DD` | when `audit` was set |
+| `audit_note` | string | *by hand*: what the audit found or corrected |
 
-### observation — `obs_<id>` (under a document)
+### observation — `<obs id>` (in `observations.json`)
 
 | field | type | rule |
 |---|---|---|
+| `doc` | string | the `doc_<sha12>` it is drawn from; it resolves in `documents.json` |
 | `statement` | string | the fact in words |
 | `measure` | measure | the magnitude (§7); may be `null` for a purely qualitative fact |
-| `quote` | string \| **null** | verbatim sentence from the doc's `core`. May be `null` when the figure is read from a non-textual capture (a chart/table image) — pair with `capture_note`. |
-| `capture_note` | string | why there is no verbatim quote — e.g. *"value read from a chart/table image; verbatim sentence not extracted"*. Present iff `quote: null`. |
-| `locator` | string | where in the doc |
-| `verification` | enum | four states: |
-| `blocked_on` | string | present iff `verification: unverifiable` — names what unblocks it, e.g. *"OCR sidecar for chartmogul PDF benchmark table"* |
+| `quote` | string \| **null** | verbatim text from the doc's `core`. May be `null` when the figure is read from a non-textual capture (a chart/table image), paired with `capture_note`. |
+| `capture_note` | string | why there is no verbatim quote, e.g. *"value read from a chart/table image; verbatim sentence not extracted"*. Present iff `quote: null`. |
+| `locator` | string | where in the doc; may be `""` |
+| `verification` | enum | four states, below; set by `add-observation` from the quote match |
+| `blocked_on` | string | *by hand*, with `verification: unverifiable`: what unblocks it, e.g. *"OCR sidecar for the benchmark PDF's table"* |
+| `audit` | enum | `unaudited` (what `add-observation` and `make-derivative` write) · `verified` (passed `audit-evidence`; `mark-audited` writes it) · `flagged` (*by hand*: a known defect, not used until resolved; says why in `audit_note`). `check-sources` S8 fails while any observation is neither `verified` nor `flagged`. |
+| `audit_date` | `YYYY-MM-DD` | when `audit` was set |
+| `audit_note` | string | *by hand*: what the audit found or corrected |
+| `source_capture` | enum | `transcribed`, copied by `add-observation` when the document is a transcription, so the weaker evidence shows on the observation itself; `fetched` when an audit re-grounds it on fetched bytes |
+| `derived` | `true` | on a derivative document's result observation (written by `make-derivative`) |
+| `derivation_kind` | enum | with `derived`: `computed` · `reasoning`, as on its document |
 
 *(There is no `cited_by` field. Which nodes use an observation is derived on demand from the node
 references in `projects/*.json` — see `agentic-fetcher/citations.mjs` — never stored, because a stored
 list drifts into stale/phantom entries.)*
 
-**`verification` states**:
+**`verification` states** (the mechanical quote match; the `audit` is the separate legitimacy review):
 
-- `verified` — a non-empty `quote` is present in the document's `core`.
-- `unchecked` — not yet swept.
-- `not_in_doc` — the doc *was* swept and the claimed figure is **not** there (a negative
-  result, not an open gap).
-- `unverifiable` — the value is real but from a source not yet parseable (scanned PDF, image);
-  carries `blocked_on`, and typically `quote: null` + `capture_note`.
+- `verified` — a non-empty `quote` is present in the document's `core` (after whitespace and unicode
+  dash/quote normalisation).
+- `unchecked` — not yet swept, or the quote is too short to prove anything.
+- `not_in_doc` — the doc *was* swept and the quote is **not** there (a negative result, not an open gap).
+- `unverifiable` — the document has no core to check against yet (a scanned PDF before OCR, an image);
+  it should carry `blocked_on`, and typically `quote: null` + `capture_note`.
 
-### general_knowledge — `gk_<id>`
+### general_knowledge — `gk_<id>` (in `corpus/general-knowledge.json`)
 `{ statement, measure, reasoning }` — a broadly-held reference-class prior admissible without a
 single citation. `reasoning` explains why it is admissible.
 
-### speculation — `spec_<id>`
+### speculation — `spec_<id>` (in `corpus/speculations.json`)
 `{ statement, measure, reasoning }` — a stated-but-unsourced load-bearing guess. Distinct from
 an observation (has a doc + quote) and from general_knowledge (broadly held). Low `confidence`
 and the `spec_` prefix flag the risk. `reasoning` = why we lean on it and what would confirm it.
 
 ---
 
-## 3. The node — `project::node` (under `nodes`)
+## 3. The node — `project::node` (in `projects/<project>.json`)
 
 The project-axis distribution the model consumes. Fields, in order:
 
@@ -109,6 +140,10 @@ The project-axis distribution the model consumes. Fields, in order:
 }
 ```
 
+- **`unit`** — the quantity's unit, in words. A unit containing `fraction 0-1` (any case; also
+  `fraction (0-1)` or an en dash) declares the quantity a fraction bounded to [0, 1], and the compiler
+  fails the node when its derived percentiles leave that range. Write it that way for every share,
+  rate or probability; `scaffold` gives bounded nodes exactly `fraction 0-1`.
 - **`truncation`** — optional `{ lower?, upper? }`; only bounds that actually **clip** beyond the
   distribution's natural domain. Each is a fixed `{ value }` or a `{ reference }`. Omit what the
   family already gives (`lower:0` under a lognormal, `[0,1]` under a beta).
@@ -409,7 +444,7 @@ aboutness, and sameness are read by an agent.
   `distribution → reference → observation → its document` in the shared corpus; there is no per-node
   evidence list. *(P7)*
 - **I13 — Derived documents show their work.** A document with a `derivation` carries
-  `{ method, from[] }` and every `from` resolves. *(P7)*
+  `{ kind, method, derived_from[] }` and every `derived_from` id resolves. *(P7)*
 - **I14 — Ready = no open gap.** A node is ready iff none of its references is `null`. *(P7)*
 - **I15 — Null is a tracked gap.** Any `reference: null` requires a `missing_document`; the build
   reports the null count as evidence debt. *(P7)*
@@ -435,7 +470,7 @@ aboutness, and sameness are read by an agent.
   `extrapolate_*` targets a `series`. *(P7)*
 
 **Mechanical** (script-checkable): I1–I4, I6 presence, I11 dedup key, I12–I16, I20, I22.
-**Semantic** (read by an agent): every `value_type`/`measure`, `trust_score`, whether a quote backs
+**Semantic** (read by an agent): every `value_type`/`measure`, a source's legitimacy (`audit`), whether a quote backs
 the value, whether a width is truly demanded (I7), basis compatibility (I21), and observation
 sameness (I11).
 

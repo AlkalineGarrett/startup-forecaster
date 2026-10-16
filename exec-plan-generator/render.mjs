@@ -1,7 +1,11 @@
-// Template renderer for the interactive execution-plan artifact.
+// Template renderer for the interactive execution-plan page.
 // Static template = CSS + interactive JS (in assets.mjs); everything else is
 // generated from the structured plan data. Edit the data file, not the output.
 import { CSS, JS } from './assets.mjs';
+
+// The template has three tinted column styles (palette slots), assigned to the data's columns in
+// order: slot b = --build, o = --ops, g = --pole. Column keys are free-form.
+const SLOTS = ['b', 'o', 'g'];
 
 const lvGlyph = (lv) => (lv === '0' ? '·' : lv);
 
@@ -27,17 +31,17 @@ function task(t) {
   return `<button class="item${stCls(t.status)}" data-d="${t.id}" data-deps="${(t.deps || []).join(' ')}"><span class="lv lv${t.lv}">${lvGlyph(t.lv)}</span>${t.label}</button>`;
 }
 
-function cell(key, tasks) {
+function cell(slot, tasks) {
   if (!tasks || !tasks.length) return '<td class="c-empty"><span class="none">—</span></td>';
   const inner = tasks.map(task).join('\n                  ');
-  return `<td class="c-${key}">\n                  ${inner}\n                </td>`;
+  return `<td class="c-${slot}">\n                  ${inner}\n                </td>`;
 }
 
 function row(r, columns) {
   if (r.type === 'gate') {
-    return `<tr class="gaterow"><td></td><td colspan="3"><button class="gitem${stCls(r.status)}" data-d="${r.id}" data-deps=""><span class="glab">Decision</span>${r.label}</button></td></tr>`;
+    return `<tr class="gaterow"><td></td><td colspan="${columns.length}"><button class="gitem${stCls(r.status)}" data-d="${r.id}" data-deps=""><span class="glab">Decision</span>${r.label}</button></td></tr>`;
   }
-  const cells = columns.map((c) => cell(c.key, r.cells[c.key])).join('\n                ');
+  const cells = columns.map((c) => cell(c.slot, r.cells[c.key])).join('\n                ');
   return `<tr>\n                <td class="wk"><b>${r.label}</b>${r.dates}</td>\n                ${cells}\n              </tr>`;
 }
 
@@ -49,17 +53,24 @@ function block(b) {
   return '';
 }
 
-function detail(d) {
+function detail(d, slotOf) {
+  if (!d.gate && d.column !== undefined && !slotOf[d.column]) throw new Error(`detail ${d.id}: unknown column "${d.column}"`);
+  const cls = d.gate ? 'det gate edge-d' : d.column !== undefined ? `det edge-${slotOf[d.column]}` : 'det';
   const status = d.status ? `<div class="status">${d.status}</div>` : '';
-  return `<div class="${d.cls}" id="d-${d.id}" hidden><div class="meta">${d.meta}</div>${status}<h4>${d.title}</h4>${d.body.map(block).join('')}</div>`;
+  return `<div class="${cls}" id="d-${d.id}" hidden><div class="meta">${d.meta}</div>${status}<h4>${d.title}</h4>${d.body.map(block).join('')}</div>`;
 }
 
-export function render(data) {
+/** Render a plan to HTML: a full document by default, or with `{ fragment: true }` only
+ *  <title> + <style> + the page content, for a host that supplies its own <html>/<head>/<body>. */
+export function render(data, { fragment = false } = {}) {
+  if (data.columns.length > SLOTS.length) throw new Error(`at most ${SLOTS.length} columns (got ${data.columns.length})`);
+  const columns = data.columns.map((c, i) => ({ ...c, slot: SLOTS[i] }));
+  const slotOf = Object.fromEntries(columns.map((c) => [c.key, c.slot]));
   const metaSpans = data.meta.map(([l, t]) => `<span><b>${l}</b> ${t}</span>`).join('\n      ');
   const scaleSpans = data.scale.map((s) => `<span class="s"><span class="lv lv${s.lv}">${lvGlyph(s.lv)}</span> ${s.label}</span>`).join('\n    ');
-  const heads = data.columns.map((c) => `<th class="h-${c.key}">${c.head} <span class="sub">${c.sub}</span></th>`).join('\n                ');
-  const rowsHtml = data.rows.map((r) => row(r, data.columns)).join('\n              ');
-  const detailsHtml = data.details.map(detail).join('\n\n        ');
+  const heads = columns.map((c) => `<th class="h-${c.slot}">${c.head} <span class="sub">${c.sub}</span></th>`).join('\n                ');
+  const rowsHtml = data.rows.map((r) => row(r, columns)).join('\n              ');
+  const detailsHtml = data.details.map((d) => detail(d, slotOf)).join('\n\n        ');
 
   // Optional per-plan palette override (e.g. a blue plan beside a teal one).
   // Appended after the base CSS so its :root vars win. Absent -> the default theme.
@@ -68,10 +79,10 @@ export function render(data) {
     || data.details.some((d) => d.status);
   const statusCss = usesStatus ? `\n${STATUS_CSS}` : '';
 
-  return `<title>${data.titleTag}</title>
+  const head = `<title>${data.titleTag}</title>
 <style>${CSS}${theme}${statusCss}</style>
-
-<div class="wrap">
+`;
+  const body = `<div class="wrap">
 
   <header class="masthead">
     ${data.eyebrow ? `<div class="eyebrow">${data.eyebrow}</div>\n    ` : ''}<h1>${data.h1}</h1>
@@ -118,5 +129,16 @@ export function render(data) {
 </div>
 
 <script>${JS}</script>
+`;
+  if (fragment) return `${head}\n${body}`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+${head}</head>
+<body>
+${body}</body>
+</html>
 `;
 }

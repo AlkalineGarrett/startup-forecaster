@@ -1,28 +1,50 @@
 // Number, currency, and text formatting used by the renderers.
 
-// Ambient display currency: the portfolio's (configurePortfolio({ currency }); default "$"). A project may
-// render in its own `cur`. `withCur` sets it for a render scope and restores the previous value, so
-// per-project (panel) and per-row (table) scopes compose without leaking a symbol across projects.
-// `fmt(v, cur)` may also override explicitly.
+// Ambient money scope: the currency amounts are in (its symbol) and the value of 1 unit of it in the portfolio's
+// reporting currency (its rate). Outside any scope it is the reporting currency (configurePortfolio sets the
+// symbol; default "$", rate 1). A venture renders in its own currency: `withCur` (portfolio-context.ts) opens a
+// scope for a venture and restores the previous one, so per-project (panel) and per-row (table) scopes compose
+// without leaking across ventures. Inside a scope, `fmt` uses the symbol, and everything that compares ventures
+// on one scale (heatVars colours, sort keys, spread strips) converts through the rate (`inReporting`).
 let _cur = "$";
-/** Set the portfolio's display currency (the ambient default outside any project scope). */
+let _rate = 1;
+/** Set the reporting symbol (configurePortfolio sets it to the reporting currency's symbol). */
 export function setCurrency(cur: string): void { _cur = cur; }
-export function withCur<T>(cur: string | undefined, fn: () => T): T {
-  const prev = _cur;
-  if (cur) _cur = cur;
-  try { return fn(); } finally { _cur = prev; }
+/** Run `fn` with amounts in the currency of symbol `cur`, worth `rate` each in the reporting currency. */
+export function withMoneyScope<T>(cur: string, rate: number, fn: () => T): T {
+  const prev = _cur, prevRate = _rate;
+  _cur = cur;
+  _rate = rate;
+  try { return fn(); } finally { _cur = prev; _rate = prevRate; }
 }
 /** The ambient currency symbol, for captions/labels that aren't a formatted number. */
 export function curSym(): string { return _cur; }
+/** An amount in the ambient currency, converted into the reporting currency. */
+export function inReporting(v: number): number { return v * _rate; }
 
-/** Format a currency amount rounded to the nearest whole THOUSAND, always in "k": €235k, −€3k, €1,290k,
- * €0. Uniform k-rounding makes the money figures easy to read and compare at a glance. Uses the given
- * `cur`, else the ambient currency (default €). */
+// Number grouping locale (configurePortfolio({ locale }); default en-US). Fixed rather than the runtime's
+// locale so a build is reproducible on any machine.
+let _locale = "en-US";
+let _nf0 = new Intl.NumberFormat(_locale, { maximumFractionDigits: 0 });
+let _nf1 = new Intl.NumberFormat(_locale, { maximumFractionDigits: 1 });
+export function setNumberLocale(locale: string): void {
+  _locale = locale;
+  _nf0 = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  _nf1 = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+}
+
+/** Format a currency amount, scaling the unit to the number: whole units below 1k ($640), thousands below 1M
+ * ($235k), millions from there ($1.3M, $12M; whole millions from 100M). Negative values get a leading "−";
+ * anything that rounds to zero is a plain $0. Uses `cur`, else the ambient symbol. */
 export function fmt(v: number, cur?: string): string {
   const c = cur ?? _cur;
-  const k = Math.round(v / 1000);
-  if (k === 0) return c + "0"; // rounds to zero → plain €0 (avoids a bare "€0k" / "−€0k")
-  return (k < 0 ? "−" : "") + c + Math.abs(k).toLocaleString("en-US") + "k";
+  const a = Math.abs(v);
+  let body: string;
+  if (a < 0.5) return c + "0";
+  if (a < 999.5) body = _nf0.format(Math.round(a));
+  else if (a < 999_500) body = _nf0.format(Math.round(a / 1000)) + "k";
+  else body = (a < 99_950_000 ? _nf1 : _nf0).format(a / 1e6) + "M";
+  return (v < 0 ? "−" : "") + c + body;
 }
 
 /** Format a bare quantity (no currency): 1.2k, 15k, 2.5M, 0.025. */
@@ -79,7 +101,10 @@ export function setMoneyBands(b: [number, number, number]): void {
 /** The current money colour-scale anchors. */
 export function moneyBands(): [number, number, number] { return _bands; }
 
-export function heatVars(v: number): string {
+/** The colour of a money cell for amount `v` in the ambient currency (converted into the reporting currency, so
+ *  every venture sits on one scale). */
+export function heatVars(amount: number): string {
+  const v = inReporting(amount);
   let base: number[];
   let bgt = 0.84; // how far toward white the background tint sits
   if (v < 0) {

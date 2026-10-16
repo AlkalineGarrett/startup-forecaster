@@ -7,11 +7,18 @@
 //   S5  every evidence document on disk is in the manifest — by path, or by content-hash for a
 //       byte-identical copy. The reverse of S1: a PASS proves nothing is missing.
 //
-// Run from repo root or sources/:  node check_sources.mjs
+// S5 never treats these as evidence (built in): a path segment starting with `_` (the staging convention:
+// browser-save `_files/` folders, `_`-prefixed scratch and helper files), `.git/`, the derived `cores/`
+// text layer, `documents.json`, OCR sidecars (`*.ocr.txt`), `.DS_Store`, and `.csv`/`.md` files at the
+// archive root (MANIFEST.csv, url-aliases.csv, README.md, …). A workspace adds its own with the config
+// field `sourcesExclude` (see distribution-compiler/compiler/workspace.mjs), e.g. ["assets/", "notes.json"].
+//
+// Run from repo root or sources/:  npx forecaster check-sources
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
-import { ROOTS } from "./paths.mjs";   // the archive to check is GROUNDING; the corpus (S6/S7) is under PROJECT
+import { basename, extname, join } from "node:path";
+import { ROOTS } from "./paths.mjs";
+import { configList } from "../distribution-compiler/compiler/workspace.mjs";   // the archive to check is GROUNDING; the corpus (S6/S7) is under PROJECT
 import { readCsvFile } from "./lib/csv.mjs";
 import { load } from "./lib/json.mjs";
 import { isMain, print, runMain } from "./lib/util.mjs";
@@ -19,24 +26,35 @@ import { isMain, print, runMain } from "./lib/util.mjs";
 const NO_HASH = "-";
 const DOC_EXT = new Set([".html", ".htm", ".pdf", ".txt", ".xlsx", ".xls", ".doc", ".docx", ".json", ".gz"]);
 
-function excluded(rel, fn) {
+/** A sourcesExclude pattern as a test of an archive-relative path (see the header). */
+export function excludePattern(pat) {
+  const p = pat.trim().replace(/^\.\//, "");
+  const dir = p.endsWith("/");
+  const body = dir ? p.slice(0, -1) : p;
+  const re = body.split("/").map((seg, i, all) => (seg === "**" ? (i === all.length - 1 ? ".*" : "(?:.*/)?") : seg.replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]") + "/")).join("").replace(/\/$/, "");
+  const full = new RegExp(`^${re}${dir ? "/" : "$"}`);
+  if (!dir && !body.includes("/")) return (rel) => full.test(basename(rel));   // a bare name: anywhere
+  return (rel) => full.test(rel);
+}
+
+/** True when the archive-relative path `rel` (file name `fn`) is never evidence for S5. */
+export function excluded(rel, fn, extra = []) {
   const ext = extname(fn).toLowerCase();
-  if (rel.includes("_files/")) return true;                     // browser-save support
-  if (rel.split("/").some((seg) => seg.startsWith("_"))) return true;  // _-prefixed = staging/derived (browser-save _files, _clean extractions, _extract.py helpers, _clean_reviews.txt)
-  if (rel.startsWith(".git/")) return true;                     // repo metadata (the cache is a git backup)
+  if (rel.split("/").some((seg) => seg.startsWith("_"))) return true;  // _-prefixed = staging/derived (browser-save _files/, scratch, helpers)
+  if (rel.includes("_files/")) return true;                     // browser-save support (page_files/)
+  if (rel.startsWith(".git/")) return true;                     // repo metadata, when the archive is a git repo
   if (rel.startsWith("cores/")) return true;                    // derived text layer, not manifest evidence
-  if (rel.startsWith("assets/")) return true;                   // never evidence
-  if (rel.startsWith("fetch-lists/")) return true;              // source-acquisition worklists
-  if (fn === "manual-manifest.csv" || fn === "documents.json" || fn.endsWith(".ocr.txt")) return true;  // index/side records
-  if (!rel.includes("/") && ([".csv", ".md", ".py"].includes(ext) || fn === ".DS_Store")) return true;  // repo metadata/tools
-  if (fn === ".DS_Store") return true;
-  return false;
+  if (fn === "documents.json" || fn.endsWith(".ocr.txt") || fn === ".DS_Store") return true;  // registry, OCR sidecars
+  if (!rel.includes("/") && [".csv", ".md"].includes(ext)) return true;   // archive-root ledgers and notes
+  return extra.some((test) => test(rel));
 }
 
 export async function main() {
   const { PROJECT, GROUNDING } = ROOTS;
   const SRC = GROUNDING;
   const MAN = readCsvFile(join(SRC, "MANIFEST.csv"));
+  const extra = (await configList("sourcesExclude")).map(excludePattern);
   const fail = [];
   const check = (inv, bad, note) => { for (const b of bad) fail.push([inv, b, note]); };
 
@@ -56,7 +74,7 @@ export async function main() {
   for (const e of readdirSync(SRC, { recursive: true, withFileTypes: true })) {
     if (!e.isFile()) continue;
     const fn = e.name, full = join(e.parentPath, fn), rel = full.slice(SRC.replace(/\/$/, "").length + 1);
-    if (storedSet.has(rel) || excluded(rel, fn)) continue;
+    if (storedSet.has(rel) || excluded(rel, fn, extra)) continue;
     if (!DOC_EXT.has(extname(fn).toLowerCase())) continue;
     const h = createHash("sha256").update(readFileSync(full)).digest("hex");
     if (!shaSet.has(h)) s5.push(rel);
@@ -86,9 +104,9 @@ export async function main() {
     checks = "S1 S2 S5 S6 S7";
 
     // S8 — audit coverage. `verification` (quote-in-core) is stamped at write time, but the
-    // legitimacy AUDIT (AUDIT.md) is a separate pass that must actually run; freshly-added
-    // observations are `audit: unaudited` (or the field is absent) until it does. A whole batch once
-    // slipped through un-reviewed, so this is now an enforced gate: an observation is un-reviewed
+    // legitimacy AUDIT (audit-evidence.md) is a separate pass that must actually run; freshly-added
+    // observations are `audit: unaudited` (or the field is absent) until it does. Nothing else stops
+    // un-reviewed evidence reaching a run, so this is an enforced gate: an observation is un-reviewed
     // unless its `audit` is `verified` or `flagged` (a deliberate "known defect, do not use" state).
     const obsPath = join(PROJECT, "corpus", "observations.json");
     if (existsSync(obsPath)) {

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Mark documents / observations `"audit": "verified"` — ONLY the ones an audit passed (AUDIT.md).
+// Mark documents / observations `"audit": "verified"` — ONLY the ones an audit passed (audit-evidence.md).
 //
-//     node mark_audited.mjs --pass-list build/audit/verdicts_*.json   # verdict files
-//     node mark_audited.mjs --obs doc_x/obs_y --obs doc_z/obs_w        # explicit obs
-//     node mark_audited.mjs --doc doc_x --doc doc_y                     # explicit docs
+//     npx forecaster mark-audited --pass-list build/audit/verdicts_*.json   # verdict files
+//     npx forecaster mark-audited --obs doc_x/obs_y --obs doc_z/obs_w        # explicit obs
+//     npx forecaster mark-audited --doc doc_x --doc doc_y                     # explicit docs
 //
 // A verdict file is a JSON array; an element with verdict `legit` (observation) or `ok` (document) is
 // marked verified. Any other verdict is left as-is (fix it first, then re-run). Stamps `audit_date`.

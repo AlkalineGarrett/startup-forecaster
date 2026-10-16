@@ -44,5 +44,6 @@ test("scrambled Halton is well-distributed and globalFactors is reproducible", (
   const g1 = globalFactors(7, shift);
   const g2 = globalFactors(7, shift);
   assert.deepStrictEqual(g1, g2, "same index+shift → same factors (CRN reproducible)");
-  assert.ok(isFinite(g1[F_MACRO]) && isFinite(g1.ai_demand));
+  assert.ok(isFinite(g1[F_MACRO]));
+  assert.deepStrictEqual(Object.keys(g1), [F_MACRO], "the default shared factor set is just macro");
 });

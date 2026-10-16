@@ -3,16 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "MC_N=500 node --test --test-reporter=spec $(ls test/*.test.ts | grep -v example.test.ts) && node --test --test-reporter=spec test/example.test.ts",
-    "test:full": "node --test --test-reporter=spec test/*.test.ts",
-    "build": "MC_CONFIG=examples/portfolio.config.mjs node build.mjs",
-    "check": "MC_CONFIG=examples/portfolio.config.mjs node build.mjs && npm test",
-    "serve": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types server.mjs",
-    "artifact": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types build-artifact.mjs",
-    "precompute": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types precompute.mjs",
-    "artifact:full": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types build-full-artifact.mjs",
+    "test": "MC_CONFIG=examples MC_N=500 node --test --test-reporter=spec $(ls test/*.test.ts | grep -v example.test.ts) && MC_CONFIG=examples node --test --test-reporter=spec test/example.test.ts",
+    "test:full": "MC_CONFIG=examples node --test --test-reporter=spec test/*.test.ts",
     "coverage": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types coverage.mjs",
-    "pipeline": "MC_CONFIG=examples/portfolio.config.mjs node pipeline/run.mjs",
-    "regen:example-golden": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types pipeline/golden.mjs"
+    "simulate": "MC_CONFIG=examples/portfolio.config.mjs node simulation/run.mjs",
+    "regen:example-golden": "MC_CONFIG=examples/portfolio.config.mjs node --experimental-strip-types simulation/golden.mjs"
   }
 }

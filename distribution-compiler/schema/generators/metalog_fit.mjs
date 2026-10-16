@@ -1,5 +1,5 @@
 // Lower-semi-bounded metalog (bound at 0), k=5 terms, fit by OLS to the paid-price
-// quantile anchors (fictional example: field-crew route-planning add-on list prices) at plotting positions i/(n+1); the $0 free tier is a separate mass.
+// quantile anchors (fictional example: field-crew route-planning add-on list prices) at plotting positions i/(n+1); the $0 free tier is the metalog's zero_mass (mass at the lower bound).
 // Dumps the density curve + two-part percentiles for the figure (build_metalog_example.mjs).
 import { writeFileSync } from "node:fs";
 import { data, dumps, fx, N, round, sum } from "./_shared.mjs";

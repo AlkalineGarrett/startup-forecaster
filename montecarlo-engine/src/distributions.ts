@@ -39,8 +39,9 @@ const INF = Infinity;
 const BIG = 1e12;
 
 // ---------- special functions (Numerical Recipes) — for the beta family ----------
+const GAMMLN_COF = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
 function gammln(xx: number): number {
-  const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  const cof = GAMMLN_COF;
   let x = xx, y = xx;
   let tmp = x + 5.5;
   tmp -= (x + 0.5) * Math.log(tmp);
@@ -72,17 +73,22 @@ function betacf(a: number, b: number, x: number): number {
   return h;
 }
 
-/** Regularized incomplete beta I_x(a,b) — the beta CDF. */
-function betai(a: number, b: number, x: number): number {
+/** ln Γ(a+b) − ln Γ(a) − ln Γ(b) (= −ln B(a,b)), in betai's evaluation order. Constant per (a,b), so a beta
+ *  Dist computes it once rather than three gammln calls per CDF evaluation. */
+const lnInvBeta = (a: number, b: number): number => gammln(a + b) - gammln(a) - gammln(b);
+
+/** Regularized incomplete beta I_x(a,b) — the beta CDF. `lgab` = lnInvBeta(a, b). */
+function betai(a: number, b: number, x: number, lgab: number = lnInvBeta(a, b)): number {
   if (x <= 0) return 0;
   if (x >= 1) return 1;
-  const bt = Math.exp(gammln(a + b) - gammln(a) - gammln(b) + a * Math.log(x) + b * Math.log(1 - x));
+  const bt = Math.exp(lgab + a * Math.log(x) + b * Math.log(1 - x));
   if (x < (a + 1) / (a + b + 2)) return (bt * betacf(a, b, x)) / a;
   return 1 - (bt * betacf(b, a, 1 - x)) / b;
 }
 
-/** Inverse regularized incomplete beta — the beta quantile (NR invbetai). */
-function invbetai(p: number, a: number, b: number): number {
+/** Inverse regularized incomplete beta — the beta quantile (NR invbetai). `lgab` = lnInvBeta(a, b),
+ *  `afac` = its Newton-step constant (both constant per (a,b)). */
+function invbetai(p: number, a: number, b: number, lgab: number = lnInvBeta(a, b), afac: number = -gammln(a) - gammln(b) + gammln(a + b)): number {
   const EPS = 1e-9, a1 = a - 1, b1 = b - 1;
   let x = 0, t, u, err, al, h, w;
   if (p <= 0) return 0;
@@ -104,10 +110,9 @@ function invbetai(p: number, a: number, b: number): number {
     if (p < t / w) x = Math.pow(a * w * p, 1 / a);
     else x = 1 - Math.pow(b * w * (1 - p), 1 / b);
   }
-  const afac = -gammln(a) - gammln(b) + gammln(a + b);
   for (let j = 0; j < 10; j++) {
     if (x === 0 || x === 1) return x;
-    err = betai(a, b, x) - p;
+    err = betai(a, b, x, lgab) - p;
     t = Math.exp(a1 * Math.log(x) + b1 * Math.log(1 - x) + afac);
     u = err / t;
     x -= (t = u / (1 - 0.5 * Math.min(1, u * (a1 / x - b1 / (1 - x)))));
@@ -119,7 +124,11 @@ function invbetai(p: number, a: number, b: number): number {
 }
 
 // ---------- generic numeric inversion (for mixtures) ----------
-function numericPPF(cdf: (x: number) => number, support: [number, number]): (u: number) => number {
+/** Bisection inverse of a monotone `cdf` on `support`. `bracket(u)`, when given, proposes a tight [a, b]
+ *  around the root (e.g. a mixture's component quantiles); it is used only when it verifiably brackets it
+ *  (cdf(a) < u ≤ cdf(b)), else that side falls back to the support edge — so it changes the starting interval
+ *  (and so the answer only within the bisection tolerance), never the root. */
+function numericPPF(cdf: (x: number) => number, support: [number, number], bracket?: (u: number) => [number, number]): (u: number) => number {
   const lo = isFinite(support[0]) ? support[0] : -BIG;
   const hi = isFinite(support[1]) ? support[1] : BIG;
   const clo = cdf(lo), chi = cdf(hi);
@@ -127,6 +136,11 @@ function numericPPF(cdf: (x: number) => number, support: [number, number]): (u: 
     if (u <= 0 || u <= clo) return lo;
     if (u >= 1 || u >= chi) return hi;
     let a = lo, b = hi;
+    if (bracket) {
+      const [ba, bb] = bracket(u);
+      if (ba > lo && ba < hi && cdf(ba) < u) a = ba;
+      if (bb < hi && bb > a && cdf(bb) >= u) b = bb;
+    }
     for (let i = 0; i < 200; i++) {
       const m = 0.5 * (a + b);
       if (cdf(m) < u) a = m; else b = m;
@@ -146,7 +160,8 @@ function lognormal(median: number, sigma: number): Dist {
   };
 }
 function betaDist(alpha: number, beta: number): Dist {
-  return { ppf: (u) => invbetai(u, alpha, beta), cdf: (x) => betai(alpha, beta, x), support: [0, 1] };
+  const lgab = lnInvBeta(alpha, beta), afac = -gammln(alpha) - gammln(beta) + gammln(alpha + beta);
+  return { ppf: (u) => invbetai(u, alpha, beta, lgab, afac), cdf: (x) => betai(alpha, beta, x, lgab), support: [0, 1] };
 }
 function normal(mean: number, sd: number): Dist {
   return { ppf: (u) => mean + sd * probit(u), cdf: (x) => phi((x - mean) / sd), support: [-INF, INF] };
@@ -183,9 +198,19 @@ function pointMass(atoms: { value: number; weight: number }[]): Dist {
   const cum: [number, number][] = [];
   let c = 0;
   for (const a of xs) { c += a.weight / tot; cum.push([c, a.value]); }
+  // CDF: the running raw-weight sum over the sorted atoms (same summation order as summing the atoms ≤ x),
+  // located by binary search for the last atom ≤ x.
+  const vals = xs.map((a) => a.value);
+  const cumW: number[] = [];
+  let w = 0;
+  for (const a of xs) { w += a.weight; cumW.push(w); }
   return {
     ppf: (u) => { for (const [cc, v] of cum) if (u <= cc + 1e-12) return v; return cum[cum.length - 1][1]; },
-    cdf: (x) => xs.filter((a) => a.value <= x).reduce((s, a) => s + a.weight, 0) / tot,
+    cdf: (x) => {
+      let lo = 0, hi = vals.length; // first index with vals[i] > x
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (vals[mid] <= x) lo = mid + 1; else hi = mid; }
+      return lo === 0 ? 0 : cumW[lo - 1] / tot;
+    },
     support: [xs[0].value, xs[xs.length - 1].value],
   };
 }
@@ -198,7 +223,14 @@ function weightedCombination(components: { d: DistSpec; weight: number }[]): Dis
   const lo = comps.some((c) => !isFinite(c.d.support[0])) ? -BIG : Math.min(...comps.map((c) => c.d.support[0]));
   const hi = comps.some((c) => !isFinite(c.d.support[1])) ? BIG : Math.max(...comps.map((c) => c.d.support[1]));
   const cdf = (x: number): number => comps.reduce((s, c) => s + c.w * c.d.cdf(x), 0);
-  return { cdf, ppf: numericPPF(cdf, [lo, hi]), support: [lo, hi] };
+  // A mixture's u-quantile lies between its components' own u-quantiles (each F_i(min) ≤ u ≤ F_i(max), so the
+  // weighted sum is too): bisect from that bracket instead of ±BIG.
+  const bracket = (u: number): [number, number] => {
+    let a = Infinity, b = -Infinity;
+    for (const c of comps) { const x = c.d.ppf(u); if (x < a) a = x; if (x > b) b = x; }
+    return [a, b];
+  };
+  return { cdf, ppf: numericPPF(cdf, [lo, hi], bracket), support: [lo, hi] };
 }
 /** Piecewise body + tail joined at a shared x-value `at` (= p* body-mass). */
 function splice(body: Dist, tail: Dist, at: number): Dist {
@@ -208,6 +240,13 @@ function splice(body: Dist, tail: Dist, at: number): Dist {
     cdf: (x) => (x <= at ? body.cdf(x) : pstar + (1 - pstar) * tail.cdf(x)),
     support: [body.support[0], tail.support[1]],
   };
+}
+
+/** The CDF at x as the inverse of a monotone ppf: bisection on u ∈ [0, 1]. */
+function cdfByBisection(ppf: (u: number) => number, x: number): number {
+  let a = 0, b = 1;
+  for (let i = 0; i < 200; i++) { const m = 0.5 * (a + b); if (ppf(m) < x) a = m; else b = m; if (b - a < 1e-12) break; }
+  return 0.5 * (a + b);
 }
 
 // ---------- metalog (k terms; unbounded, lower-, upper- or doubly-bounded) ----------
@@ -260,9 +299,7 @@ function metalog(anchors: { prob: number; value: number }[], K: number, lowerBou
   const cdf = (x: number): number => {
     if (x <= loV) return zeroMass;
     if (x >= hiV) return 1;
-    let a = 0, b = 1;
-    for (let i = 0; i < 200; i++) { const m = 0.5 * (a + b); if (ppf(m) < x) a = m; else b = m; if (b - a < 1e-12) break; }
-    return 0.5 * (a + b);
+    return cdfByBisection(ppf, x);
   };
   return { ppf, cdf, support: [loV, hiV] };
 }
@@ -275,9 +312,7 @@ function piecewise(anchors: { prob: number; value: number }[]): Dist {
   const cdf = (x: number): number => {
     if (x <= loV) return 0;
     if (x >= hiV) return 1;
-    let a = 0, b = 1;
-    for (let i = 0; i < 200; i++) { const m = 0.5 * (a + b); if (ppf(m) < x) a = m; else b = m; if (b - a < 1e-12) break; }
-    return 0.5 * (a + b);
+    return cdfByBisection(ppf, x);
   };
   return { ppf, cdf, support: [loV, hiV] };
 }
@@ -305,7 +340,16 @@ export function construct(d: DistSpec): Dist {
 function gammaDist(shape: number, rate: number): Dist {
   const scale = 1 / rate;
   const P = (x: number): number => regGammaP(shape, x / scale);
-  return { ppf: numericPPF(P, [0, INF]), cdf: P, support: [0, INF] };
+  // Bracket: a Wilson–Hilferty estimate, widened ×/÷2 until it encloses the root (numericPPF verifies it).
+  const bracket = (u: number): [number, number] => {
+    const z = probit(u), c = 1 / (9 * shape);
+    const wh = shape * Math.pow(Math.max(1e-6, 1 - c + z * Math.sqrt(c)), 3) * scale;
+    let a = wh, b = wh;
+    for (let i = 0; i < 60 && a > 1e-300 && P(a) >= u; i++) a *= 0.5;
+    for (let i = 0; i < 60 && P(b) < u; i++) b *= 2;
+    return [a, b];
+  };
+  return { ppf: numericPPF(P, [0, INF], bracket), cdf: P, support: [0, INF] };
 }
 function regGammaP(a: number, x: number): number {
   if (x <= 0) return 0;

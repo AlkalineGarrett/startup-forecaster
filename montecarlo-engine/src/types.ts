@@ -27,7 +27,7 @@ export type Loadings = Record<string, number>;
  * when absent (fractions → bounded (0,1); other magnitudes → semi-bounded (0,∞)). */
 export type NodeBound = "unbounded" | "semi-lo" | "bounded";
 
-/** A unit's revenue trajectory: 60 monthly net-collected revenues (pre-fx), written in place. */
+/** A unit's revenue trajectory: one revenue per month over the horizon (HORIZON_MONTHS; pre-fx), written in place. */
 export type MonthTraj = Float64Array;
 // ── Model horizon (per portfolio; configurePortfolio({ horizonYears, headlineFromYear })) ──────────────────
 /** Months in a unit's trajectory. Default 60 (5 years). */
@@ -77,6 +77,9 @@ export interface ProjectNode {
   _frac?: boolean;
   /** Runtime: the compiled distribution's support score (0–100), when the node has one. */
   _support?: number;
+  /** Kept out of the UI's driver lists (node cards, graph, tornado). Still sampled. E.g. a terminal-value
+   *  multiple nobody needs to see. */
+  hidden?: boolean;
   /**
    * Runtime: a click-override. When set, this node's distribution is replaced by a
    * narrow normal centred on this bar position (0..1); cleared by Reset. Set from the UI.
@@ -107,10 +110,18 @@ export interface Project {
   model?: import("./templates.ts").ModelSpec;
   id: string;
   name: string;
-  /** Display currency symbol. */
-  cur: string;
-  /** Multiplier applied to the raw revenue to normalise to EUR. */
-  fx: number;
+  /** The venture's currency, ISO code (e.g. "USD"): its outputs are in it. Defaults to the portfolio's reporting
+   *  currency. A workspace sets it in its profile (ventures.<id>.currency, passed as configurePortfolio({ ventures })),
+   *  which wins over a value here. A currency other than the reporting one needs an `exchangeRates` entry. */
+  currency?: string;
+  /** The ISO code the venture's input prices are quoted in, when it differs from `currency` (e.g. prices researched
+   *  in USD for a venture reported in EUR). From the profile (ventures.<id>.priceCurrency) like `currency`. */
+  priceCurrency?: string;
+  /** DERIVED by configurePortfolio, never set by hand: the display symbol of `currency`. */
+  cur?: string;
+  /** DERIVED by configurePortfolio, never set by hand: the multiplier from the price currency into the venture's
+   *  currency, toReporting(priceCurrency) / toReporting(currency) (1 when they are the same). */
+  fx?: number;
   type: string;
   one: string;
   /** Optional expandable topline brief shown at the top of this unit's page. */
@@ -125,38 +136,34 @@ export interface Project {
    *  - `cogsLines`: cost-of-revenue components, each a rate (fraction of that year's gross revenue). The
    *     project's `margin` should equal 1 − Σ rates so the totals reconcile.
    *  - `costLines`: fixed operating-cost components, each an absolute annual amount. `cost` should equal
-   *     their sum. */
+   *     their sum. A line's `from` overrides the portfolio's `costsStart` for that line. */
   revenueLines?: string[];
   cogsLines?: { label: string; rate: (s: ScenarioState) => number }[];
-  costLines?: { label: string; amount: (s: ScenarioState) => number }[];
-  /** Price-as-output: when set, the engine attaches a revenue(price) curve + optimal price. */
-  priceSweep?: { priceNode: string; wtpNode?: string; extraNodes?: ProjectNode[] };
-  /** Writes the unit's 60-month net-collected revenue trajectory (pre-fx) into `out`. */
-  /** The revenue model. Required unless `model` is given (configurePortfolio fills it from the template). */
+  costLines?: CostLine[];
+  /** Price-as-output: when set, the engine attaches a revenue(price) curve + optimal price. See RunUnit.priceSweep. */
+  priceSweep?: PriceSweep;
+  /** The revenue model: writes the unit's monthly trajectory over the horizon (pre-fx) into `out`. Required
+   *  unless `model` is given (configurePortfolio fills it from the template). */
   sim?: (s: ScenarioState, r: Rng, out: MonthTraj) => void;
-  /** Gross-margin fraction for a draw (cost of revenue). Defaults per project type. */
+  /** Gross-margin fraction for a draw (1 − cost of revenue). A business unit with neither this nor
+   *  `cogsLines` takes the portfolio's `defaults.margin`, and is an error when there is none. */
   margin?: (s: ScenarioState) => number;
-  /** Terminal-value multiple on month-60 run-rate (e.g. 2–5× ARR solo SaaS, 0 for jobs). */
+  /** Terminal-value multiple on the horizon-end annual run-rate (e.g. a few × ARR for software, 0 for an
+   *  income track). Absent → the portfolio's `defaults.tvMultiple`, else 0 (no terminal value). */
   tvMultiple?: (s: ScenarioState) => number;
-  /** Annual operating cost (project currency, pre-fx) that reduces the margin/contribution line
-   * (after-tax cash), NOT reported revenue. Free-tier cost-to-serve, per-title build spend, etc.
-   * Reported revenue (`out`) stays gross ≥ 0; a negative contribution draw is a viability event. */
+  /** Annual operating cost (venture currency, pre-fx) that reduces the contribution line (after-tax cash),
+   * NOT reported revenue: free-tier cost-to-serve, salaries, compliance, etc. Starts per the portfolio's
+   * `costsStart`. Reported revenue (`out`) stays gross ≥ 0; a negative contribution draw is a viability event. */
   cost?: (s: ScenarioState) => number;
-  /** Shared-market tag: base units in the same market XOR in a portfolio sum (e.g. the two job
-   * tracks — accepting one ends the other search). See RunUnit.market. */
+  /** Shared-market tag: base units in the same market are alternatives for the same buyers, so a portfolio
+   * sum keeps only the larger per draw (e.g. two job searches — accepting one ends the other). See RunUnit.market. */
   market?: string;
-  /** Per-project reference-class p90 (EUR/yr) for the sanity flag; a single portfolio-wide value
-   * can't fit projects of different shapes. Falls back to REFERENCE_P90 when absent. */
+  /** Per-project reference-class p90 (venture currency, per year) for the optimism flag; a single portfolio-wide
+   * value can't fit projects of different shapes. Falls back to the portfolio's `referenceP90` (converted). */
   refP90?: number;
-  /** Custom reference-class caveat body (HTML). Used when the generic solo-software / $10k-MRR base rate
-   * is the WRONG comparator (e.g. a funded-service or B2B-heavy venture). Replaces the default flag text;
-   * still gated by the refP90 threshold. */
+  /** Custom reference-class caveat body (HTML), when the portfolio's reference class is the wrong comparator
+   * for this venture. Replaces the default flag text; still gated by the refP90 threshold. */
   refNote?: string;
-  /** Additive-variant allocation: the max segments pursuable at once (concurrency
-   * cap) and a fixed per-segment overhead fraction — so "all-fronts" is a capped allocation, not a
-   * free sum of every segment. */
-  segmentConcurrency?: number;
-  segmentOverhead?: number;
   /**
    * Optional product variants. When present, the project is simulated as its base
    * graph (the "base unit") plus each variant, and an equal-weight supermix of them all.
@@ -180,30 +187,31 @@ export interface Project {
    * Keeps the all-fronts view available as a sub-tab but off the default headline.
    */
   headlineBase?: boolean;
-  /** The project carries its OWN single merged pre-revenue lag node (e.g. a project's
-   * `research_readiness_months`), so initProjects must NOT inject the shared `code_months` +
-   * `readiness_months` build nodes on top of it — that would sample three overlapping lag nodes
-   * where the sim reads only one (WO18 B4). */
+  /** Lag-node convention: the engine and the templates read `code_months` (build) and `readiness_months`
+   * (real-world readiness) when a unit has them — for the lag split, `costsStart`, and the template's default
+   * lag. The engine never adds them. `mergedLag` marks a project that carries ONE merged pre-revenue lag node
+   * instead, so a workspace's own init knows not to add the pair. */
   mergedLag?: boolean;
   /**
-   * A personal-income / service track (a job salary or solo consulting), not a product
-   * business. Excluded from the Pairwise combination view — you can't "pursue it alongside"
-   * a product the way two products combine.
+   * An income track (salary or freelance), not a product business: its revenue is taxable income, so it has
+   * no cost of revenue unless it sets `margin` or `cogsLines`, its after-tax uses the personal schedule, and it
+   * has no terminal value by default. A personal unit with a `net_tax_multiplier` node uses it directly:
+   * net = gross profit × net_tax_multiplier − operating cost. (Which units appear in Pairwise is the
+   * `pairwiseIds` allow-list, not this flag.)
    */
   personal?: boolean;
   /**
-   * Optional per-project after-tax schedule for a PERSONAL track, overriding the portfolio-wide
-   * `personalAfterTax` — e.g. a self-employed practice taxed differently from salaried job tracks.
-   * Receives the billed gross revenue for the year (EUR, before cost of revenue), the gross profit
-   * (after cost of revenue), the draw's scenario state and the year's operating cost (EUR); returns the
-   * final after-tax cash NET of operating cost (so a schedule can treat that cost as deductible).
-   * Variants inherit it.
+   * Optional per-unit after-tax schedule, for ANY unit (business or personal), overriding the portfolio's
+   * tax settings — e.g. a self-employed practice, or a company route. Works in the venture's own currency:
+   * receives the year's billed gross revenue (before cost of revenue), the gross profit (after cost of revenue),
+   * the draw's scenario state and the year's operating cost; returns the final after-tax cash NET of operating
+   * cost (so a schedule can treat that cost as deductible). Variants inherit it.
    */
-  afterTax?: (grossRevenueEur: number, grossProfitEur: number, s: ScenarioState, opcostEur: number) => number;
+  afterTax?: AfterTaxFn;
   /**
    * No longer being pursued. Still fully modeled (golden/pairwise unchanged) but moved out of the
    * main Overview + tab bar into a dedicated "Archived" view; its full model stays drill-through
-   * accessible from there. Distinct from `personal` (which only gates the Pairwise view).
+   * accessible from there.
    */
   archived?: boolean;
 }
@@ -213,41 +221,53 @@ export interface RunUnit {
   /** As on Project: a business-model template that supplies the unit's sim and money lines. */
   model?: import("./templates.ts").ModelSpec;
   id: string;
-  fx: number;
+  /** Multiplier from the input price currency into the unit's currency (see Project.fx; default 1). Derived by
+   *  configurePortfolio for a project's variants; a unit built by hand may set it. */
+  fx?: number;
+  /** The unit's currency (ISO code; default the reporting currency). Variants take their project's. */
+  currency?: string;
+  /** The unit's price currency (ISO code; default its currency). Variants take their project's. */
+  priceCurrency?: string;
   nodes: ProjectNode[];
-  /** Writes the unit's 60-month net-collected revenue trajectory (pre-fx) into `out`. When `parts` is
+  /** Writes the unit's monthly revenue trajectory over the horizon (pre-fx) into `out`. When `parts` is
    *  supplied (one pre-zeroed buffer per `revenueLines` label), the sim also writes each revenue sub-line
    *  into its buffer so the engine can report per-line revenue; `out` stays the total. */
   sim: (s: ScenarioState, r: Rng, out: MonthTraj, parts?: Record<string, MonthTraj>) => void;
   /** Itemization (see Project): revenue sub-line labels, cost-of-revenue rate components, fixed cost components. */
   revenueLines?: string[];
   cogsLines?: { label: string; rate: (s: ScenarioState) => number }[];
-  costLines?: { label: string; amount: (s: ScenarioState) => number }[];
+  costLines?: CostLine[];
   /** Per-node scalar loading on the execution factor; node.loadings takes precedence when present. */
   rho: Record<string, number>;
-  /** Gross-margin fraction for a draw. Defaults to a business default when absent. */
+  /** Gross-margin fraction for a draw (see Project.margin). */
   margin?: (s: ScenarioState) => number;
-  /** Terminal-value multiple on month-60 run-rate. */
+  /** Terminal-value multiple on the horizon-end run-rate (see Project.tvMultiple). */
   tvMultiple?: (s: ScenarioState) => number;
-  /** Annual operating cost (project currency, pre-fx) subtracted from the contribution line, not
+  /** Annual operating cost (venture currency, pre-fx) subtracted from the contribution line, not
    * revenue. See Project.cost. */
   cost?: (s: ScenarioState) => number;
-  /** A personal-income track (job/consulting): after-tax uses the portfolio's personal-tax schedule, not a business margin. */
+  /** An income track (salary/freelance): see Project.personal. */
   personal?: boolean;
-  /** Per-unit personal after-tax schedule (see Project.afterTax); falls back to the portfolio schedule. */
-  afterTax?: (grossRevenueEur: number, grossProfitEur: number, s: ScenarioState, opcostEur: number) => number;
+  /** Per-unit after-tax schedule (see Project.afterTax); falls back to the portfolio's tax settings. */
+  afterTax?: AfterTaxFn;
   /** Shared-market tag: units with the same non-empty market model the SAME buyer pool, so a
    * portfolio sum takes the max within a market group per draw instead of double-counting them. */
   market?: string;
-  /** All-fronts base front: the generic "no wedge" product is the always-present core (each variant
-   * is this core plus its special features), so it contributes every draw and is exempt from the
-   * `segmentConcurrency` cap — the cap governs only the incremental wedges layered on top. */
-  base?: boolean;
   /** Price-as-output: when set, the engine runs a price sweep (demand overlay + active hours cap)
-   * and attaches the revenue(price) curve + optimal price to the result. `priceNode` is the node id
-   * whose sampled p50 is the "planned" price and whose value the sweep overrides. */
-  priceSweep?: { priceNode: string; wtpNode?: string; extraNodes?: ProjectNode[] };
+   * and attaches the revenue(price) curve + optimal price to the result. */
+  priceSweep?: PriceSweep;
 }
+
+/** A price sweep: `priceNode` is the node whose sampled median is the "planned" price and whose value the sweep
+ *  overrides; `wtpNode` sizes the grid's top; `extraNodes` are drawn only when pricing. The grid runs from 0.3×
+ *  to ≥2.5× the planned price; `minPrice` (venture currency) optionally floors its bottom. */
+export interface PriceSweep { priceNode: string; wtpNode?: string; extraNodes?: ProjectNode[]; minPrice?: number }
+
+/** A fixed operating-cost line: an absolute annual amount; `from` overrides the portfolio's `costsStart`. */
+export interface CostLine { label: string; amount: (s: ScenarioState) => number; from?: "start" | "readiness" | "launch" }
+
+/** A unit's own after-tax schedule (see Project.afterTax). All amounts in the unit's currency. */
+export type AfterTaxFn = (grossRevenue: number, grossProfit: number, s: ScenarioState, opcost: number) => number;
 
 /** One row of a project's variance decomposition: how strongly a node drives the output. */
 export interface TornadoBar {
@@ -268,7 +288,7 @@ export interface Variant extends RunUnit {
   brief?: UnitBrief;
 }
 
-/** P20/P50/P80 of a cumulative-revenue horizon (EUR). */
+/** P20/P50/P80 of a cumulative-revenue horizon (venture currency). */
 export interface Horizon {
   p20: number;
   p50: number;
@@ -286,7 +306,11 @@ export interface YearStat {
 }
 
 /** The outcome distribution of one project's simulation. */
+/** The outcome distribution of one unit's simulation. Every amount is in `currency` — the venture's own, or for
+ *  a combination of ventures in different currencies, the reporting currency. */
 export interface RunResult {
+  /** The currency of every amount here (ISO code). */
+  currency: string;
   samples: Float64Array;
   p20: number;
   p50: number;
@@ -297,28 +321,27 @@ export interface RunResult {
   pSucc: number;
   /** Median outcome among the runs that cleared the threshold. */
   condP50: number;
-  /** The "meaningful" threshold used, in EUR/yr. */
+  /** The "meaningful" threshold used, per year, in this result's currency (the portfolio's successThreshold
+   *  converted). */
   thr: number;
   /**
-   * Revenue horizons (EUR), build-lag aware: first 3 months once live (a quarter-year total),
-   * first year once live (annual), and the years-2–5 annual run-rate ((5-year total − first
-   * year) ÷ 4) — the mature annual figure once past the launch year.
+   * Revenue horizons: the first 3 months (a quarter-year total), the first year (annual), and the headline
+   * window's annual average (`headlineFromYear` to the horizon) — the mature annual figure.
    */
   h3: Horizon;
   h12: Horizon;
   h25: Horizon;
-  /** Raw per-sample horizon revenue (EUR) — 3-month, first-year, years-2–5-annual — so a supermix can re-pool them. */
+  /** Raw per-sample horizon revenue — 3-month, first-year, headline-window annual — so a supermix can re-pool them. */
   sH3: Float64Array;
   sH12: Float64Array;
   sH25: Float64Array;
-  /** Terminal value at month 60 (EUR): annual run-rate × a sampled multiple. p50 reported. */
+  /** Terminal value at the horizon's end: annual run-rate × a sampled multiple. p50 reported. */
   terminalValue: number;
-  /** NPV of the 60-month net-collected stream (EUR), discounted at DISCOUNT_ANNUAL. p50 reported. */
+  /** NPV of the revenue stream over the horizon, discounted at the portfolio's discountRate. p50 reported. */
   npv: number;
-  /** After-tax cash to the operator ("net income"), average-yearly: the portfolio's personal-track
-   * tax schedule for personal tracks (PERSONAL_AFTER_TAX), gross-margin × effective business tax
-   * otherwise, minus annual operating cost (can be < 0). Full set reported so the Overview table can
-   * switch to a net-income view. */
+  /** After-tax cash to the operator ("net income"), average-yearly over the headline window: the unit's own
+   * afterTax, else the personal schedule for income tracks, else pre-tax profit after the business tax;
+   * operating cost deducted (can be < 0). Full set reported so the Overview table can switch to a net view. */
   afterTax20: number;
   afterTax50: number;
   afterTax80: number;
@@ -330,41 +353,39 @@ export interface RunResult {
   grossMargin: number;
   /** P(average-yearly revenue < the decision floor) — the go/no-go diagnostic. */
   pFloor: number;
-  /** The decision floor used for pFloor (EUR/yr). */
+  /** The decision floor used for pFloor, per year, in this result's currency (decisionFloor converted). */
   floor: number;
   /** Mean months of the launch lag, split into compressible build vs uncompressible institutional. */
   lagBuild: number;
   lagInstitutional: number;
-  /** Raw per-sample after-tax average-yearly (EUR), so a supermix can re-pool it. */
+  /** Raw per-sample after-tax average-yearly, so a supermix can re-pool it. */
   sAfter: Float64Array;
   /** Variance decomposition: the nodes that drive the outcome most, |corr| descending. */
   tornado: TornadoBar[];
   /** Price-as-output diagnostic (additive; populated only for units with priceSweep). The
    * revenue(price) curve under the demand overlay + active capacity cap, the sampled
-   * ("planned") price for reference, and the revenue-optimal price. Revenue is p50 average-yearly
-   * EUR; hoursUtil is mean peak capacity utilisation (1 = fully booked). */
+   * ("planned") price for reference, and the revenue-optimal price. Revenue is mean average-yearly
+   * revenue; hoursUtil is mean peak capacity utilisation (1 = fully booked). */
   priceCurve?: PricePoint[];
   plannedPrice?: number;
   optimalPrice?: number;
   optimalRevenue?: number;
   optimalHoursUtil?: number;
-  /** Per-year revenue (EUR), year 1 → year 5, each as {p20,p50,mean,p80}. Built by bucketing every
-   *  draw's 60-month trajectory into 12-month years. Additive — does not affect any headline. */
+  /** Per-year revenue, year 1 → the horizon (HORIZON_YEARS entries), each as {p20,p50,mean,p80}. Built by
+   *  bucketing every draw's trajectory into 12-month years. Additive — does not affect any headline. */
   yearRevenue?: YearStat[];
-  /** Per-year net income (EUR), year 1 → year 5, each as {p20,p50,mean,p80}: that year's revenue put
-   *  through the same net transform as the after-tax line (business margin × (1 − tax), or the personal-tax schedule
-   *  tax for personal tracks) minus the annual operating cost. */
+  /** Per-year net income, one YearStat per model year: that year's revenue put through the same net transform
+   *  as the after-tax line, less that year's operating cost. */
   yearNet?: YearStat[];
-  /** Per-year operating cost distribution (EUR), one YearStat per year — the `cost()` outlay, gated to the
-   *  readiness phase onward (0 during the pure code build). Lets the project page split income vs cost by year. */
+  /** Per-year operating cost distribution, one YearStat per year — the `cost()` outlay from its start
+   *  (`costsStart`, or a line's `from`). Lets the project page split income vs cost by year. */
   costStat?: YearStat[];
-  /** Per-year cost-of-revenue (gross-margin haircut, EUR) and tax, so the project page can break the
-   *  revenue→net bridge into its components. Business: cogs = rev×(1−margin), tax = rev×margin×tax-rate;
-   *  personal tracks: cogs = 0, tax = the income tax (rev − net). */
+  /** Per-year cost-of-revenue and tax, so the project page can break the revenue→net bridge into its
+   *  components. Tax is the residual: rev − cogs − operating cost − net. */
   yearCogs?: YearStat[];
   yearTax?: YearStat[];
   /** Itemized income-statement sub-lines, each an INDEPENDENT per-draw quantity (not a share): revenue,
-   *  cost-of-revenue AND operating-cost lines all carry a per-year stat (operating cost is readiness-gated,
+   *  cost-of-revenue AND operating-cost lines all carry a per-year stat (operating cost starts at its trigger,
    *  so it varies by year). Because each is sampled independently, sub-line percentiles do NOT sum to the
    *  parent's percentile (only the means do). */
   statementLines?: {
@@ -372,7 +393,7 @@ export interface RunResult {
     cogs?: { label: string; stat: YearStat[] }[];
     opcost?: { label: string; stat: YearStat[] }[];
   };
-  /** Raw per-year samples (EUR), 5 arrays of N — revenue and net — so a supermix can re-pool them
+  /** Raw per-year samples, one array of N per model year — revenue and net — so a supermix can re-pool them
    *  into pooled per-year stats (mirrors sH3/sH12/sH25). */
   sYearRev?: Float64Array[];
   sYearNet?: Float64Array[];
@@ -388,7 +409,7 @@ export interface RunResult {
 
 /** The binned counts the revenue histogram renders — a tiny stand-in for the raw sample array. */
 export interface HistProfile {
-  loss: number; // draws below €0
+  loss: number; // draws below 0
   zero: number; // draws below the ~0 threshold
   bins: number[]; // positive-value bar counts (length 48), binned at the fixed cap
   total: number; // sample count, for the share-of-runs tooltips

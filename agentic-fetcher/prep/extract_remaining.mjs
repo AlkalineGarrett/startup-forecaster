@@ -2,10 +2,10 @@
 // Generates cores/doc_<sha12>.txt for non-asset/non-crawl artifacts that lack one (never overwrites):
 //   - xlsx  -> zip + cell values (sharedStrings + each sheet) — lib/xlsx.mjs
 //   - gz    -> gunzip, keep if it decodes to text
-//   - txt   -> already text; extract into a core
+//   - text  -> already text; extract into a core (type text, or the older txt)
 //   - html  -> re-run the boilerplate-stripper; keep if >800 chars (recovers pages the first
 //              aggressive pass dropped). Genuinely-empty pages (404/challenge/SPA) stay coreless.
-// Run: node prep/extract_remaining.mjs --write
+// Run: npx forecaster extract-remaining --write
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
@@ -14,6 +14,7 @@ import { readCsvFile } from "../lib/csv.mjs";
 import { unescape } from "../lib/html.mjs";
 import { dumps, loads } from "../lib/json.mjs";
 import { NotAZip, xlsxText } from "../lib/xlsx.mjs";
+import { isAsset, kind } from "../lib/manifest.mjs";
 import { decode, isMain, print, readText, runMain, today } from "../lib/util.mjs";
 
 export function stripHtml(t) {
@@ -23,8 +24,9 @@ export function stripHtml(t) {
   return t.replace(/\n\s*\n+/g, "\n\n").replace(/[ \t]+/g, " ").trim();
 }
 
-/** The text derived for one artifact of type `typ` (throws on an unreadable file). */
+/** The text derived for one artifact of MANIFEST type `typ` (throws on an unreadable file). */
 export function extractRemaining(src, typ) {
+  typ = kind(typ);
   let text = "";
   if (typ === "xlsx") {
     try {
@@ -40,7 +42,7 @@ export function extractRemaining(src, typ) {
     const raw = gunzipSync(readFileSync(src));
     try { text = decode(raw, "strict"); } catch { text = ""; }
     if (text.slice(0, 200).includes("<") && text.slice(0, 2000).includes(">")) text = stripHtml(text);
-  } else if (typ === "txt") {
+  } else if (typ === "text") {
     text = readText(src, "replace").trim();
   } else if (typ === "html") {
     text = stripHtml(readText(src, "replace"));
@@ -56,13 +58,13 @@ export async function main(argv = process.argv.slice(2)) {
   const cores = new Set(existsSync(coreDir) ? readdirSync(coreDir).filter((n) => n.startsWith("doc_") && n.endsWith(".txt")).map((n) => n.slice(4, 16)) : []);
   const WRITE = argv.includes("--write");
 
-  const made = { xlsx: 0, gz: 0, txt: 0, html: 0, json: 0 };
+  const made = { xlsx: 0, gz: 0, text: 0, html: 0, json: 0 };
   const empty = [];
   for (const m of man) {
-    if (m.status === "asset" || m.tier === "crawls") continue;
+    if (isAsset(m) || m.tier === "crawls" || !m.sha256 || m.sha256 === "-") continue;   // crawl summaries carry no bytes
     const sha = m.sha256;
     if (cores.has(sha.slice(0, 12))) continue;
-    const src = join(GROUNDING, m.stored), typ = m.type;
+    const src = join(GROUNDING, m.stored), typ = kind(m.type);
     if (!existsSync(src)) continue;
     let text;
     try {
@@ -71,7 +73,8 @@ export async function main(argv = process.argv.slice(2)) {
       empty.push([typ, m.stored, `err:${e.message}`]);
       continue;
     }
-    const minlen = ["xlsx", "txt", "json"].includes(typ) ? 40 : 800;
+    if (!Object.hasOwn(made, typ)) { empty.push([typ, m.stored, "read by extract-cores / ocr-cores"]); continue; }
+    const minlen = ["xlsx", "text", "json"].includes(typ) ? 40 : 800;
     if (text.length < minlen) { empty.push([typ, m.stored, `${text.length}chars`]); continue; }
     const core = join(GROUNDING, "cores", `doc_${sha.slice(0, 12)}.txt`);
     const hdr = `# core for ${m.stored}\n# title: ${m.title ?? ""}\n# url: ${m.url ?? ""}\n# (generated ${TODAY} by extract_remaining.mjs; type=${typ})\n\n`;

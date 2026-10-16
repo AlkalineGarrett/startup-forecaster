@@ -2,9 +2,9 @@
 // Add an observation to the shared corpus so a node's `reference: "doc_<sha>/obs_<id>"` resolves
 // to a real, quote-verified fact — turning grounding from prose into a machine-checked link.
 //
-//   node add_observation.mjs doc_5697a4de16e7 obs_nrr_arpa_lt50 \
-//       --value 94 --unit "%" --statement "Net revenue retention ~94% for <$50 ARPA SaaS" \
-//       --quote "Net Revenue Retention (NRR)" --locator "retention table"
+//   npx forecaster add-observation doc_<sha12> obs_habit_app_annual_price \
+//       --value 39.99 --unit "USD/yr" --statement "The habit app's annual plan is $39.99 per year" \
+//       --quote "Annual plan: $39.99 per year" --locator "pricing table"
 //
 // Which nodes cite an observation is NOT stored on it (that list drifts into stale/phantom entries).
 // It is derived on demand from projects/*.json by `citations.mjs`.
