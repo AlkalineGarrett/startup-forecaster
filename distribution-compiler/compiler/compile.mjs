@@ -4,7 +4,7 @@
 // each node's distribution, derive its percentiles, and diagnose mismatches/invariants. Emits a
 // filled build artifact + a source-vs-compiled diff.
 //
-//   npx forecaster compile projects/<project>.json [--write] [--quiet] [--corpus DIR]
+//   npx startup-forecaster compile projects/<project>.json [--write] [--quiet] [--corpus DIR]
 //
 // --write persists build/<project>.compiled.json (with the source freshness stamp). Exit 1 on any error.
 // See compiler/DESIGN.md.

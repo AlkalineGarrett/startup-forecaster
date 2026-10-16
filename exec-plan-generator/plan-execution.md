@@ -25,5 +25,5 @@ gates follow the principles below.
 
 1. Copy `exec-plan-generator/data-example.mjs` from the package into the workspace's `plans/` as
    `data-<plan>.mjs`, and replace its content, keeping the data shape `README.md` describes.
-2. Render it: `npx forecaster exec-plan plans/data-<plan>.mjs <out>.html` (writes a full HTML
+2. Render it: `npx startup-forecaster exec-plan plans/data-<plan>.mjs <out>.html` (writes a full HTML
    document; add `--fragment` for a host that supplies its own `<html>/<head>/<body>`, `--check` for a dry run).

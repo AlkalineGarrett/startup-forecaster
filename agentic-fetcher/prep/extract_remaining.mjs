@@ -5,7 +5,7 @@
 //   - text  -> already text; extract into a core (type text, or the older txt)
 //   - html  -> re-run the boilerplate-stripper; keep if >800 chars (recovers pages the first
 //              aggressive pass dropped). Genuinely-empty pages (404/challenge/SPA) stay coreless.
-// Run: npx forecaster extract-remaining --write
+// Run: npx startup-forecaster extract-remaining --write
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";

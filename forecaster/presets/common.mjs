@@ -11,11 +11,11 @@
 //
 // PLACEHOLDERS ARE NOT FINDINGS. They are deliberately wide, generic priors that let a new venture's model
 // run end to end on day one. Every one is recorded as a `…_placeholder` speculation (support 5) and
-// `forecaster status` reports it as unresearched until a researched distribution replaces it.
+// `startup-forecaster status` reports it as unresearched until a researched distribution replaces it.
 //
 // Each placeholder becomes an exact-fit metalog through p10/p50/p90 (lower bound 0; upper bound 1 when
 // bounded). A metalog's tails grow fast with the spread: past roughly p90/p50 ≈ 4 the mean overtakes the
-// p95 and the p99 runs away. Keep every placeholder inside that (check with `npx forecaster preview fit
+// p95 and the p99 runs away. Keep every placeholder inside that (check with `npx startup-forecaster preview fit
 // metalog p10=… p50=… p90=… --lower=0`).
 //
 // A preset's `build(opts)` takes:

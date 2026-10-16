@@ -41,7 +41,7 @@ representation of them? Check each node:
    can't support).
 2. **Params** — do the params follow from the cited evidence? Recompute: lognormal median/sigma from
    the right two quantiles (z-spread 2.5631 p10/p90, 3.2897 p05/p95); FX (direction + value);
-   derivatives; metalog anchors = the stated quantiles; splice `slope_match`. `npx forecaster preview`
+   derivatives; metalog anchors = the stated quantiles; splice `slope_match`. `npx startup-forecaster preview`
    checks a construction or a fit.
 3. **Tightness** — is the spread justified? Flag OVERCONFIDENT (too-narrow given weak/single-source/
    judgement evidence) and UNDER-confident (absurdly wide).
@@ -61,8 +61,8 @@ that is wrong; never fabricate evidence. If a fix needs new or corrected evidenc
 
 1. List the nodes built or changed since the last audit: the ones `build-distributions` reported, or, when
    the workspace is a git repository, `git diff distributions/projects/`.
-2. For each, open its cited evidence (`npx forecaster search`, the cores in `sources/cores/`) and check it
+2. For each, open its cited evidence (`npx startup-forecaster search`, the cores in `sources/cores/`) and check it
    against the list above. For many nodes, bundle each project's nodes with their resolved evidence and give
    each bundle to a review agent.
-3. Fix what's found, then compile each changed project: `npx forecaster compile distributions/projects/<id>.json`
+3. Fix what's found, then compile each changed project: `npx startup-forecaster compile distributions/projects/<id>.json`
    must report 0 errors.

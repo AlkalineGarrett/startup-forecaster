@@ -1,12 +1,12 @@
 // The workspace profile: `profile.json` at the workspace root, the person's and each venture's answers that
-// the model's settings come from. The agent writes it during onboarding (add-venture.md); `forecaster init`
+// the model's settings come from. The agent writes it during onboarding (add-venture.md); `startup-forecaster init`
 // scaffolds it with nulls for what only the person can say and the guessable defaults filled in.
 //
-// The engine never reads this file. `forecaster` turns it into a generated module, `<dataRoot>/profile-data.ts`
+// The engine never reads this file. `startup-forecaster` turns it into a generated module, `<dataRoot>/profile-data.ts`
 // (PROFILE_SETTINGS: the configurePortfolio settings; PROFILE_GAPS: what is still unanswered), refreshed
 // before every command, and the workspace's src/projects.ts passes PROFILE_SETTINGS to configurePortfolio.
 //
-// A null field is unanswered: it never silently becomes a default. `forecaster status` lists it as
+// A null field is unanswered: it never silently becomes a default. `startup-forecaster status` lists it as
 // "profile incomplete", and an unset tax shows as "no tax configured". A field the person chose not to
 // answer holds "declined": it is answered, the engine keeps its neutral default, and the outputs say so.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -133,7 +133,7 @@ export function taxSummary(profile) {
 }
 
 /** The configurePortfolio settings the profile sets. Only answered fields become settings; everything else
- *  keeps the engine's neutral default (and stays a gap in PROFILE_GAPS / `forecaster status`). */
+ *  keeps the engine's neutral default (and stays a gap in PROFILE_GAPS / `startup-forecaster status`). */
 export function profileSettings(profile) {
   const p = profile?.person || {};
   const s = {};
@@ -169,7 +169,7 @@ export function profileSettings(profile) {
 export function profileModuleSource(profile) {
   const lit = (v) => JSON.stringify(v, null, 2);
   return `// GENERATED from ${PROFILE_FILE} by startup-forecaster (forecaster/lib/profile.mjs) before every
-// \`forecaster\` command. Do not edit: change ${PROFILE_FILE} (the onboarding in add-venture.md writes it).
+// \`startup-forecaster\` command. Do not edit: change ${PROFILE_FILE} (the onboarding in add-venture.md writes it).
 // PROFILE_SETTINGS are the configurePortfolio settings the profile sets; anything it leaves unanswered keeps the
 // engine's neutral default and is listed in PROFILE_GAPS.
 export const PROFILE_SETTINGS = ${lit(profileSettings(profile))} as const;
@@ -192,7 +192,7 @@ export function syncProfileModule(root, dataRoot) {
   return out;
 }
 
-/** What the profile answers and lacks, for `forecaster profile` / `status`. `ventureIds`: the ventures to
+/** What the profile answers and lacks, for `startup-forecaster profile` / `status`. `ventureIds`: the ventures to
  *  check (default: every venture with a distributions file). */
 export function profileReport(pf, ventureIds) {
   const profile = readProfile(pf.root);

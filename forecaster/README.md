@@ -1,17 +1,17 @@
-# forecaster
+# startup-forecaster
 
 The entry point of [startup-forecaster](..): it scaffolds a venture into a portfolio from a business-model
-preset (`forecaster new`) and reports what is grounded and what to research next (`forecaster status`). The
+preset (`startup-forecaster new`) and reports what is grounded and what to research next (`startup-forecaster status`). The
 agent playbook that drives the whole loop is the repo's [`AGENTS.md`](../AGENTS.md).
 
 | step | tool |
 |---|---|
-| scaffold a venture from a business-model preset | **here** (`forecaster new`) |
+| scaffold a venture from a business-model preset | **here** (`startup-forecaster new`) |
 | find, archive and quote sources | [`agentic-fetcher`](../agentic-fetcher) |
 | build each node's distribution from the evidence | [`distribution-compiler`](../distribution-compiler) |
 | simulate | [`montecarlo-engine`](../montecarlo-engine) (`simulation/`) |
 | render, serve, publish the results | [`forecast-renderer`](../forecast-renderer) |
-| see what is grounded and what to research next | **here** (`forecaster status`) |
+| see what is grounded and what to research next | **here** (`startup-forecaster status`) |
 | build / execution plans | [`build-plan-generator`](../build-plan-generator), [`exec-plan-generator`](../exec-plan-generator) |
 
 > **Doing this as a step?** Read its step doc first: [`add-venture.md`](add-venture.md) (step `add-venture`).
@@ -23,12 +23,12 @@ Run anywhere inside a workspace (the folder with `portfolio.config.mjs`):
 
 ```sh
 npx startup-forecaster init <dir> [--name "<Title>"] [--link]   # outside a workspace
-npx forecaster agent-files [--force]
-npx forecaster presets
-npx forecaster new <id> --preset <preset> --name "<Name>" [--currency <ISO>] [--channel <name>]
-npx forecaster profile [--json]
-npx forecaster status [<id> ...] [--json]
-npx forecaster <tool> [args]          # any tool in the package; `npx forecaster help` lists them
+npx startup-forecaster agent-files [--force]
+npx startup-forecaster presets
+npx startup-forecaster new <id> --preset <preset> --name "<Name>" [--currency <ISO>] [--channel <name>]
+npx startup-forecaster profile [--json]
+npx startup-forecaster status [<id> ...] [--json]
+npx startup-forecaster <tool> [args]          # any tool in the package; `npx startup-forecaster help` lists them
 ```
 
 **`init`** creates a workspace that depends on this package (installed with `npm install`; `--link` links a
@@ -39,7 +39,7 @@ and `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`, which point any coding agent at the
 **`agent-files`** adds those three files to an existing workspace (it keeps files that exist unless `--force`).
 
 **`profile.json`** holds the person's answers and each venture's (shape and onboarding: [`add-venture.md`](add-venture.md)).
-Before every command, `forecaster` regenerates `<dataRoot>/profile-data.ts` from it: `PROFILE_SETTINGS`, the
+Before every command, `startup-forecaster` regenerates `<dataRoot>/profile-data.ts` from it: `PROFILE_SETTINGS`, the
 `configurePortfolio` settings it sets (reporting currency, exchange rates, thresholds, discount rate,
 horizon, cost timing, pairwise haircut, business tax and its note, extra payment channels), and
 `PROFILE_GAPS`, what is still unanswered. The workspace's `src/projects.ts` passes `PROFILE_SETTINGS` to the
@@ -52,7 +52,7 @@ it passes; **`status`** starts with the same warnings ("profile incomplete: …"
 it at the portfolio's `// forecaster:imports`, `// forecaster:register <ARRAY>` and `// forecaster:modules`
 markers, seeds a **placeholder** distribution per node in `distributions/` (a wide preset
 prior, support 5, backed by a `…_placeholder` speculation — never presented as a finding), and writes a
-research brief (`<dossiers>/<id>/research-brief.md`). Then `npx forecaster simulate` makes it runnable.
+research brief (`<dossiers>/<id>/research-brief.md`). Then `npx startup-forecaster simulate` makes it runnable.
 The venture's currency and payment channel come from its `profile.json` entry (`ventures.<id>`), else the
 reporting currency and the preset's channel, which it lists under "To confirm"; `--currency` and `--channel`
 override them. An unknown channel is rejected with the valid names (the engine's built-ins plus the profile's
@@ -83,7 +83,7 @@ is the support capacity of the people doing it. Presets are written in US dollar
 their labels; `new` puts every money node (unit starting with "currency") into the venture's currency in one
 pass, converting when the profile has the rate (the brief says which) and filling in the symbol.
 Every placeholder is an exact-fit metalog through its p10/p50/p90, kept narrow enough that its mean stays
-below its p95 and its p99 stays sane (`npx forecaster preview fit metalog p10=… p50=… p90=… --lower=0`). The
+below its p95 and its p99 stays sane (`npx startup-forecaster preview fit metalog p10=… p50=… p90=… --lower=0`). The
 cold-start acquisition ramp is a fixed judgement the brief lists under "Judgement settings".
 
 ## Test

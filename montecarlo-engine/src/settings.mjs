@@ -1,4 +1,4 @@
-// The settings vocabulary the engine and the forecaster CLI share: currency symbols, the built-in payment
+// The settings vocabulary the engine and the startup-forecaster CLI share: currency symbols, the built-in payment
 // channels and the wording of the tax description. Plain JavaScript with no imports and no side effects,
 // because forecaster/lib/profile.mjs runs without the TypeScript loader. The engine's .ts modules import it
 // like any other module (the page bundler lists it ahead of format.ts).

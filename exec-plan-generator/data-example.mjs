@@ -1,6 +1,6 @@
 // Example plan data for the exec-plan generator — entirely fictional ("Habit Tracker launch").
 // A new plan = a copy of this file with your own meta / scale / columns / rows / details.
-// Run:  npx forecaster exec-plan data-example.mjs   ->   execution-plan-example.html
+// Run:  npx startup-forecaster exec-plan data-example.mjs   ->   execution-plan-example.html
 //
 // Shape:
 //   meta:    [label, text][]                      — masthead key/value spans

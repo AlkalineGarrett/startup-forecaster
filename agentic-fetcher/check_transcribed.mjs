@@ -21,8 +21,8 @@
 // Classification is a heuristic to route the work; the human/agent makes the call. Two-root model:
 // transcription flag is on the observation (PROJECT); doc identity/core is under GROUNDING.
 //
-//     npx forecaster check-transcribed            # report + worklist
-//     npx forecaster check-transcribed --json      # machine-readable
+//     npx startup-forecaster check-transcribed            # report + worklist
+//     npx startup-forecaster check-transcribed --json      # machine-readable
 import { existsSync } from "node:fs";
 import { ROOTS } from "./paths.mjs";
 import { configList } from "../distribution-compiler/compiler/workspace.mjs";

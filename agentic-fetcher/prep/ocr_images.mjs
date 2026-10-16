@@ -3,7 +3,7 @@
 // (FORECASTER_OCR when set, else macOS Vision via ocrtool); stops up front when none can run here.
 // Keeps only meaningful-text results.
 //
-// Usage: npx forecaster ocr-images [root ...] [--force]
+// Usage: npx startup-forecaster ocr-images [root ...] [--force]
 //   each root is a folder of the archive (relative to it); default: the whole archive
 //
 // Output:

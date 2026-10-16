@@ -8,12 +8,12 @@
 // Both are `{ statement, measure?, reasoning }` (schema §2). No quote/document — `reasoning` carries
 // the justification (why it is admissible / why we lean on it and what would confirm it).
 //
-//   npx forecaster add-knowledge gk gk_saas_rule_of_40 \
+//   npx startup-forecaster add-knowledge gk gk_saas_rule_of_40 \
 //       --statement "Healthy SaaS growth+margin ≈ 40% (Rule of 40)" \
 //       --reasoning "Widely-cited investor heuristic; used as a soft sanity bound, not a hard source." \
 //       --value 40 --unit "%"
 //
-//   npx forecaster add-knowledge spec spec_entrant_undercut \
+//   npx startup-forecaster add-knowledge spec spec_entrant_undercut \
 //       --statement "A solo entrant prices ~30% under the incumbent solo tier" \
 //       --reasoning "No source for this specific entrant; standard undercut assumption. Confirm at launch."
 import { existsSync, readFileSync } from "node:fs";

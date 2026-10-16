@@ -16,8 +16,8 @@
 // own `compute()` so the check matches how the value was produced. Two-root model: derivative identity
 // + derivation live in GROUNDING/documents.json; observations in PROJECT/corpus/observations.json.
 //
-//     npx forecaster verify-derivatives            # human-readable report
-//     npx forecaster verify-derivatives --json      # machine verdicts
+//     npx startup-forecaster verify-derivatives            # human-readable report
+//     npx startup-forecaster verify-derivatives --json      # machine verdicts
 import { existsSync } from "node:fs";
 import { ROOTS } from "./paths.mjs";
 import { compute } from "./make_derivative.mjs";

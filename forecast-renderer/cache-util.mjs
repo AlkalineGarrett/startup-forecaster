@@ -1,6 +1,6 @@
 // Shared paths + source fingerprint for the precomputed-init cache, used by precompute.mjs and the simulation
 // build's results pass (montecarlo-engine simulation/results.mjs) (writers), server.mjs, the page builders and
-// `forecaster status` (coverage.mjs --drivers) (readers). The cache holds the sim-derived state (appcore.snapshotState) so a page can
+// `startup-forecaster status` (coverage.mjs --drivers) (readers). The cache holds the sim-derived state (appcore.snapshotState) so a page can
 // skip the startup pass. It is invalidated by a content hash of everything that could move the numbers:
 //   - the engine's sources and this renderer's app core (src/, minus render/);
 //   - the portfolio: its bootstrap's directory, its `dataRoot`, the `generated.*` modules, the manifest and

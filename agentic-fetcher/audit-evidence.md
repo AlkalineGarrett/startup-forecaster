@@ -5,7 +5,7 @@
 
 **Input:** what `ground-evidence` produced since the last audit: documents, observations and derivatives.
 
-**Done when:** `npx forecaster check-sources` passes (S1 S2 S5 S6 S7 S8), every node meets the source
+**Done when:** `npx startup-forecaster check-sources` passes (S1 S2 S5 S6 S7 S8), every node meets the source
 target or states its shortfall, and every finding is fixed or flagged.
 
 **Next:** `build-distributions` (`distribution-compiler/build-distributions.md`). Whether a node's
@@ -87,7 +87,7 @@ its `core`:
    entries — see below). It is absent on a source nobody has classified yet; the audit sets it.
 4. **`capture` is correct** — `fetched` when the core comes from the archived bytes, `transcribed` when an
    agent typed it. A transcribed source's observations carry `source_capture: "transcribed"`; run
-   `npx forecaster check-transcribed` to route each one to a re-fetch, a person, or a re-grounding.
+   `npx startup-forecaster check-transcribed` to route each one to a re-fetch, a person, or a re-grounding.
 
 Verdict: `ok` · `mistitled` · `wrong_url` · `garbage` · `bundle` (several sources concatenated) ·
 `not_a_source` (internal write-up) · `misclassified`.
@@ -120,32 +120,32 @@ computed one; a node leaning on it should reflect that in its `support_score`.
 
 ### The gate
 
-`npx forecaster add-observation` stamps every new observation `audit: "unaudited"`. That is *debt*, not done:
+`npx startup-forecaster add-observation` stamps every new observation `audit: "unaudited"`. That is *debt*, not done:
 `verification` only means the quote is in the core; the **legitimacy audit** (does the quote support
 the statement, is the measure/unit/segment right, is the source real — Audits 1–3 above) is a
 separate pass that must actually run. Nothing else stops un-reviewed evidence reaching a run, so the
 coordinating session **must** clear it before a run relies on the corpus:
 
 ```
-npx forecaster check-sources                              # S8 FAILS while any observation is unaudited
-npx forecaster audit-prepare obs 3                        # slice the unaudited remainder into batches
+npx startup-forecaster check-sources                              # S8 FAILS while any observation is unaudited
+npx startup-forecaster audit-prepare obs 3                        # slice the unaudited remainder into batches
 #   → spawn one audit agent per batch (prompt template below); collect verdicts_<tag>.json
-npx forecaster mark-audited --pass-list build/audit/verdicts_*.json   # mark legit/ok → verified
+npx startup-forecaster mark-audited --pass-list build/audit/verdicts_*.json   # mark legit/ok → verified
 #   → fix any misread/overreach to match the source and re-verify; flag unfixable defects
-npx forecaster check-sources                              # must PASS (S1 S2 S5 S6 S7 S8) before building distributions on the evidence
+npx startup-forecaster check-sources                              # must PASS (S1 S2 S5 S6 S7 S8) before building distributions on the evidence
 ```
 
-The gate is **S8** in `npx forecaster check-sources`: it fails while any observation's `audit` is absent or
+The gate is **S8** in `npx startup-forecaster check-sources`: it fails while any observation's `audit` is absent or
 `unaudited`, so a run cannot silently consume un-reviewed evidence. Re-run after any edit — an edited
 entry drops back to unaudited.
 
 ### Running it (repeatable)
 
-1. `npx forecaster audit-prepare obs [N]` (or `docs`) — slices the not-yet-verified corpus into N
+1. `npx startup-forecaster audit-prepare obs [N]` (or `docs`) — slices the not-yet-verified corpus into N
    balanced batch files under `build/audit/batch_*.json` (scratch; keep it out of version control).
 2. Spawn one agent per batch with the prompt template below; each writes `verdicts_<tag>.json`.
 3. Aggregate the verdicts; fix/remove per the resolutions above.
-4. `npx forecaster mark-audited --pass-list <verdicts...>` marks every `legit`/`ok` entry
+4. `npx startup-forecaster mark-audited --pass-list <verdicts...>` marks every `legit`/`ok` entry
    `"audit": "verified"` (and stamps the date). Re-run audits after any later edit — an edited entry
    drops back to unaudited.
 

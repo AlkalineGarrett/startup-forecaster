@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Slice the not-yet-verified corpus into balanced batch files for audit agents (see audit-evidence.md).
 //
-//     npx forecaster audit-prepare obs [N]     # observation-legitimacy batches (default N=6)
-//     npx forecaster audit-prepare docs [N]     # document-metadata batches
+//     npx startup-forecaster audit-prepare obs [N]     # observation-legitimacy batches (default N=6)
+//     npx startup-forecaster audit-prepare docs [N]     # document-metadata batches
 //
 // Writes build/audit/batch_<tag>.json (gitignored). Each batch keeps a document's observations together
 // and balances by observation (or document) count. Only entries not already `"audit": "verified"` are

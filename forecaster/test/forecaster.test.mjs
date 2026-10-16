@@ -1,4 +1,4 @@
-// End to end in a throwaway workspace (`forecaster init`): scaffold a venture with every preset, compile its placeholders with
+// End to end in a throwaway workspace (`startup-forecaster init`): scaffold a venture with every preset, compile its placeholders with
 // the distribution-compiler, generate the engine modules, run the model (golden), build the page, and read its status.
 // Needs the montecarlo-engine and distribution-compiler beside it.
 import { test } from "node:test";
@@ -10,7 +10,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const CLI = join(HERE, "..", "bin", "forecaster.mjs");
+const CLI = join(HERE, "..", "bin", "startup-forecaster.mjs");
 
 function portfolio() {
   const root = join(mkdtempSync(join(tmpdir(), "forecaster-")), "ws");
@@ -26,8 +26,8 @@ const editProfile = (root, f) => {
   f(p);
   writeFileSync(file, JSON.stringify(p, null, 2) + "\n");
 };
-// the workspace's own installed command, as `npx forecaster` would run it
-const bin = (root, ...args) => execFileSync(join(root, "node_modules", ".bin", "forecaster"), args, { cwd: root, encoding: "utf8" });
+// the workspace's own installed command, as `npx startup-forecaster` would run it
+const bin = (root, ...args) => execFileSync(join(root, "node_modules", ".bin", "startup-forecaster"), args, { cwd: root, encoding: "utf8" });
 const simulate = (root, to) => bin(root, "simulate", "--to", to);
 
 test("scaffold → compile → generate → run → status, for every preset", { timeout: 300_000 }, () => {
@@ -95,7 +95,7 @@ test("every step in AGENTS.md has a doc that opens with its required reading and
 test("a data tool run outside a workspace says so instead of reporting an empty answer", async () => {
   const { needsWorkspace, workspaceProblem } = await import("../lib/tools.mjs");
   const outside = mkdtempSync(join(tmpdir(), "no-workspace-"));
-  assert.match(workspaceProblem("fetch-request", outside, {}), /^forecaster fetch-request: not inside a workspace/);
+  assert.match(workspaceProblem("fetch-request", outside, {}), /^startup-forecaster fetch-request: not inside a workspace/);
   for (const cmd of ["preview", "compile", "build-plan", "exec-plan"]) {
     assert.equal(needsWorkspace(cmd), false, `${cmd} works on explicit files`);
     assert.equal(workspaceProblem(cmd, outside, {}), null);
@@ -111,7 +111,7 @@ test("a data tool run outside a workspace says so instead of reporting an empty 
   for (const cmd of ["check-sources", "citations", "simulate"]) {
     const r = run(cmd);
     assert.equal(r.status, 2, `${cmd} exits 2 outside a workspace`);
-    assert.match(r.stderr, new RegExp(`^forecaster ${cmd}: not inside a workspace`));
+    assert.match(r.stderr, new RegExp(`^startup-forecaster ${cmd}: not inside a workspace`));
   }
   assert.match(run("status").stderr, /not inside a workspace/);
   assert.equal(run("help").status, 0);
@@ -176,7 +176,7 @@ test("new: an unknown channel is rejected; a non-USD venture takes its currency 
   assert.match(ts, /"channel": "eeaB2B"/);
   assert.match(ts, /Price per customer \(£\/mo, flat\)/);
   assert.doesNotMatch(ts, /team_cost_yr/, "no team cost without a rate to convert the payroll");
-  const sim = spawnSync(join(root, "node_modules", ".bin", "forecaster"), ["simulate", "--to", "golden"], { cwd: root, encoding: "utf8" });
+  const sim = spawnSync(join(root, "node_modules", ".bin", "startup-forecaster"), ["simulate", "--to", "golden"], { cwd: root, encoding: "utf8" });
   assert.notEqual(sim.status, 0, "a venture with no rate into the reporting currency does not simulate");
   assert.match(sim.stdout + sim.stderr, /no GBP rate/);
 

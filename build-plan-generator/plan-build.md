@@ -23,7 +23,7 @@ the same as any other figure.
 
 1. Copy `build-plan-generator/example.mjs` from the package into the workspace's `plans/` as
    `<plan>.mjs`, and replace its content with the venture's steps, keeping the shape `README.md` describes.
-2. Render it: `npx forecaster build-plan plans/<plan>.mjs` (writes a full HTML document to
+2. Render it: `npx startup-forecaster build-plan plans/<plan>.mjs` (writes a full HTML document to
    `plans/<plan>-build-plan.html`; pass an output path as a second argument to change it, and
    `--fragment` if the page goes into a host that supplies its own `<html>/<head>/<body>`).
 3. Edit the spec, never the generated HTML, and re-render.

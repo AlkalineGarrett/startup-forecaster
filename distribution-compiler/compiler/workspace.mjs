@@ -1,6 +1,6 @@
 // Where the data lives: the forecasting workspace.
 //
-// A workspace is a folder with a portfolio.config.mjs at its root (`forecaster init` creates one). Its
+// A workspace is a folder with a portfolio.config.mjs at its root (`startup-forecaster init` creates one). Its
 // `distributionData` and `groundingSources` fields name the distribution-data project and the source
 // archive, relative to the config. The tools find the workspace by walking up from the current directory,
 // so they run from anywhere inside it.

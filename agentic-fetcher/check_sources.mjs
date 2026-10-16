@@ -13,7 +13,7 @@
 // archive root (MANIFEST.csv, url-aliases.csv, README.md, …). A workspace adds its own with the config
 // field `sourcesExclude` (see distribution-compiler/compiler/workspace.mjs), e.g. ["assets/", "notes.json"].
 //
-// Run from repo root or sources/:  npx forecaster check-sources
+// Run from repo root or sources/:  npx startup-forecaster check-sources
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join } from "node:path";

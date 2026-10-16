@@ -15,16 +15,16 @@ HTML document. One template renders any plan; edit the data, run the build. A fi
 | `data-<plan>.mjs` | A plan's content — meta, scale, calendar rows (weeks + gates), tasks, and detail panels. Optional `themeCSS` for a per-plan palette. | **Yes — this is the source of truth.** |
 | `render.mjs` | Template. Turns a data object into the HTML page (exports `render(data, { fragment })`). | Only to change structure/markup. |
 | `assets.mjs` | The static template: the CSS and the interactive JS (dependency overlay, downward relayout, click-to-detail). | Rarely — for styling or interaction changes. |
-| `build.mjs` | CLI (`npx forecaster exec-plan`). Renders a data module to HTML. | Rarely. |
+| `build.mjs` | CLI (`npx startup-forecaster exec-plan`). Renders a data module to HTML. | Rarely. |
 | `test/` | Render tests (`npm test`). | When the template changes. |
 
 ## Render
 
 ```
-npx forecaster exec-plan data-myplan.mjs              # -> execution-plan-myplan.html next to the data
-npx forecaster exec-plan data-myplan.mjs out.html     # explicit output path
-npx forecaster exec-plan data-myplan.mjs --fragment   # bare fragment instead of a full document
-npx forecaster exec-plan data-myplan.mjs --check      # dry run: prints size, writes nothing
+npx startup-forecaster exec-plan data-myplan.mjs              # -> execution-plan-myplan.html next to the data
+npx startup-forecaster exec-plan data-myplan.mjs out.html     # explicit output path
+npx startup-forecaster exec-plan data-myplan.mjs --fragment   # bare fragment instead of a full document
+npx startup-forecaster exec-plan data-myplan.mjs --check      # dry run: prints size, writes nothing
 ```
 
 The output is a full HTML document (doctype, charset, inline CSS and JS), ready to open in a browser,
@@ -38,7 +38,7 @@ package — `import { render } from 'startup-forecaster/exec-plan-generator/rend
 ## Add a new plan
 
 1. Copy `data-example.mjs` to `data-<name>.mjs`; keep the data shape below.
-2. `npx forecaster exec-plan data-<name>.mjs`.
+2. `npx startup-forecaster exec-plan data-<name>.mjs`.
 
 Set `themeCSS` in the data to a `:root{ --build/--ops/--pole (+ their -soft) }` override to give the
 plan its own accent triad (the tinted columns, in that order); omit it to inherit the default teal.

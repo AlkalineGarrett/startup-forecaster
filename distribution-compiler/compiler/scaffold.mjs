@@ -25,7 +25,7 @@
 // `spec_reasoning` (startup-forecaster uses these to seed its labelled placeholder priors).
 //
 //   node --experimental-strip-types coverage.mjs --json > cov.json
-//   npx forecaster scaffold cov.json <project-id> [--nodes a,b] [--write]
+//   npx startup-forecaster scaffold cov.json <project-id> [--nodes a,b] [--write]
 //
 // Without --write it prints what it would add. The data project is the workspace's (see workspace.mjs).
 // Where the simulator's hand path cannot fit an exact metalog (a percentile on a bound, e.g. "p10 = 0

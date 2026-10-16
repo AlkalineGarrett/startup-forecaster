@@ -79,7 +79,7 @@ No node ids — formulae never reference other nodes.
 ## Agent workflow
 
 1. Author `projects/<project>.json` — as lean or as complete as you like.
-2. `npx forecaster compile projects/<project>.json` → build artifact + diff + diagnostics.
+2. `npx startup-forecaster compile projects/<project>.json` → build artifact + diff + diagnostics.
 3. Fix flagged mismatches; re-run until clean.
 
 A project is **fresh and clean** when `build/<project>.compiled.json` exists, its recorded
@@ -126,9 +126,9 @@ x-value and degenerates on a point-mass body.)
 
 **Don't hand-solve params — use the preview/fit tool:**
 ```
-npx forecaster preview '{"kind":"lognormal","median":9,"sigma":0.64}'   # percentiles + mean + support
-npx forecaster preview fit beta p10=0.25 p90=0.70                        # params from target quantiles
-npx forecaster preview fit lognormal p50=9 p90=20                        # (also: normal, gamma)
+npx startup-forecaster preview '{"kind":"lognormal","median":9,"sigma":0.64}'   # percentiles + mean + support
+npx startup-forecaster preview fit beta p10=0.25 p90=0.70                        # params from target quantiles
+npx startup-forecaster preview fit lognormal p50=9 p90=20                        # (also: normal, gamma)
 ```
 (σ shortcut for a lognormal: `sigma = ln(p90/p10) / (2·1.2816)`.)
 
@@ -167,11 +167,11 @@ A value's `reference` resolves to `in_<id>` (a node input), or `doc_<sha>/obs_<i
 is present but does not resolve (id not found) or resolves without a scalar (I4). Corpus starts
 empty; add entries with the file-locked, schema-checked writers (safe for parallel agents):
 ```
-npx forecaster add-observation doc_<sha> obs_<id> --unit "…" --statement "…" \
+npx startup-forecaster add-observation doc_<sha> obs_<id> --unit "…" --statement "…" \
     --quote "<verbatim from the core>" \
     [--value <v> | --mean <v> | --interval "lo,hi" | --quantiles "p10:v,p50:v" | --series "2021:v,2024:v"]
-npx forecaster add-observation doc_<sha> obs_<id> --quote "…" --check   # verify only, no write
-npx forecaster add-knowledge gk|spec  <id> --statement "…" --reasoning "…" [--value <v> --unit …]
+npx startup-forecaster add-observation doc_<sha> obs_<id> --quote "…" --check   # verify only, no write
+npx startup-forecaster add-knowledge gk|spec  <id> --statement "…" --reasoning "…" [--value <v> --unit …]
 ```
 The quote is matched against `cores/doc_<sha12>.txt` after normalizing whitespace + unicode
 (dashes/quotes/NBSP), so a figure split across lines or an en-dash still verifies
@@ -181,10 +181,10 @@ The compile **grounding-mix** readout counts a *bare* `inferred_value` (no refer
 grounded one (a shape param fit to a referenced anchor is fine); it nudges only on bare judgement.
 
 **Need a source you don't have?** See `agentic-fetcher/ground-evidence.md` (in this package) — the ladder is: search the archive
-(`npx forecaster search`) → WebSearch/WebFetch to find it → if you can get the bytes,
-`npx forecaster install-source <file> --url <url> --title "…"` (archives + extracts a searchable core +
+(`npx startup-forecaster search`) → WebSearch/WebFetch to find it → if you can get the bytes,
+`npx startup-forecaster install-source <file> --url <url> --title "…"` (archives + extracts a searchable core +
 registers the `doc_<sha>`), then `add_observation` against it → if it's gated/paywalled/JS-rendered,
-`npx forecaster fetch-request add --url … --for project::node` to pool it into the human-fetch queue and
+`npx startup-forecaster fetch-request add --url … --for project::node` to pool it into the human-fetch queue and
 leave the node as `missing_document` debt. At end of run the human works `fetch_request.mjs list`,
 installs the files (which auto-resolves the queue), and a follow-up pass grounds the freed nodes.
 

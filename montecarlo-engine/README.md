@@ -152,11 +152,11 @@ export default {
 ```
 
 Every entrypoint reads it (from `MC_CONFIG`, else the nearest `portfolio.config.mjs` at or above the current
-directory, else an error; `MC_CONFIG=examples` opts into the bundled example). In a workspace, the engine runs through the package's `forecaster` command:
+directory, else an error; `MC_CONFIG=examples` opts into the bundled example). In a workspace, the engine runs through the package's `startup-forecaster` command:
 
 ```sh
-npx forecaster simulate        # compile → gen → golden → pairwise → precompute
-npx forecaster coverage        # grounding per node
+npx startup-forecaster simulate        # compile → gen → golden → pairwise → precompute
+npx startup-forecaster coverage        # grounding per node
 ```
 
 The **simulation build** (`simulation/`) is the whole data → model chain: it compiles the distribution data project

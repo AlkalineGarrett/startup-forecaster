@@ -2,7 +2,7 @@
 // grep-able text layer (page text + recovered chart/screenshot figures). Exact match only: a
 // sources page sidecar -> that page's own core (via MANIFEST sha). Idempotent (skips if already
 // folded).
-// Run: npx forecaster fold-ocr-into-cores --write
+// Run: npx startup-forecaster fold-ocr-into-cores --write
 import { appendFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { ROOTS } from "../paths.mjs";

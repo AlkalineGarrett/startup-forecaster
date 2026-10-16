@@ -1,4 +1,4 @@
-// `forecaster new` — scaffold a venture into a portfolio, ready to research:
+// `startup-forecaster new` — scaffold a venture into a portfolio, ready to research:
 //   1. <dataRoot>/projects/<id>.ts      the model's STRUCTURE (node ids, labels, loadings) + its template `model`;
 //                                      labels name the venture's currency (its profile entry, or --currency)
 //   2. registration                    at the portfolio's `// forecaster:` markers (bootstrap + manifest)
@@ -40,7 +40,7 @@ import { F_EXEC } from "startup-forecaster/montecarlo-engine/src/factors.ts";
 // ${name} — scaffolded by startup-forecaster (preset ${preset}) on ${date}.
 // STRUCTURE ONLY: every node's distribution lives in ${relative(pf.root, join(pf.distributionData, "projects", id + ".json"))},
 // starting as a labelled PLACEHOLDER prior. Research each node (${pf.dossiers ? relative(pf.root, join(pf.dossiers, id, "research-brief.md")) : "the research brief"}), replace its
-// placeholder with a grounded distribution, then \`npx forecaster simulate\` and \`npx forecaster status ${id}\`.
+// placeholder with a grounded distribution, then \`npx startup-forecaster simulate\` and \`npx startup-forecaster status ${id}\`.
 // Money is in ${currency} (${cur}): the currency profile.json records for it (ventures.${id}.currency).
 export const ${ident}: Project = {
   id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, type: ${JSON.stringify(built.type)},
@@ -66,7 +66,7 @@ ladder (search the archive first; fetch with an agent; queue genuinely browser-g
 invent a figure or call a proxy grounded). Aim for at least three independent sources per node unless the
 person has set another target; when fewer turn up, try harder within reason, then state the shortfall.
 
-Research in order of influence: run \`npx forecaster simulate\` then \`npx forecaster status ${id}\` — it ranks the nodes
+Research in order of influence: run \`npx startup-forecaster simulate\` then \`npx startup-forecaster status ${id}\` — it ranks the nodes
 by how strongly each drives the outcome. The cruxes (volume and conversion/penetration) usually lead.
 
 ## Model
@@ -102,7 +102,7 @@ export function ventureSettings(pf, { id, presetModule, flags = {} }) {
   if (!/^[A-Z]{3}$/.test(currency)) throw new Error(`currency "${currency}" is not an ISO 4217 code (e.g. USD, EUR, GBP)`);
   if (!flags.currency && !isSet(entry.currency)) notes.push(`currency ${currency}: not in profile.json ventures.${id}.currency; guessed from ${profile && isSet(person.reportingCurrency) ? "the reporting currency" : "the default (USD)"}. Confirm it from the market it sells into.`);
   if (!profile && currency !== reporting)
-    throw new Error(`currency ${currency}: this workspace has no profile.json to record it in (the reporting currency is ${reporting}); create one with \`forecaster init\` or the onboarding in add-venture.md`);
+    throw new Error(`currency ${currency}: this workspace has no profile.json to record it in (the reporting currency is ${reporting}); create one with \`startup-forecaster init\` or the onboarding in add-venture.md`);
   const cur = symbolOf(currency);
 
   const valid = [...new Set([...BUILTIN_CHANNEL_NAMES, ...Object.keys(profile?.channels || {})])];
@@ -188,7 +188,7 @@ export function scaffoldVenture(pf, { id, name, preset, presetModule, flags = {}
     key: `${id}::${n.id}`, node: n.id, label: n.label, kind: n.kind, bound: n.bound || "semi-lo",
     pctiles: { ...n.placeholder }, prov: {}, conf: "low", basis: "", urls: [], source: "hand",
     unit: n.unit, support: 5, spec_id: placeholderSpec(id, n.id),
-    reasoning: `PLACEHOLDER — not researched. A generic wide prior from the forecaster preset so the model runs end to end; it says nothing about this venture. To ground it: ${n.research}`,
+    reasoning: `PLACEHOLDER — not researched. A generic wide prior from the startup-forecaster preset so the model runs end to end; it says nothing about this venture. To ground it: ${n.research}`,
     spec_statement: `Placeholder prior for ${name} '${n.label}' — NOT researched: p10=${n.placeholder.p10}, p50=${n.placeholder.p50}, p90=${n.placeholder.p90}`,
     spec_reasoning: `A generic wide prior from the startup-forecaster '${preset}' preset, so the model runs before any research. It carries no evidence about this venture; replace the node's distribution with a researched one.`,
   })) };

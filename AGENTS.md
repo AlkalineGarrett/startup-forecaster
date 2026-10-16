@@ -9,8 +9,8 @@ sees must trace back to evidence or to a judgement that is labelled as one.
 
 ## Where things are
 
-- **The tools** are the `startup-forecaster` npm package. Every tool runs as `npx forecaster <command>`
-  (`npx forecaster help` lists them; each prints its usage with `-h`). Its documents are in
+- **The tools** are the `startup-forecaster` npm package. Every tool runs as `npx startup-forecaster <command>`
+  (`npx startup-forecaster help` lists them; each prints its usage with `-h`). Its documents are in
   `node_modules/startup-forecaster/`; below, `<pkg>` means that folder.
 - **The data** lives in a **workspace**: the folder whose root holds `portfolio.config.mjs` and depends on
   the package. Every tool finds the workspace by walking up from the current directory, so run commands
@@ -22,8 +22,8 @@ sees must trace back to evidence or to a judgement that is labelled as one.
   portfolio.config.mjs   where every part lives (fields documented in <pkg>/montecarlo-engine/config.mjs)
   profile.json           the person's answers (tax, currency, team, thresholds) and each venture's (market,
                          currency, channel): the model's settings come from it
-  package.json           depends on startup-forecaster; npm run simulate / serve / build / … run forecaster commands
-  src/projects.ts        registers the ventures (`npx forecaster new` adds them at the `// forecaster:` markers)
+  package.json           depends on startup-forecaster; npm run simulate / serve / build / … run startup-forecaster commands
+  src/projects.ts        registers the ventures (`npx startup-forecaster new` adds them at the `// forecaster:` markers)
   src/projects/<id>.ts   a venture's structure: node ids, labels, correlations, business-model template
   distributions/         projects/<id>.json (each node's distribution) · corpus/ (evidence) · build/ (compiled)
   sources/               the source archive: documents.json, cores/ (text of each source), MANIFEST.csv, fetch queue
@@ -39,10 +39,10 @@ Requirements: Node 22.13 or newer. The package has no dependencies.
 1. **Find the workspace.** Locate `portfolio.config.mjs`, then read it and the workspace's `AGENTS.md`.
 2. **Read `profile.json`.** It holds what the person has already told you; reuse it, never re-ask. If
    analysis is starting (a new venture, a first forecast) and the profile is incomplete
-   (`npx forecaster profile` lists the gaps), run the onboarding in `<pkg>/forecaster/add-venture.md` first.
+   (`npx startup-forecaster profile` lists the gaps), run the onboarding in `<pkg>/forecaster/add-venture.md` first.
    Never stand in a default for an answer only the person can give.
 3. **See the current state.** Run `git status` (don't build on someone's half-finished change) and
-   `npx forecaster status`, which shows every venture's headline and how well each node is grounded.
+   `npx startup-forecaster status`, which shows every venture's headline and how well each node is grounded.
 4. **Read what exists for the venture in question:** `dossiers/<id>/`, its `src/projects/<id>.ts`, its
    `distributions/projects/<id>.json`. Earlier work and decisions live there.
 5. **Be sure which venture is meant.** A node can live in more than one place: a venture and its variants
@@ -64,7 +64,7 @@ name the steps you ran.
 ## Ending your reply: what the person must do
 
 Some work only the person can do. The biggest is fetching the pages no agent can reach. Before you send your
-final reply, run `npx forecaster fetch-request export --md`. If it lists any requests, **end your reply with
+final reply, run `npx startup-forecaster fetch-request export --md`. If it lists any requests, **end your reply with
 them**: the very last thing in the message, after your summary, never at the beginning or in the middle,
 where it gets lost. Make it impossible to miss:
 
@@ -77,8 +77,8 @@ These hold evidence the forecast needs, and no agent can reach them (login, payw
 2. …
 
 Run these in <workspace path>:
-- `FIRECRAWL_API_KEY=<key> npx forecaster firecrawl` fetches all of them if you have a Firecrawl key
-- otherwise save each page in your browser and run `npx forecaster install-source <file> --url <url>`
+- `FIRECRAWL_API_KEY=<key> npx startup-forecaster firecrawl` fetches all of them if you have a Firecrawl key
+- otherwise save each page in your browser and run `npx startup-forecaster install-source <file> --url <url>`
 
 Tell me when they're in and I'll add them to the forecast.
 ```

@@ -4,7 +4,7 @@
 //   --golden      golden.json from the pass's results (a project's headline run; a variant project's base
 //                 unit, which is run(p)) — the same fields simulation/golden.mjs writes
 //   --pairwise    the pairwise matrix, baked to the config's `generated.pairwise` (simulation/gen-pairwise.mjs)
-//   --precompute  the renderer's startup snapshot (.cache), exactly what `forecaster precompute` writes
+//   --precompute  the renderer's startup snapshot (.cache), exactly what `startup-forecaster precompute` writes
 //
 // For pairwise or precompute the pass is the renderer's own init (appcore.initAppcore → the engine's
 // runPortfolio: every unit, variants included) plus its computePairwiseAsync, and golden reads the same results.

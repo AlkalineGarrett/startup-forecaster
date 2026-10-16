@@ -101,7 +101,7 @@ does with them.)
 
 ### H. Verification discipline
 21. **Verify against the running system, not a copy of its output.** Read numbers from an actual `run()`
-    (`npx forecaster status --json`, `npx forecaster coverage --json`), not from a built page, which can be
+    (`npx startup-forecaster status --json`, `npx startup-forecaster coverage --json`), not from a built page, which can be
     stale.
 22. **Reconcile numerically before believing a screenshot.** Sub-lines sum to their parent at the mean; the
     income-statement identity holds; year-over-year moves go in a direction you can explain.
@@ -142,8 +142,8 @@ Run this against a simulation before reporting or publishing its numbers.
 
 ## Procedure
 
-1. Read the numbers from the running system, not a built page: `npx forecaster status --json` and
-   `npx forecaster coverage --json` for the ventures that changed.
+1. Read the numbers from the running system, not a built page: `npx startup-forecaster status --json` and
+   `npx startup-forecaster coverage --json` for the ventures that changed.
 2. Go through every check above for those ventures, tracing anything surprising to its formula.
 3. Compare each venture's median with its reference class (`refP90` / `refNote` on the project), and explain a
    gap rather than tuning it away.

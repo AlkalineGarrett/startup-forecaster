@@ -41,7 +41,7 @@ registry. The schema it validates against lives in this folder.
 
 ```sh
 # from the workspace root:
-npx forecaster compile distributions/projects/<project>.json --write
+npx startup-forecaster compile distributions/projects/<project>.json --write
 ```
 
 ## Tests
@@ -50,4 +50,4 @@ npx forecaster compile distributions/projects/<project>.json --write
 npm test
 ```
 Beyond the unit tests, the end-to-end check is that recompiling a project whose sources have not changed
-(`npx forecaster compile <project.json> --write`) reproduces its `build/<project>.compiled.json` byte for byte.
+(`npx startup-forecaster compile <project.json> --write`) reproduces its `build/<project>.compiled.json` byte for byte.

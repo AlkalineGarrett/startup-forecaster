@@ -1,4 +1,4 @@
-// `forecaster status <id>` — how grounded a venture is, and what to research next. The per-node report is the
+// `startup-forecaster status <id>` — how grounded a venture is, and what to research next. The per-node report is the
 // engine's (montecarlo-engine coverage.mjs --drivers: one classifier, shared with `npm run coverage`); this adds
 // the venture's open fetch requests and the human-readable view. Each node's class comes from the evidence its
 // distribution references in the distribution-data project:
@@ -9,14 +9,14 @@
 // plus any reference left as a tracked gap (reference: null + missing_document), and the venture's open
 // fetch-queue requests. Nodes are ranked by how strongly they drive the outcome (the engine's rank
 // correlation of each node with revenue), so research goes where it moves the answer. The drivers and the
-// headline come from the precompute snapshot `forecaster simulate` writes, when it is current with the
+// headline come from the precompute snapshot `startup-forecaster simulate` writes, when it is current with the
 // sources; otherwise coverage.mjs runs each venture once (~1 s a venture).
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** The engine's per-node report for these ventures (classification + outcome drivers), in one run. The
- *  TypeScript flags come from NODE_OPTIONS, which bin/forecaster.mjs sets for every child. */
+ *  TypeScript flags come from NODE_OPTIONS, which bin/startup-forecaster.mjs sets for every child. */
 function engineCoverage(pf, ids) {
   const r = spawnSync(process.execPath, [join(pf.engine, "coverage.mjs"), "--json", "--drivers", ...ids],
     { cwd: pf.root, env: { ...process.env, MC_CONFIG: pf.configPath }, encoding: "utf8", maxBuffer: 1 << 28 });
@@ -89,5 +89,5 @@ export function printStatus(s, { locale } = {}) {
   const next = s.nodes.find((n) => n.cls === "placeholder" || n.cls === "missing") || s.nodes.find((n) => n.cls === "judgement" && n.driver);
   if (next) console.log(next.cls === "judgement"
     ? `\n  next: ground \`${next.node}\` — the strongest driver still resting on judgement — with sourced observations.`
-    : `\n  next: research \`${next.node}\` (see the research brief), then \`npx forecaster simulate\`.`);
+    : `\n  next: research \`${next.node}\` (see the research brief), then \`npx startup-forecaster simulate\`.`);
 }

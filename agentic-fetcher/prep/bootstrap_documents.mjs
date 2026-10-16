@@ -9,7 +9,7 @@
 // audit, capture…), and only sources it lacks are added. --force replaces the file wholesale instead,
 // dropping every audit and correction recorded in it.
 //
-// Run: npx forecaster bootstrap-documents [--write [--force]]
+// Run: npx startup-forecaster bootstrap-documents [--write [--force]]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { ROOTS } from "../paths.mjs";   // MANIFEST/cores + documents.json (identity registry) under GROUNDING; corpus scaffolds under PROJECT
 import { readCsvFile } from "../lib/csv.mjs";

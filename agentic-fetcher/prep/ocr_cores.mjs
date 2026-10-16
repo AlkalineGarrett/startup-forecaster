@@ -12,7 +12,7 @@ export async function main() {
   const { GROUNDING } = ROOTS;
   const CORES = `${GROUNDING}/cores`;
   const worklist = `${GROUNDING}/ocr-worklist.tsv`;
-  if (!existsSync(worklist)) die(`no ${worklist}: run \`npx forecaster extract-cores\` first, which writes it`);
+  if (!existsSync(worklist)) die(`no ${worklist}: run \`npx startup-forecaster extract-cores\` first, which writes it`);
   const work = lines(readText(worklist)).filter((l) => l.trim());
   if (!work.length) { print("OCR worklist is empty"); return; }
   const backends = {};

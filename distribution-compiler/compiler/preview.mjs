@@ -7,15 +7,15 @@ const DOC = `Preview a distribution's percentiles without authoring a node or ru
 and fit params to target quantiles (the actual authoring task). No corpus, no file write.
 
   # percentiles + support + mean for an inline construction (params: plain numbers or value objects)
-  npx forecaster preview '{"kind":"lognormal","median":9,"sigma":0.64}'
-  npx forecaster preview '{"kind":"splice","segments":[...],"splices":[...]}'
+  npx startup-forecaster preview '{"kind":"lognormal","median":9,"sigma":0.64}'
+  npx startup-forecaster preview '{"kind":"splice","segments":[...],"splices":[...]}'
 
   # fit params to hit target quantiles, then show the resulting percentiles
-  npx forecaster preview fit beta p10=0.25 p90=0.70
-  npx forecaster preview fit lognormal p50=9 p90=20
-  npx forecaster preview fit normal p10=100 p90=140
-  npx forecaster preview fit gamma p10=0.1 p50=0.47 p90=1.5
-  npx forecaster preview fit metalog p10=50 p50=120 p90=400 [--lower=0]   # a source-stated LADDER
+  npx startup-forecaster preview fit beta p10=0.25 p90=0.70
+  npx startup-forecaster preview fit lognormal p50=9 p90=20
+  npx startup-forecaster preview fit normal p10=100 p90=140
+  npx startup-forecaster preview fit gamma p10=0.1 p50=0.47 p90=1.5
+  npx startup-forecaster preview fit metalog p10=50 p50=120 p90=400 [--lower=0]   # a source-stated LADDER
 
 Reach for \`metalog\` when a source states a quantile LADDER (>=3 points) whose shape isn't a clean
 parametric family — asymmetric, or lower-bounded (a $0 floor). A lognormal fit to just p10/p90

@@ -3,9 +3,9 @@
 > **Required reading before this step's first action:** this whole file. They are part of the step, not
 > background: nodes researched without it have not been grounded.
 
-**Input:** the nodes to research: by default the venture's top drivers, in the order `npx forecaster status
+**Input:** the nodes to research: by default the venture's top drivers, in the order `npx startup-forecaster status
 <id>` ranks them (its `driver` column is each node's influence on the outcome), or the nodes the request
-names. For a venture made with `npx forecaster new`, `dossiers/<id>/research-brief.md` (in the config's
+names. For a venture made with `npx startup-forecaster new`, `dossiers/<id>/research-brief.md` (in the config's
 `dossiers` folder, `dossiers/` by default) says what evidence
 would ground each node; otherwise each node's `model_definition` and the venture's dossier say what it
 measures.
@@ -21,7 +21,7 @@ The goal for every figure is a **quote-verifiable** fact: an observation whose `
 document's core.
 
 > **Step 1 is an invariant, not advice.** Never fetch or queue a URL that is already archived: check it
-> against `documents.json`, `url-aliases.csv` and `MANIFEST.csv` first (`npx forecaster fetch-request add`
+> against `documents.json`, `url-aliases.csv` and `MANIFEST.csv` first (`npx startup-forecaster fetch-request add`
 > refuses a page that is already archived).
 
 ## Principles (binding)
@@ -29,7 +29,7 @@ document's core.
 **1. Never send the human to fetch something an agent could have fetched.** Always search the
 archive first (step 1) — the page is often already on disk under a redirected/canonical URL. If it
 isn't, the agent that needs it finds and fetches it (steps 2–3a). Subagents and the main session have
-the same web tools: a web search finds a page, and `curl` (or `npx forecaster install-source --url`) gets its
+the same web tools: a web search finds a page, and `curl` (or `npx startup-forecaster install-source --url`) gets its
 bytes. A web-fetch tool only returns a model's reading of the page, not the bytes, so it can confirm a
 figure but can't archive one. The writers are file-locked, so parallel agents can install sources safely; still
 search the archive first so ten agents don't each fetch the same pricing page. A fetch that fails for
@@ -53,13 +53,13 @@ do **not** reach for browser automation. Many sites fingerprint automated intera
 movement, timing, headless signals — and can flag or block the **user's own browser or account**,
 which is a cost far larger than any single source. So a page that needs a live browser is a
 `human_only` queue item (step 3b): the human fetches it by hand in their normal browser and hands the
-file/URL back for `npx forecaster install-source`. Flip an `agent_fetchable` request that only fails because
-it needs rendering to `human_only` with `npx forecaster fetch-request defer` — it is unreachable *by an
+file/URL back for `npx startup-forecaster install-source`. Flip an `agent_fetchable` request that only fails because
+it needs rendering to `human_only` with `npx startup-forecaster fetch-request defer` — it is unreachable *by an
 agent*, even though a human browser can reach it.
 
 **4. Record figures exactly.** A figure is recorded with a quote copied verbatim from the archived core,
 in the source's own unit, population and period. Never round, convert or paraphrase it into a stronger
-claim; a conversion is a derivative (`npx forecaster make-derivative`), not an edit. A price on the
+claim; a conversion is a derivative (`npx startup-forecaster make-derivative`), not an edit. A price on the
 vendor's own site needs no second source.
 
 **5. Aim for three independent sources per node; more is better.** A node is grounded on at least three
@@ -83,8 +83,8 @@ at the first rung that works.
 ### 1. Search what we already have — don't refetch
 
 ```
-npx forecaster search "net revenue retention"      # phrase; falls back to any-of-words
-npx forecaster search "\\b3[0-9]% churn"           # a real regex (has metachars) → used as-is
+npx startup-forecaster search "net revenue retention"      # phrase; falls back to any-of-words
+npx startup-forecaster search "\\b3[0-9]% churn"           # a real regex (has metachars) → used as-is
 ```
 
 A query with regex metacharacters is a **JavaScript** regular expression, matched with the `i` and `u`
@@ -95,7 +95,7 @@ Returns one merged record per matching source (title, url, publisher, raw file, 
 matching snippets). If the figure is here, ground it directly — the core already exists:
 
 ```
-npx forecaster add-observation doc_<sha> obs_<id> --value <v> --unit "<u>" \
+npx startup-forecaster add-observation doc_<sha> obs_<id> --value <v> --unit "<u>" \
     --statement "<what it says>" --quote "<verbatim from the core>"
 ```
 
@@ -110,9 +110,9 @@ If you can save the raw file — a `curl` download, a PDF you fetched, a page th
 `pdftotext`; a scanned PDF via offline OCR), writes the MANIFEST row, and registers the corpus doc:
 
 ```
-npx forecaster install-source <saved-file> --url <source-url> --title "<title>"
-npx forecaster install-source <saved-file> --url <url> --check     # preview hash/dedupe/core first
-npx forecaster install-source --url <url>                          # or let it curl (needs network)
+npx startup-forecaster install-source <saved-file> --url <source-url> --title "<title>"
+npx startup-forecaster install-source <saved-file> --url <url> --check     # preview hash/dedupe/core first
+npx startup-forecaster install-source --url <url>                          # or let it curl (needs network)
 ```
 
 It refuses a file it can't read and one whose text comes out empty (a page saved before it rendered, a
@@ -125,12 +125,12 @@ Then record each figure against the `doc_<sha>` it prints; the quote is checked 
 quote that isn't in it is rejected:
 
 ```
-npx forecaster add-observation doc_<sha> obs_<id> --value <v> --unit "<u>" \
+npx startup-forecaster add-observation doc_<sha> obs_<id> --value <v> --unit "<u>" \
     --statement "<what it says>" --quote "<verbatim from the core>"
 ```
 
-A figure computed from other sources goes through `npx forecaster make-derivative`; a broadly known prior
-or a labelled judgement goes through `npx forecaster add-knowledge gk|spec <id> --statement … --reasoning …`.
+A figure computed from other sources goes through `npx startup-forecaster make-derivative`; a broadly known prior
+or a labelled judgement goes through `npx startup-forecaster add-knowledge gk|spec <id> --statement … --reasoning …`.
 
 ### 3b. You cannot retrieve the bytes → queue the fetch, and move on
 
@@ -139,11 +139,11 @@ everything else. Which **lane** depends on *why* you can't get it — this is th
 
 ```
 # Your fetch failed on a normal public page (DNS, a 403 to curl, a timeout) — another fetch may get it.
-npx forecaster fetch-request add --url <url> --priority <top|high|med|low> \
+npx startup-forecaster fetch-request add --url <url> --priority <top|high|med|low> \
     --why "holds offer-acceptance 73/79/84%" --for <project::node>          # lane defaults to agent_fetchable
 
 # The page is genuinely gated — paywall / login / VPN / JS-rendered / portal PDF — no agent can reach it.
-npx forecaster fetch-request add --url <url> --lane human_only --priority top \
+npx startup-forecaster fetch-request add --url <url> --lane human_only --priority top \
     --why "login-walled; holds …" --for <project::node>
 ```
 (`--priority` is one of `top` · `high` · `med` · `low` — not `normal`.) **This is your only move for a
@@ -151,7 +151,7 @@ source you can't retrieve — do NOT guess a value or substitute a proxy** (prin
 it, leave the node's value `reference: null` with a `missing_document: "<what you need and why>"` (the
 compiler tracks it as declared evidence-debt, not an error), and move on. The one exception is a number
 no external comp could *ever* ground (inherent judgement): record it as a labelled speculation
-(`npx forecaster add-knowledge spec …`, saying why no source can exist) instead of queuing it.
+(`npx startup-forecaster add-knowledge spec …`, saying why no source can exist) instead of queuing it.
 
 ### 4. Between phases — drain what agents couldn't fetch
 
@@ -159,17 +159,17 @@ Between the grounding phase and any human handoff, the **main interactive sessio
 in three steps:
 
 ```
-npx forecaster fetch-request check                # 1. flag pending requests already in the archive
-npx forecaster fetch-request drain                # 2. the agent_fetchable worklist — fetch + install each
-npx forecaster fetch-request export --md          # 3. what's LEFT — only pages no agent could reach
+npx startup-forecaster fetch-request check                # 1. flag pending requests already in the archive
+npx startup-forecaster fetch-request drain                # 2. the agent_fetchable worklist — fetch + install each
+npx startup-forecaster fetch-request export --md          # 3. what's LEFT — only pages no agent could reach
 ```
 
 1. **Dedupe first** — a source is often archived under a redirected/canonical URL. For each flagged
    request, open the archived core; if the figure is there, `resolve --url <url> --note "already
    archived: doc_… — …"` — don't fetch it again.
 2. **Drain the agent-fetchable lane** — for each, `curl` the page and
-   `npx forecaster install-source <saved> --url <url>` (auto-resolves the entry). If this retry *also*
-   fails, `npx forecaster fetch-request defer --url <url> --note "retry failed: <err>"` moves it to the human
+   `npx startup-forecaster install-source <saved> --url <url>` (auto-resolves the entry). If this retry *also*
+   fails, `npx startup-forecaster fetch-request defer --url <url> --note "retry failed: <err>"` moves it to the human
    lane. A follow-up pass then authors the now-available observation and swaps each
    `missing_document` node onto its real `doc_<sha>/obs_<id>` — recompile; the debt is gone.
 3. **Hand off the remainder** — `export` now lists only `human_only` requests: the sources no agent
@@ -183,11 +183,11 @@ mid-run, the queue+`drain` above is the recovery path; where your agent can resu
 one that needed the source once it is installed, so it continues from where it stopped.
 
 The human works that `export` list. If they have a Firecrawl key, one command gets most of it:
-`npx forecaster firecrawl` reads the queue and fetches every pending request (`--list` previews; a list file
+`npx startup-forecaster firecrawl` reads the queue and fetches every pending request (`--list` previews; a list file
 limits it to those pages). Firecrawl renders each page in its own browser
 (so JavaScript pages and most bot walls come back), installs it, and resolves its entry; failures stay in the
 queue. It spends the person's Firecrawl credits, so the person runs it; an agent does not. What is left they
-save by hand and install with `npx forecaster install-source <file> --url <url>`, which also **auto-resolves**
+save by hand and install with `npx startup-forecaster install-source <file> --url <url>`, which also **auto-resolves**
 the matching entry. Then the same follow-up pass authors the observations and clears the
 `missing_document` debt.
 

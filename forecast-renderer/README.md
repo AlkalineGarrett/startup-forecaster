@@ -10,11 +10,11 @@ interactive page and serves it. Zero dependencies; TypeScript run directly via N
 
 | command (in a workspace) | what it makes |
 |---|---|
-| `npx forecaster serve` | the interactive model at http://localhost:8137 (`PORT` overrides): simulation and rendering run in Node; the browser gets HTML fragments through the thin `client.mjs` and the shared DOM layer `src/dom-shared.mjs` (tabs, sorting, hover, pinning, re-simulation) |
-| `npx forecaster precompute` | the server's startup cache, so `serve` and the static pages boot instantly. `npx forecaster simulate` already writes it; this recomputes it only when it is stale (`--force` always) |
-| `npx forecaster build` | `dist/montecarlo.html`: one self-contained page (engine + renderers + the portfolio's data, bundled) that starts from the precomputed results and re-simulates in the browser when you edit a venture; it refreshes a stale snapshot first |
-| `npx forecaster artifact-full` | `dist/montecarlo-full-artifact.html`: every panel pre-rendered from the cache, with `dom-shared.mjs` + `client.mjs` in a static mode (no simulation) |
-| `MC_PROJECTS=a,b MC_OUT=x.html npx forecaster artifact-full` | the same, for chosen ventures only |
+| `npx startup-forecaster serve` | the interactive model at http://localhost:8137 (`PORT` overrides): simulation and rendering run in Node; the browser gets HTML fragments through the thin `client.mjs` and the shared DOM layer `src/dom-shared.mjs` (tabs, sorting, hover, pinning, re-simulation) |
+| `npx startup-forecaster precompute` | the server's startup cache, so `serve` and the static pages boot instantly. `npx startup-forecaster simulate` already writes it; this recomputes it only when it is stale (`--force` always) |
+| `npx startup-forecaster build` | `dist/montecarlo.html`: one self-contained page (engine + renderers + the portfolio's data, bundled) that starts from the precomputed results and re-simulates in the browser when you edit a venture; it refreshes a stale snapshot first |
+| `npx startup-forecaster artifact-full` | `dist/montecarlo-full-artifact.html`: every panel pre-rendered from the cache, with `dom-shared.mjs` + `client.mjs` in a static mode (no simulation) |
+| `MC_PROJECTS=a,b MC_OUT=x.html npx startup-forecaster artifact-full` | the same, for chosen ventures only |
 
 The precompute cache lives beside the config (`<workspace>/.cache/`, or `MC_CACHE_DIR`); static pages land
 next to the live page (`dirname(out)`). The cache key hashes everything that can move the numbers: the

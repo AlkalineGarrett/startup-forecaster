@@ -14,7 +14,7 @@ contract (`simulation/gen-distributions.mjs` reads the compiled artifacts; `src/
 | source | `projects/<project>.json` | one file per project; human/agent-authored, lean (subset of slots filled) |
 | **compiled** | `build/<project>.compiled.json` | **consume this** — the same node set with every derived slot filled and checked, plus a `_meta` block |
 
-The build artifact is produced by `npx forecaster compile projects/<project>.json --write`.
+The build artifact is produced by `npx startup-forecaster compile projects/<project>.json --write`.
 Consume the **compiled** artifact, not the source: in it, every `computed_value` formula is
 evaluated, every reference resolved to a scalar, and `debug_computed_percentiles` filled.
 

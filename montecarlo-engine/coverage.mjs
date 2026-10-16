@@ -76,7 +76,7 @@ const rows = selected.map((p) => ({ id: p.id, name: p.name, cur: p.cur, currency
 
 // --drivers: attach each selected project's outcome drivers (rank correlation of each node with revenue — the
 // engine's tornado) and the headline, so research can go where it moves the answer. They are read from the
-// precompute snapshot (forecast-renderer's .cache, written by `forecaster simulate`) when it is current with
+// precompute snapshot (forecast-renderer's .cache, written by `startup-forecaster simulate`) when it is current with
 // the sources — it holds each project's run(p) result (a variant project's under its base unit, which is
 // run(p)) — and otherwise each project is run once here.
 if (args.includes("--drivers")) {

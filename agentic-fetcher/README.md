@@ -26,9 +26,9 @@ the archive's `MANIFEST.csv` with `prep/bootstrap_documents.mjs`.
 From the workspace root:
 
 ```sh
-npx forecaster search "net revenue retention"
-npx forecaster install-source saved.html --url https://x.com/p --title "X pricing"
-npx forecaster add-observation doc_<sha> obs_<id> --value 49 --unit USD/mo \
+npx startup-forecaster search "net revenue retention"
+npx startup-forecaster install-source saved.html --url https://x.com/p --title "X pricing"
+npx startup-forecaster add-observation doc_<sha> obs_<id> --value 49 --unit USD/mo \
     --statement "..." --quote "verbatim from the core"
 ```
 

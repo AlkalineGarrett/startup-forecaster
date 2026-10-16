@@ -4,11 +4,11 @@
 //   gen         compiled graphs + corpus → the generated distributions + evidence modules
 //   golden      re-freeze golden (the model moved; run only when that is intended)
 //   pairwise    re-bake the Pairwise matrix
-//   precompute  write forecast-renderer's startup snapshot (.cache), as `forecaster precompute` does
+//   precompute  write forecast-renderer's startup snapshot (.cache), as `startup-forecaster precompute` does
 //
 // golden, pairwise and precompute share ONE run of the portfolio: whichever of them are selected run together
 // in one process (simulation/results.mjs). Rendering the results (the live page, static pages) is
-// forecast-renderer's job (`forecaster build` / `serve` / `artifact`), and they start from that snapshot.
+// forecast-renderer's job (`startup-forecaster build` / `serve` / `artifact`), and they start from that snapshot.
 //
 //   node simulation/run.mjs                     # every stage the config supports
 //   node simulation/run.mjs --from gen --to gen # a sub-range

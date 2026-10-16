@@ -85,7 +85,7 @@ yet parseable — carries `blocked_on`) are distinct, honest states. A number re
 `quote: null` + a `capture_note`, not a fabricated quote.
 
 **Retrieval before declaring a gap.** Blocked is not the same as unavailable. Search the archive
-(`npx forecaster search`), then fetch the page with `curl` or a web-fetch tool (normalise the URL; try the
+(`npx startup-forecaster search`), then fetch the page with `curl` or a web-fetch tool (normalise the URL; try the
 page's own API), and only then queue it `human_only` for a person to fetch in their own browser
 (`agentic-fetcher/ground-evidence.md`). Never drive an automated browser. Record a `reference: null` only
 once the request is queued, and archive what you retrieve when you retrieve it.

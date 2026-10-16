@@ -6,7 +6,7 @@
 **Input:** an idea, product or venture the person wants forecast.
 
 **Done when:** `profile.json` holds the person's answers and this venture's (or records what they declined),
-the venture is scaffolded, `npx forecaster simulate` runs, and `npx forecaster status <id>` lists every node
+the venture is scaffolded, `npx startup-forecaster simulate` runs, and `npx startup-forecaster status <id>` lists every node
 as a placeholder ranked by influence, with no "profile incomplete" line.
 
 **Next:** `ground-evidence` (`agentic-fetcher/ground-evidence.md`) for the venture's most influential nodes.
@@ -29,8 +29,8 @@ as a placeholder ranked by influence, with no "profile incomplete" line.
 ## Onboarding: the profile
 
 `profile.json` at the workspace root holds the answers the model's settings come from: tax, currency,
-thresholds, team and cost timing. `forecaster` turns it into `src/profile-data.ts` before every command, and
-`src/projects.ts` passes those settings to the engine. `npx forecaster profile` shows what it answers, what
+thresholds, team and cost timing. `startup-forecaster` turns it into `src/profile-data.ts` before every command, and
+`src/projects.ts` passes those settings to the engine. `npx startup-forecaster profile` shows what it answers, what
 it still lacks, what was declined and what is due for re-confirming.
 
 **1. Read the profile first.** Reuse every person-level answer already in it; don't ask again. Ask only for
@@ -72,7 +72,7 @@ its `answeredAt` date is more than about 6 months old, or when the person says s
 - the pairwise split-attention haircut (`pairAttentionOverhead`): solo 0.15, team 0;
 - per venture: the currency it reports in (`currency`) from the market; when its input prices are quoted in
   another currency (e.g. USD app-store prices in a EUR-reported venture), that one too (`priceCurrency`); the
-  payment channel (`channel`) from the business model and market (`npx forecaster new` lists the valid ones
+  payment channel (`channel`) from the business model and market (`npx startup-forecaster new` lists the valid ones
   when given a wrong one); and an exchange rate into the reporting currency for each currency that differs
   (`person.exchangeRates.<code> = { "rate": <value of 1 <code> in the reporting currency>, "source": "<url>",
   "asOf": "<date>" }`), researched with a source and date.
@@ -80,8 +80,8 @@ its `answeredAt` date is more than about 6 months old, or when the person says s
 **3. Save the answers** to `profile.json`: person-level answers under `person`, this venture's under
 `ventures.<id>`, and for every field answered, `answeredAt["person.<field>"]` or
 `answeredAt["ventures.<id>.<field>"]` set to today's date (`YYYY-MM-DD`). A guessed default the person
-confirmed counts as answered. Then re-run the simulation build (`npx forecaster simulate`) so the settings
-apply, and check `npx forecaster profile` shows no gaps you didn't expect.
+confirmed counts as answered. Then re-run the simulation build (`npx startup-forecaster simulate`) so the settings
+apply, and check `npx startup-forecaster profile` shows no gaps you didn't expect.
 
 Shape (null = not yet answered):
 
@@ -115,16 +115,16 @@ list price>, "fixedFee": <per charge, venture currency> }`), researched like any
    organisation, one-off), the beachhead market, what already exists (code, audience, relationships), the
    real constraints of the people doing it (time, location, budget) and any price the person has decided.
    Save it as `dossiers/<id>/description.md`.
-3. **Pick a preset.** `npx forecaster presets` lists them with their nodes. Choose the one whose mechanics
+3. **Pick a preset.** `npx startup-forecaster presets` lists them with their nodes. Choose the one whose mechanics
    match how money arrives. If none fits (marketplace take rate, usage-based, services capped by delivery
    hours, several revenue streams), use the closest preset only if the mismatch is minor, and note it in the
    description. Otherwise the venture needs a new engine template (`montecarlo-engine/src/templates.ts` in the
    package) or, as a last resort, a hand-written `sim()`: propose that to the person.
 4. **Scaffold it.**
    ```sh
-   npx forecaster new <id> --preset <preset> --name "<Name>"
-   npx forecaster simulate
-   npx forecaster status <id>
+   npx startup-forecaster new <id> --preset <preset> --name "<Name>"
+   npx startup-forecaster simulate
+   npx startup-forecaster status <id>
    ```
    `new` takes the venture's currency and channel from `profile.json` (`ventures.<id>`); `--currency <ISO>`
    and `--channel <name>` override them, and `new` records them there. The profile is the one record of a

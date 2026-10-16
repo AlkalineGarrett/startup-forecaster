@@ -15,10 +15,10 @@ plan.
 ## Principles (binding)
 
 1. **Numbers come from the simulation.** A page, chart, table or summary shows the simulation's output
-   (`golden.json`, `npx forecaster status --json`, `npx forecaster coverage --json`); nothing is typed by hand.
+   (`golden.json`, `npx startup-forecaster status --json`, `npx startup-forecaster coverage --json`); nothing is typed by hand.
 2. **Never show a stale page.** Every page starts from the precomputed results. `build` and the static pages
-   recompute them when they are stale; `serve` does not. `npx forecaster simulate` writes them, and
-   `npx forecaster precompute` refreshes them when they are stale (after an edit outside the simulation build), so
+   recompute them when they are stale; `serve` does not. `npx startup-forecaster simulate` writes them, and
+   `npx startup-forecaster precompute` refreshes them when they are stale (after an edit outside the simulation build), so
    run it before starting `serve`. A built page is a copy; rebuild it after the simulation changes.
 3. **Check the page itself.** The tests cover the simulation, not the page. After a change to the page,
    open it and check the browser console: one script error takes the whole page down and no test reports it.
@@ -41,17 +41,17 @@ plan.
 
 | to see… | run | output |
 |---|---|---|
-| each venture's headline and node grounding, ranked by influence | `npx forecaster status [<id>…] [--json]` | terminal |
-| which nodes are compiled vs hand-authored, plus orphaned data | `npx forecaster coverage [<id>] [--json]` | terminal |
-| the full interactive model (re-simulates live) | `npx forecaster precompute`, then `npx forecaster serve` | http://localhost:8137 (`PORT` overrides) |
-| the same, as one self-contained file | `npx forecaster build` | `dist/montecarlo.html` |
-| a static page of every panel (no live simulation) | `npx forecaster artifact-full` | `dist/montecarlo-full-artifact.html` |
-| a static page for chosen ventures only | `MC_PROJECTS=<id>,<id> MC_OUT=<file>.html npx forecaster artifact-full` | `dist/<file>.html` |
+| each venture's headline and node grounding, ranked by influence | `npx startup-forecaster status [<id>…] [--json]` | terminal |
+| which nodes are compiled vs hand-authored, plus orphaned data | `npx startup-forecaster coverage [<id>] [--json]` | terminal |
+| the full interactive model (re-simulates live) | `npx startup-forecaster precompute`, then `npx startup-forecaster serve` | http://localhost:8137 (`PORT` overrides) |
+| the same, as one self-contained file | `npx startup-forecaster build` | `dist/montecarlo.html` |
+| a static page of every panel (no live simulation) | `npx startup-forecaster artifact-full` | `dist/montecarlo-full-artifact.html` |
+| a static page for chosen ventures only | `MC_PROJECTS=<id>,<id> MC_OUT=<file>.html npx startup-forecaster artifact-full` | `dist/<file>.html` |
 
 2. Write or refresh the brief of every venture whose forecast changed: `brief` in `src/projects/<id>.ts`
    (for a variant, on the variant), as `{ one, sections }`. `one` is the one-line takeaway; use the sections
    **What it means**, **What would change it** and **Cheapest next steps**, each a list of short bullets.
-   Read the venture's drivers (`npx forecaster status <id>`) and grounding before writing it. Then rebuild the
-   page (`npx forecaster build`).
+   Read the venture's drivers (`npx startup-forecaster status <id>`) and grounding before writing it. Then rebuild the
+   page (`npx startup-forecaster build`).
 3. Before sharing, check: no console exceptions on the page, every control changes what it claims to, and
    each venture shows its own currency.

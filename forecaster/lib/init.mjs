@@ -7,7 +7,7 @@
 //     portfolio.manifest.mjs   which portfolio modules the engine bundles, and where
 //     package.json             depends on startup-forecaster; npm run simulate / serve / … (forecaster commands)
 //     profile.json             the person's and each venture's answers the settings come from (add-venture.md)
-//     src/projects.ts          the ventures as code (`forecaster new` registers each one here); passes the
+//     src/projects.ts          the ventures as code (`startup-forecaster new` registers each one here); passes the
 //                              profile's settings (src/profile-data.ts, generated from profile.json) to the engine
 //     distributions/           projects/<id>.json (the nodes), corpus/ (evidence), build/ (compiled)
 //     sources/                 the source archive: documents.json, cores/, archived files, fetch queue
@@ -36,7 +36,7 @@ export function agentFiles(name = "Venture portfolio") {
     "AGENTS.md": `# ${name}
 
 A startup-forecaster workspace: this folder holds the forecasting data. The tools are the
-\`startup-forecaster\` package it depends on (\`npx forecaster help\` lists them).
+\`startup-forecaster\` package it depends on (\`npx startup-forecaster help\` lists them).
 
 **Before acting on any request here, read \`${PLAYBOOK}\` and follow it end to end.**
 It covers adding a venture, researching and grounding assumptions, building and re-running the simulation,
@@ -74,7 +74,7 @@ export function initWorkspace(dir, { name = "Venture portfolio", link = false } 
   }
   mkdirSync(dir, { recursive: true });
   const root = realpathSync(dir);   // relative links to the checkout must survive symlinked parents
-  const cmd = (c) => `forecaster ${c}`;
+  const cmd = (c) => `startup-forecaster ${c}`;
   const files = {
     "portfolio.config.mjs": `// Where this workspace's pieces live (montecarlo-engine/config.mjs documents every field).
 export default {
@@ -123,7 +123,7 @@ export const PORTFOLIO_MODULES = {
 import { configurePortfolio } from "startup-forecaster/montecarlo-engine/src/portfolio-context.ts";
 import { applyDistributions } from "startup-forecaster/montecarlo-engine/src/apply-distributions.ts";
 import "./distributions-data.ts";
-// The settings from profile.json (currency, tax, thresholds, cost timing): \`forecaster\` regenerates
+// The settings from profile.json (currency, tax, thresholds, cost timing): \`startup-forecaster\` regenerates
 // profile-data.ts from it before every command. Edit profile.json, never profile-data.ts.
 import { PROFILE_SETTINGS } from "./profile-data.ts";
 // forecaster:imports
@@ -157,7 +157,7 @@ configurePortfolio({ ...PROFILE_SETTINGS, projects: VENTURES });
     // what `npm install` does for a file: dependency — so the workspace runs straight away, offline
     mkdirSync(join(root, "node_modules", ".bin"), { recursive: true });
     symlinkSync(rel(join(root, "node_modules"), CHECKOUT), join(root, "node_modules", "startup-forecaster"));
-    symlinkSync("../startup-forecaster/forecaster/bin/forecaster.mjs", join(root, "node_modules", ".bin", "forecaster"));
+    symlinkSync("../startup-forecaster/forecaster/bin/startup-forecaster.mjs", join(root, "node_modules", ".bin", "startup-forecaster"));
   } else {
     const r = spawnSync("npm", ["install", "--no-audit", "--no-fund"], { cwd: root, stdio: "inherit" });
     installed = r.status === 0;

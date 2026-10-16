@@ -14,7 +14,7 @@
 // derivative when the conclusion is a judgement the sources support but do not arithmetically yield.
 //
 //     # median monthly price across habit apps whose prices were read from their own source docs:
-//     npx forecaster make-derivative \
+//     npx startup-forecaster make-derivative \
 //         --title "Median monthly price across habit apps (derived)" \
 //         --from doc_<sha_a>/obs_app_a_price --from doc_<sha_b>/obs_app_b_price \
 //         --records "4.99,7.99,9.99,6.49,12.99" --compute median \
@@ -22,7 +22,7 @@
 //         --statement "Median monthly price across 5 habit apps = derived"
 //
 //     # a statistic over a series already in the corpus (pulls the series values):
-//     npx forecaster make-derivative --title "CAGR of US field-service crews (derived)" \
+//     npx startup-forecaster make-derivative --title "CAGR of US field-service crews (derived)" \
 //         --records-from doc_<sha>/obs_field_crews_series --compute cagr \
 //         --unit "fraction/yr" --obs obs_field_crews_cagr --statement "Field-service crew count CAGR 2021-2024 = derived"
 //

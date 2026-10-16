@@ -10,7 +10,7 @@ import { urlsFromList } from "../firecrawl_fetch.mjs";
 
 test("reads the export (markdown or csv) and plain URL lists", () => {
   const md = "# Human fetch worklist — 2 source(s) no agent could reach\n\n## [high] https://a.example/x\n- why: see https://other.example/ref\n" +
-    "- after saving: `npx forecaster install-source <saved-file> --url https://a.example/x`\n\n## [low] https://b.example/y?id=2\n";
+    "- after saving: `npx startup-forecaster install-source <saved-file> --url https://a.example/x`\n\n## [low] https://b.example/y?id=2\n";
   assert.deepEqual(urlsFromList(md), ["https://a.example/x", "https://b.example/y?id=2"]);
   const csv = 'priority,url,why,unblocks,suggested_filename\nhigh,https://a.example/x,"a, b",p::n,\nlow,https://b.example/y,,,\n';
   assert.deepEqual(urlsFromList(csv), ["https://a.example/x", "https://b.example/y"]);

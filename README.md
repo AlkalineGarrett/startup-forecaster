@@ -20,6 +20,21 @@ Then open your coding agent in `my-forecasts/` and ask to forecast an idea:
 It will then ask you questions for settings that only you can provide (such as where you pay tax, or
 the minimum acceptable revenue, which is used for color coding the results).
 
+### Running it from the GitHub source
+
+To use the latest code instead of the npm release, clone the repository and create the workspace from your
+checkout:
+
+```sh
+git clone https://github.com/AlkalineGarrett/startup-forecaster.git
+node startup-forecaster/forecaster/bin/startup-forecaster.mjs init my-forecasts --link
+cd my-forecasts
+```
+
+`--link` points the workspace at your checkout instead of the npm package, so `npx startup-forecaster` inside
+`my-forecasts/` runs the code you cloned. To update, `git pull` in `startup-forecaster/`; the workspace picks
+up the change straight away.
+
 ## What you'll need to do yourself
 
 The agent does the research and the modelling, but a few things only you can do:
@@ -31,15 +46,15 @@ The agent does the research and the modelling, but a few things only you can do:
 - **Fetch the pages it can't reach.** Some sources sit behind a login, a paywall or a page that only works in
   a real browser. The agent doesn't open a browser for you, so it queues these and lists them at the end of
   its reply. To get them, run this in your workspace:
-  - `npx forecaster fetch-request export --md` shows the list.
-  - If you have a [Firecrawl](https://firecrawl.dev) API key, `FIRECRAWL_API_KEY=<key> npx forecaster firecrawl`
+  - `npx startup-forecaster fetch-request export --md` shows the list.
+  - If you have a [Firecrawl](https://firecrawl.dev) API key, `FIRECRAWL_API_KEY=<key> npx startup-forecaster firecrawl`
     fetches the whole list in one go. It uses your Firecrawl credits, so the agent never runs it for you.
   - For anything left, open the page in your browser, save it (or download the PDF), and run
-    `npx forecaster install-source <saved file> --url <page url>`.
+    `npx startup-forecaster install-source <saved file> --url <page url>`.
 
   Then tell the agent the pages are in, and it will use them.
 - **Approve anything that leaves your machine.** The agent asks before publishing or sharing a page.
-- **Open the interactive model.** `npx forecaster serve` runs it locally. If your agent's sandbox blocks
+- **Open the interactive model.** `npx startup-forecaster serve` runs it locally. If your agent's sandbox blocks
   local ports, run it yourself in a terminal.
 
 ## Requirements
@@ -83,7 +98,7 @@ Claude Code can also load the playbook as a skill:
 
 | folder | what it does |
 |---|---|
-| [`forecaster/`](forecaster) | the `forecaster` command: workspaces, business-model presets, scaffolding a venture, grounding status, and every tool below |
+| [`forecaster/`](forecaster) | the `startup-forecaster` command: workspaces, business-model presets, scaffolding a venture, grounding status, and every tool below |
 | [`agentic-fetcher/`](agentic-fetcher) | find, archive and quote sources (the sourcing ladder, fetch queue, OCR, search) |
 | [`distribution-compiler/`](distribution-compiler) | build each assumption's distribution from the evidence; the node format spec |
 | [`montecarlo-engine/`](montecarlo-engine) | simulate the portfolio (business-model templates, correlated draws, cohort accounting); the data → model simulation build |
@@ -95,7 +110,7 @@ Claude Code can also load the playbook as a skill:
 ```sh
 git clone https://github.com/AlkalineGarrett/startup-forecaster.git
 npm test --prefix startup-forecaster                       # engine, compiler, fetcher, forecaster end to end
-node startup-forecaster/forecaster/bin/forecaster.mjs init my-forecasts --link   # a workspace linked to this checkout
+node startup-forecaster/forecaster/bin/startup-forecaster.mjs init my-forecasts --link   # a workspace linked to this checkout
 ```
 
 MIT licensed.

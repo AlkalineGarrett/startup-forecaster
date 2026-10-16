@@ -2,7 +2,7 @@
 // Add an observation to the shared corpus so a node's `reference: "doc_<sha>/obs_<id>"` resolves
 // to a real, quote-verified fact — turning grounding from prose into a machine-checked link.
 //
-//   npx forecaster add-observation doc_<sha12> obs_habit_app_annual_price \
+//   npx startup-forecaster add-observation doc_<sha12> obs_habit_app_annual_price \
 //       --value 39.99 --unit "USD/yr" --statement "The habit app's annual plan is $39.99 per year" \
 //       --quote "Annual plan: $39.99 per year" --locator "pricing table"
 //

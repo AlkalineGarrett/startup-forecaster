@@ -1,4 +1,4 @@
-// Every tool in the package, as a `forecaster <command>`. A command runs its script with the arguments
+// Every tool in the package, as a `startup-forecaster <command>`. A command runs its script with the arguments
 // that follow it, from the current directory (each tool finds the workspace by walking up to
 // portfolio.config.mjs), and exits with the script's exit code.
 import { spawnSync } from "node:child_process";
@@ -21,7 +21,7 @@ export function nodeOptions() {
 const fetcher = (f) => `agentic-fetcher/${f}.mjs`;
 const prep = (f) => `agentic-fetcher/prep/${f}.mjs`;
 
-/** command → [script (relative to the package), one-line description, options], grouped for `forecaster help`.
+/** command → [script (relative to the package), one-line description, options], grouped for `startup-forecaster help`.
  *  Options: `workspace: false` for a tool that works on explicit files and needs no workspace; every other
  *  tool reads the workspace's data. */
 const FILES_ONLY = { workspace: false };
@@ -81,7 +81,7 @@ export const needsWorkspace = (cmd) => (ENTRIES[cmd]?.[2] || {}).workspace !== f
 export function workspaceProblem(cmd, cwd = process.cwd(), env = process.env) {
   if (!needsWorkspace(cmd)) return null;
   const problem = dataProblem({ cwd, env });
-  return problem && `forecaster ${cmd}: ${problem}`;
+  return problem && `startup-forecaster ${cmd}: ${problem}`;
 }
 
 /** Run a tool with `args`; returns its exit code. */
@@ -93,9 +93,9 @@ export function runTool(cmd, args) {
   return r.status ?? 1;
 }
 
-/** The tool list for `forecaster help`. */
+/** The tool list for `startup-forecaster help`. */
 export function toolHelp() {
   const width = Math.max(...Object.keys(SCRIPTS).map((k) => k.length));
   return Object.entries(TOOLS).map(([group, tools]) =>
-    `${group}:\n` + Object.entries(tools).map(([k, [, d]]) => `  forecaster ${k.padEnd(width)}  ${d}`).join("\n")).join("\n\n");
+    `${group}:\n` + Object.entries(tools).map(([k, [, d]]) => `  startup-forecaster ${k.padEnd(width)}  ${d}`).join("\n")).join("\n\n");
 }

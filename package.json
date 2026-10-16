@@ -23,7 +23,7 @@
     "node": ">=22.13"
   },
   "bin": {
-    "forecaster": "forecaster/bin/forecaster.mjs"
+    "startup-forecaster": "forecaster/bin/startup-forecaster.mjs"
   },
   "files": [
     "AGENTS.md",

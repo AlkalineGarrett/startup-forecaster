@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 // startup-forecaster — take a startup idea from a one-line pitch to a researched, simulated forecast.
 //
-//   forecaster init <dir> [--name "<Title>"] [--link]    create a workspace (portfolio, data, sources, plans)
-//   forecaster agent-files [--force]                     add AGENTS.md / CLAUDE.md / GEMINI.md to this workspace
-//   forecaster presets                                   the business-model presets + their nodes
-//   forecaster new <id> --preset <p> --name "<Name>"     scaffold a venture into this portfolio; currency and
+//   startup-forecaster init <dir> [--name "<Title>"] [--link]    create a workspace (portfolio, data, sources, plans)
+//   startup-forecaster agent-files [--force]                     add AGENTS.md / CLAUDE.md / GEMINI.md to this workspace
+//   startup-forecaster presets                                   the business-model presets + their nodes
+//   startup-forecaster new <id> --preset <p> --name "<Name>"     scaffold a venture into this portfolio; currency and
 //                  [--currency GBP]                      channel come from profile.json's entry for it unless
 //                  [--channel usB2B]                     given here
-//   forecaster profile [--json]                          what profile.json answers, what it still lacks
-//   forecaster status [<id> ...] [--json]                grounding per node, ranked by influence
-//   forecaster <tool> [args]                             any tool in the package (`forecaster help` lists them)
+//   startup-forecaster profile [--json]                          what profile.json answers, what it still lacks
+//   startup-forecaster status [<id> ...] [--json]                grounding per node, ranked by influence
+//   startup-forecaster <tool> [args]                             any tool in the package (`startup-forecaster help` lists them)
 //
 // Run anywhere inside a workspace (the folder with portfolio.config.mjs) or pass --portfolio <dir>.
 // The agent playbook that drives the whole flow is AGENTS.md at the root of this package.
@@ -54,12 +54,12 @@ async function main() {
   const [cmd, ...rest] = positional;
   if (!cmd || cmd === "help" || argv.includes("-h") || argv.includes("--help")) { console.log(usage()); return; }
   if (cmd === "init") {
-    if (!rest[0]) throw new Error('usage: forecaster init <dir> [--name "<Title>"]');
+    if (!rest[0]) throw new Error('usage: startup-forecaster init <dir> [--name "<Title>"]');
     const { root, installed } = initWorkspace(rest[0], { name: flag("--name"), link: argv.includes("--link") });
     console.log(`Created workspace ${root}${installed ? "" : "\n(the startup-forecaster install failed; run \`npm install\` in it)"}\n\n` +
       `Next: cd ${rest[0]} && git init\n` +
       `      then ask your coding agent to forecast an idea (it starts by filling in profile.json with you),\n` +
-      `      or fill in profile.json yourself and: npx forecaster new <id> --preset <preset> --name "<Name>"`);
+      `      or fill in profile.json yourself and: npx startup-forecaster new <id> --preset <preset> --name "<Name>"`);
     return;
   }
   if (cmd === "presets") {
@@ -83,7 +83,7 @@ async function main() {
     const name = flag("--name");
     if (!id || !presetName || !name) throw new Error(`usage: ${NEW_USAGE}`);
     const presetModule = (await presets()).find((p) => p.name === presetName);
-    if (!presetModule) throw new Error(`unknown preset "${presetName}" — see \`forecaster presets\``);
+    if (!presetModule) throw new Error(`unknown preset "${presetName}" — see \`startup-forecaster presets\``);
     const res = scaffoldVenture(pf, {
       id, name, preset: presetName, presetModule,
       flags: { currency: flag("--currency"), cur: flag("--cur"), fx: flag("--fx"), channel: flag("--channel") },
@@ -93,7 +93,7 @@ async function main() {
     console.log(`Scaffolded ${id} (${res.nodes} nodes, every one a labelled placeholder):`);
     for (const f of res.written) console.log(`  ${relative(pf.root, f) || f}`);
     if (res.notes.length) console.log(`\nTo confirm:\n${res.notes.map((n) => `  - ${n}`).join("\n")}`);
-    console.log(`\nNext: npx forecaster simulate   (compiles the placeholders, regenerates, re-freezes golden)\n      npx forecaster status ${id}   (what to research first)`);
+    console.log(`\nNext: npx startup-forecaster simulate   (compiles the placeholders, regenerates, re-freezes golden)\n      npx startup-forecaster status ${id}   (what to research first)`);
     return;
   }
   if (cmd === "profile") {
@@ -119,8 +119,8 @@ async function main() {
 const NEW_USAGE = 'forecaster new <id> --preset <p> --name "<Name>" [--currency <ISO>] [--channel <name>]';
 
 function usage() {
-  return `Workspace:\n  forecaster init <dir> [--name "<Title>"] [--link]\n  forecaster agent-files [--force]\n  forecaster presets\n` +
-    `  ${NEW_USAGE}\n  forecaster profile [--json]\n  forecaster status [<id> ...] [--json]\n\n${toolHelp()}`;
+  return `Workspace:\n  startup-forecaster init <dir> [--name "<Title>"] [--link]\n  startup-forecaster agent-files [--force]\n  startup-forecaster presets\n` +
+    `  ${NEW_USAGE}\n  startup-forecaster profile [--json]\n  startup-forecaster status [<id> ...] [--json]\n\n${toolHelp()}`;
 }
 
-main().catch((e) => { console.error(`forecaster: ${e.message}`); process.exit(1); });
+main().catch((e) => { console.error(`startup-forecaster: ${e.message}`); process.exit(1); });

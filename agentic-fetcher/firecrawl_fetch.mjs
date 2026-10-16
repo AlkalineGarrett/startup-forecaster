@@ -6,9 +6,9 @@
 // archive, a text core, MANIFEST row, corpus doc), and its queue entry is resolved. Pages already in the
 // archive are skipped, so a rerun picks up where the last one stopped.
 //
-//     npx forecaster firecrawl                       # every pending request in the queue, in one go
-//     npx forecaster firecrawl --list                # show what would be fetched, spend nothing
-//     npx forecaster firecrawl fetch-list.md         # only the pages in a list: a `fetch-request export` file
+//     npx startup-forecaster firecrawl                       # every pending request in the queue, in one go
+//     npx startup-forecaster firecrawl --list                # show what would be fetched, spend nothing
+//     npx startup-forecaster firecrawl fetch-list.md         # only the pages in a list: a `fetch-request export` file
 //                                                    # (--md or --csv) or one URL per line; `-` reads stdin
 //
 // Needs FIRECRAWL_API_KEY. It spends the key holder's Firecrawl credits, so it runs when the person runs it.
@@ -137,7 +137,7 @@ export async function main(argv = process.argv.slice(2), { fetchImpl = fetch, wa
   }
   print(`\ndone: ${installed} installed, ${failed.length} failed` + (skipped ? `, ${skipped} already archived` : ""));
   if (failed.length) {
-    print("still in the queue (save these by hand, then `npx forecaster install-source <file> --url <url>`):");
+    print("still in the queue (save these by hand, then `npx startup-forecaster install-source <file> --url <url>`):");
     for (const [u, e] of failed) print(`  ${u}  — ${e}`);
   }
 }

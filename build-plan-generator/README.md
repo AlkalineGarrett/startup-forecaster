@@ -25,10 +25,10 @@ that supplies its own `<html>/<head>/<body>`.
 ## Build
 
 ```sh
-npx forecaster build-plan example.mjs
+npx startup-forecaster build-plan example.mjs
 # → writes example-build-plan.html next to the spec
 # optional explicit output path, and a bare fragment instead of a full document:
-npx forecaster build-plan example.mjs /path/to/out.html --fragment
+npx startup-forecaster build-plan example.mjs /path/to/out.html --fragment
 ```
 
 No dependencies — plain Node (tested on v22). Then open, publish or share the HTML.
@@ -37,7 +37,7 @@ No dependencies — plain Node (tested on v22). Then open, publish or share the 
 
 1. Copy `example.mjs` to `myproject.mjs`.
 2. Edit its three exports (schema below). Replace the example content; keep the shape.
-3. `npx forecaster build-plan myproject.mjs` → `myproject-build-plan.html`.
+3. `npx startup-forecaster build-plan myproject.mjs` → `myproject-build-plan.html`.
 4. Open, publish or share that HTML.
 
 `build-plan.css` and `render.mjs` are shared — you never copy them per project.

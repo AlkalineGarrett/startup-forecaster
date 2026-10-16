@@ -10,7 +10,7 @@ const CHECKOUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 export async function loadPortfolio(dir = process.cwd()) {
   const cfgPath = findConfig(dir);
-  if (!cfgPath) throw new Error(`no portfolio.config.mjs in or above ${resolve(dir)} — run inside a workspace (\`forecaster init <dir>\` makes one)`);
+  if (!cfgPath) throw new Error(`no portfolio.config.mjs in or above ${resolve(dir)} — run inside a workspace (\`startup-forecaster init <dir>\` makes one)`);
   // the engine: MC_ENGINE, else the workspace's installed package, else this package's own
   const candidates = [process.env.MC_ENGINE && resolve(process.env.MC_ENGINE), join(dirname(cfgPath), "node_modules", "startup-forecaster", "montecarlo-engine"), join(CHECKOUT, "montecarlo-engine")].filter(Boolean);
   const engineDir = candidates.find((d) => existsSync(join(d, "config.mjs")));

@@ -1,5 +1,5 @@
-// Precompute the model's startup state to disk so `npx forecaster serve` boots instantly instead of running
-// the init pass. `npx forecaster simulate` already writes it (its results pass, montecarlo-engine
+// Precompute the model's startup state to disk so `npx startup-forecaster serve` boots instantly instead of running
+// the init pass. `npx startup-forecaster simulate` already writes it (its results pass, montecarlo-engine
 // simulation/results.mjs, shares the portfolio run with golden and the pairwise bake), so this command only
 // recomputes when the snapshot is missing or stale, or with --force. A recompute runs one full init,
 // v8-serializes appcore's snapshot (RunResults are Float64Arrays + plain objects, which round-trip natively),

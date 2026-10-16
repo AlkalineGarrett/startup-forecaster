@@ -4,7 +4,7 @@
 // Mean/P80 selector for the overview+pairwise, and the histogram hover CDF-readout). DELIBERATELY OMITS the
 // client-side simulation engine + the node distribution/model data (so no re-simulation, no node-pinning) and
 // the heavy Grounding/evidence corpus. This is the "everything, minus the simulation data" view.
-// Run: npx forecaster artifact-full
+// Run: npx startup-forecaster artifact-full
 import { PORTFOLIO_TITLE } from "../montecarlo-engine/src/portfolio-context.ts";
 import { fmt } from "../montecarlo-engine/src/format.ts";
 import { prepareStatic, bakeStatViews, inlineJson, rendererFile, writeArtifact } from "./artifact-common.mjs";

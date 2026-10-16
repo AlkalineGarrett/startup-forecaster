@@ -7,7 +7,7 @@
 **Input:** a change to the data or the structure (a changed distribution has passed `audit-distributions`), or
 a request to re-run the simulation.
 
-**Done when:** the simulation build (`npx forecaster simulate`) has run from the stage the change touched to
+**Done when:** the simulation build (`npx startup-forecaster simulate`) has run from the stage the change touched to
 the end, the golden diff shows only the intended ventures moving, and the workspace's own tests pass if it has
 any (`npm test`).
 
@@ -26,10 +26,10 @@ has `distributionData: "distributions"` and its venture files under the `bootstr
 2. **Never hand-edit generated files**: the config's `generated.distributions`, `generated.evidence` and
    `generated.pairwise` modules, `<distributionData>/build/`, and the rendered pages (`out`). The simulation
    build (or the renderer) rewrites them.
-3. **Re-running the simulation means running `npx forecaster simulate`.** That command compiles the
+3. **Re-running the simulation means running `npx startup-forecaster simulate`.** That command compiles the
    distributions, regenerates the model's modules, re-freezes golden, re-bakes pairwise and writes the
    precompute snapshot the pages start from (all three from one run of the portfolio). It does not render the
-   pages; that is `render-forecast`. `npx forecaster status` and `npx forecaster coverage` read the generated
+   pages; that is `render-forecast`. `npx startup-forecaster status` and `npx startup-forecaster coverage` read the generated
    modules (status reads its headlines and drivers from that snapshot), so they show current numbers only once
    it has run.
 4. **Run the chain in order.** Each stage feeds the next; a change one layer up with stale layers below
@@ -44,10 +44,10 @@ has `distributionData: "distributions"` and its venture files under the `bootstr
    Business-model templates live in `montecarlo-engine/src/templates.ts` in the package.
 2. **Run the simulation build:**
    ```sh
-   npx forecaster simulate                  # compile → gen → golden → pairwise → precompute
-   npx forecaster simulate --fast           # skips the slow pairwise and precompute stages (both are then stale)
-   npx forecaster simulate --from gen --to gen
-   npx forecaster simulate --list
+   npx startup-forecaster simulate                  # compile → gen → golden → pairwise → precompute
+   npx startup-forecaster simulate --fast           # skips the slow pairwise and precompute stages (both are then stale)
+   npx startup-forecaster simulate --from gen --to gen
+   npx startup-forecaster simulate --list
    ```
    It always runs the whole portfolio, even for a one-venture change. Use `--fast` when the
    pairwise view doesn't matter for the request, and say that it is stale. The workspace's npm scripts

@@ -5,7 +5,7 @@
 // An existing core is never overwritten unless --force is given: observations quote-verify against the
 // stored cores, so silently re-extracting them (with a different extractor) could break verified quotes.
 //
-// Run: npx forecaster extract-cores [--force]
+// Run: npx startup-forecaster extract-cores [--force]
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOTS } from "../paths.mjs";

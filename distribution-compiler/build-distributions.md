@@ -9,7 +9,7 @@
 nodes the request names.
 
 **Done when:** each node's distribution in `distributions/projects/<id>.json` is constructed from its
-evidence, and every changed project compiles with 0 errors (`npx forecaster compile
+evidence, and every changed project compiles with 0 errors (`npx startup-forecaster compile
 distributions/projects/<id>.json`).
 
 **Next:** `audit-distributions` (`audit-distributions.md`) for every node this step built or changed.
@@ -47,10 +47,10 @@ For each node in the input:
    `<id>::<variant>::<node>`; change the ones the request is about).
 2. Try shapes before writing them:
    ```sh
-   npx forecaster preview fit <kind> p10=… p90=…                         # params from target quantiles
-   npx forecaster preview '{"kind":"lognormal","median":9,"sigma":0.6}'  # percentiles of a construction
+   npx startup-forecaster preview fit <kind> p10=… p90=…                         # params from target quantiles
+   npx startup-forecaster preview '{"kind":"lognormal","median":9,"sigma":0.6}'  # percentiles of a construction
    ```
 3. Write the construction: references to the observations, formulas, anchors, `support_score`,
    `reasoning`, and `reconciliation` / `cross_checks` where sources were combined.
-Then compile each changed project: `npx forecaster compile distributions/projects/<id>.json` must report 0
+Then compile each changed project: `npx startup-forecaster compile distributions/projects/<id>.json` must report 0
 errors. Read the warnings; each one is a question about a construction.

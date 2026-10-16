@@ -14,13 +14,13 @@
 //   5. if the source fulfils a queued human-fetch request (matching URL), marks it resolved.
 //
 //     # an agent that already has the bytes (saved a WebFetch/download to a file):
-//     npx forecaster install-source path/to/saved.html --url https://x.com/p --title "X pricing"
+//     npx startup-forecaster install-source path/to/saved.html --url https://x.com/p --title "X pricing"
 //
 //     # fetch the URL directly with curl (needs network access):
-//     npx forecaster install-source --url https://x.com/p --title "X pricing"
+//     npx startup-forecaster install-source --url https://x.com/p --title "X pricing"
 //
 //     # verify/inspect only — hash, dedupe check, extracted core preview; no write:
-//     npx forecaster install-source path/to/saved.html --url https://x.com/p --check
+//     npx startup-forecaster install-source path/to/saved.html --url https://x.com/p --check
 //
 // Cleaning is deliberately lean (the core is the text layer search.mjs + add_observation quote-match
 // against). Re-running on the same bytes is a no-op. Paths resolve through paths.mjs (the workspace, or
@@ -280,7 +280,7 @@ export async function install(data, url, title, { tier = "manual", origin = "age
   print(`installed ${docId}  (${typ}, ${data.length} bytes)  core via ${how}: ${coreText.length} chars`);
   print(`  raw:  ${GROUNDING}/${storedRel}`);
   print(`  core: ${GROUNDING}/${coreRel}`);
-  print(`  → ground it:  npx forecaster add-observation ${docId} obs_<id> --value <v> --unit <u> ` +
+  print(`  → ground it:  npx startup-forecaster add-observation ${docId} obs_<id> --value <v> --unit <u> ` +
     '--statement <s> --quote "<verbatim from the core>"');
   return [docId, "installed"];
 }
@@ -301,7 +301,7 @@ async function resolveRequest(url) {
     if (pend.length) {
       eprint(`  ⚠ a queued fetch on ${dom} is still PENDING and did not match this URL exactly: ` +
         `${pend[0].url}\n    if this install covers it, resolve it: ` +
-        `npx forecaster fetch-request resolve --url ${pend[0].url}`);
+        `npx startup-forecaster fetch-request resolve --url ${pend[0].url}`);
     }
   } catch {
     // never let queue bookkeeping fail an install
@@ -335,11 +335,11 @@ export async function main() {
     try {
       r = run("curl", ["-fsSL", "--max-time", "60", a.url], { timeout: 90 });
     } catch (e) {
-      die(`fetch error: ${e.message}. Queue it for a human: npx forecaster fetch-request add --url ${a.url} ...`);
+      die(`fetch error: ${e.message}. Queue it for a human: npx startup-forecaster fetch-request add --url ${a.url} ...`);
     }
     if (r.code !== 0 || !r.stdout.length) {
       die(`curl fetch failed (${r.code}). Save the file yourself and pass it, or queue it: ` +
-        `npx forecaster fetch-request add --url ${a.url} --why '...' --for <project::node>`);
+        `npx startup-forecaster fetch-request add --url ${a.url} --why '...' --for <project::node>`);
     }
     data = r.stdout;
     name = basename(urlPath(a.url)) || "source";

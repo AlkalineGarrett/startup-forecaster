@@ -10,9 +10,9 @@
 // An observation is *referenced* if its id appears in a `reference`/`references`/`records-from`/formula
 // in any project node, OR (indirectly) if it feeds a derivative document that a project references.
 //
-//     npx forecaster citations                      # obs_id -> [project::node, ...] (+ orphan report)
-//     npx forecaster citations --json               # machine-readable index
-//     npx forecaster citations --orphans            # only observations no node uses (direct or indirect)
+//     npx startup-forecaster citations                      # obs_id -> [project::node, ...] (+ orphan report)
+//     npx startup-forecaster citations --json               # machine-readable index
+//     npx startup-forecaster citations --orphans            # only observations no node uses (direct or indirect)
 //
 // Two-root: observations under PROJECT/corpus, projects under PROJECT/projects, derivative identity
 // under GROUNDING/documents.json.

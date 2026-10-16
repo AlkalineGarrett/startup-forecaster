@@ -16,7 +16,7 @@
  *
  * State is a SINGLE session (the server mutates node._override on the shared PROJECTS singletons, just
  * as the in-browser app did). This is a local single-user tool; two concurrent browser tabs would
- * share one state. Run: `node --experimental-strip-types server.mjs` (or `npx forecaster serve`).
+ * share one state. Run: `node --experimental-strip-types server.mjs` (or `npx startup-forecaster serve`).
  */
 import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
@@ -32,7 +32,7 @@ await loadPortfolio(); // attach the portfolio (portfolio.config.mjs bootstrap, 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 8137;
 
-// Boot from the precomputed cache (npx forecaster precompute) when it matches the current engine sources —
+// Boot from the precomputed cache (npx startup-forecaster precompute) when it matches the current engine sources —
 // instant startup, no sims. Otherwise fall back to a full init pass. Set MC_NO_CACHE=1 to always
 // recompute. A stale/corrupt cache never wins: the source hash must match, and any error recomputes.
 function saveCache() {
@@ -54,7 +54,7 @@ if (!process.env.MC_NO_CACHE && existsSync(CACHE_BIN) && existsSync(CACHE_HASH))
       booted = true;
       console.log(`Loaded precomputed model from cache in ${Date.now() - t0}ms${ac.pairwiseReady() ? " (pairwise included)" : ""}.`);
     } else {
-      console.log("Precompute cache is stale (the model's sources changed) — recomputing. Run `npx forecaster precompute` to refresh it.");
+      console.log("Precompute cache is stale (the model's sources changed) — recomputing. Run `npx startup-forecaster precompute` to refresh it.");
     }
   } catch (e) {
     console.log(`Precompute cache unusable (${e && e.message}) — recomputing.`);
